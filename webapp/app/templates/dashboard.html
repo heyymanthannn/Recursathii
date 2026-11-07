@@ -2,12 +2,12 @@
 <h1>{{ user.business }}</h1>
 <p class="sub">{{ trial_left if trial_left else "Revenue recovery at a glance." }}</p>
 <div class="cards">
-<div class="card"><div class="label">Total revenue recovered</div><div class="kpi green">{{ inr(m.recovered) }}</div></div>
-<div class="card"><div class="label">Failed payments</div><div class="kpi red">{{ m.failed_count }} <span class="badge-note">({{ inr(m.failed_amount) }})</span></div></div>
-<div class="card"><div class="label">Pending overdue invoices</div><div class="kpi amber">{{ m.overdue_count }}</div></div>
-<div class="card"><div class="label">Recovery success rate</div><div class="kpi blue">{{ m.success_rate }}%</div></div>
-<div class="card"><div class="label">Dormant customers</div><div class="kpi purple"><a href="/radar">view in Radar</a></div></div>
-<div class="card"><div class="label">Outstanding value</div><div class="kpi lav">{{ inr(m.outstanding) }}</div></div>
+<div class="card"><div class="label"><span class="msym kicon">savings</span>Total revenue recovered</div><div class="kpi green">{{ inr(m.recovered) }}</div></div>
+<div class="card"><div class="label"><span class="msym kicon">error</span>Failed payments</div><div class="kpi red">{{ m.failed_count }} <span class="badge-note">({{ inr(m.failed_amount) }})</span></div></div>
+<div class="card"><div class="label"><span class="msym kicon">schedule</span>Pending overdue invoices</div><div class="kpi amber">{{ m.overdue_count }}</div></div>
+<div class="card"><div class="label"><span class="msym kicon">trending_up</span>Recovery success rate</div><div class="kpi blue">{{ m.success_rate }}%</div></div>
+<div class="card"><div class="label"><span class="msym kicon">person_search</span>Dormant customers</div><div class="kpi purple"><a href="/radar">view in Radar</a></div></div>
+<div class="card"><div class="label"><span class="msym kicon">account_balance_wallet</span>Outstanding value</div><div class="kpi lav">{{ inr(m.outstanding) }}</div></div>
 </div>
 <div class="filterrow">
 <a class="pill-link {{ 'on' if period != 'weekly' }}" href="/dashboard">Monthly</a>
