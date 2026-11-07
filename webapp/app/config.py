@@ -51,6 +51,6 @@ YOUPI_MERCHANT_ID = os.environ.get("YOUPI_MERCHANT_ID", "")
 
 # Manual Google Pay / UPI mode: no provider, money lands directly in the
 # owner's bank account. Customers scan the QR in Google Pay (or any UPI app).
-MANUAL_UPI_ID = os.environ.get("MANUAL_UPI_ID", "manthansolapure12@oksbi")
-MANUAL_UPI_PAYEE = os.environ.get("MANUAL_UPI_PAYEE", "Manthan Solapure")
+MANUAL_UPI_ID = os.environ.get("MANUAL_UPI_ID", "")   # owner UPI handle, set in Render env (kept out of the public repo)
+MANUAL_UPI_PAYEE = os.environ.get("MANUAL_UPI_PAYEE", "RecurSaathi")
 ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "changeme-admin")  # for mark-paid endpoint
