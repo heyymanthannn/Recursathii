@@ -231,20 +231,19 @@ body{letter-spacing:-.006em}
 
 /* ---------- motion ---------- */
 @keyframes rise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
-.js .reveal{opacity:0;transform:translateY(22px)}
-.js .reveal.in{opacity:1;transform:none;transition:opacity .65s cubic-bezier(.2,.65,.25,1),transform .65s cubic-bezier(.2,.65,.25,1)}
+.js .reveal.in{animation:rise .65s cubic-bezier(.2,.65,.25,1)}
 .js .hero .wrap>*{animation:rise .75s cubic-bezier(.2,.65,.25,1) both}
 .js .hero .wrap>*:nth-child(2){animation-delay:.07s}
 .js .hero .wrap>*:nth-child(3){animation-delay:.14s}
 .js .hero .wrap>*:nth-child(4){animation-delay:.21s}
 .js .hero .wrap>*:nth-child(5){animation-delay:.28s}
 .js .mockwrap{animation:rise .9s .3s cubic-bezier(.2,.65,.25,1) both}
-.js .mkchart i,.js .achart i{transform-origin:bottom;transform:scaleY(.05);transition:transform .9s cubic-bezier(.2,.65,.25,1)}
-.js .mkchart.in i,.js .achart.in i{transform:scaleY(1)}
+.js .mkchart.in i,.js .achart.in i{animation:growbar .9s cubic-bezier(.2,.65,.25,1);transform-origin:bottom}
+@keyframes growbar{from{transform:scaleY(.05)}to{transform:scaleY(1)}}
 .nlinks a{position:relative}
 .nlinks a::after{content:'';position:absolute;left:0;right:0;bottom:-5px;height:1.5px;background:var(--vio);transform:scaleX(0);transform-origin:left;transition:transform .25s}
 .nlinks a:hover::after{transform:scaleX(1)}
-@media(prefers-reduced-motion:reduce){.js .reveal,.js .mkchart i,.js .achart i{opacity:1!important;transform:none!important;transition:none!important}.js .hero .wrap>*,.js .mockwrap,.js .legal{animation:none!important}.nlinks a::after{transition:none}}
+@media(prefers-reduced-motion:reduce){.js .reveal.in,.js .mkchart.in i,.js .achart.in i{animation:none!important}.js .hero .wrap>*,.js .mockwrap,.js .legal{animation:none!important}.nlinks a::after{transition:none}}
 
 /* ---------- premium pass v4 ---------- */
 h1{font-size:clamp(38px,5.6vw,64px);font-weight:800;letter-spacing:-.038em;line-height:1.04}
@@ -336,11 +335,7 @@ section{padding:96px 0}
 .hero .btn-ghost{background:rgba(255,255,255,.7);border:1px solid #d8d8e2;color:#0a0a0c}
 .hero .btn-ghost:hover{border-color:#0a0a0c;transform:translateY(-2px)}
 .hero .ctas{gap:14px}
-.js .hero .caps span{opacity:0;transform:translateY(14px)}
-.js .hero .caps span:nth-child(1){animation:rise .6s .5s cubic-bezier(.2,.65,.25,1) forwards}
-.js .hero .caps span:nth-child(2){animation:rise .6s .58s cubic-bezier(.2,.65,.25,1) forwards}
-.js .hero .caps span:nth-child(3){animation:rise .6s .66s cubic-bezier(.2,.65,.25,1) forwards}
-.js .hero .caps span:nth-child(4){animation:rise .6s .74s cubic-bezier(.2,.65,.25,1) forwards}
+.js .hero .wrap>*:nth-child(6){animation-delay:.35s}
 .mockwrap{position:relative}
 .js .mockwrap{animation:rise .9s .28s cubic-bezier(.2,.65,.25,1) both,floaty 7s 1.4s ease-in-out infinite alternate}
 @keyframes floaty{from{transform:translateY(0) rotate(0deg)}to{transform:translateY(-10px) rotate(.25deg)}}
@@ -350,7 +345,6 @@ section{padding:96px 0}
  .hero::before,.hero::after{animation:none}
  .hero h1 em{animation:none}
  .js .mockwrap{animation:rise .9s .28s cubic-bezier(.2,.65,.25,1) both}
- .js .hero .caps span{animation:none;opacity:1;transform:none}
  .mock{transition:none}
 }
 </style>
