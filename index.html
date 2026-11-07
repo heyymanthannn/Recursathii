@@ -606,11 +606,14 @@ modal.addEventListener('click',function(e){if(e.target===modal)modal.classList.r
 document.getElementById('signupForm').addEventListener('submit',async function(e){
   e.preventDefault();
   var f=e.target, msg=document.getElementById('formMsg'), btn=f.querySelector('button');
+  var g=function(n){return ((f.elements[n]||{}).value||'').trim();};
   msg.textContent='';btn.textContent='Creating account…';btn.disabled=true;
   try{
     var r=await fetch('/api/signup',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name:f.name.value,email:f.email.value,phone:f.phone.value,plan:chosen})});
-    var d=await r.json();
+      body:JSON.stringify({name:g('name'),email:g('email'),phone:g('phone'),plan:chosen})});
+    var d=null;var ct=(r.headers.get('content-type')||'');
+    try{if(ct.indexOf('json')>-1)d=await r.json();}catch(_){}
+    if(!d){msg.textContent='This demo page has no signup server behind it. Signup works in the full app build, or email support@recursaathi.in and we\u2019ll set you up.';return;}
     if(!r.ok)throw new Error(d.detail||'Signup failed');
     msg.textContent='Account created. Taking you to checkout…';
     setTimeout(function(){window.location.href=d.checkout_url;},600);
