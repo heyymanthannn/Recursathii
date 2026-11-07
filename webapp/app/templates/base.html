@@ -6,7 +6,6 @@
 <title>{% block title %}RecurSaathi{% endblock %}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/style.css">
 </head>
@@ -72,5 +71,10 @@
   <a href="/contact">Contact</a>
 </div></footer>
 {% endif %}
+<div class="cbar" id="cbar"><p>This site uses a few cookies to keep your session working. No trackers, nothing shared.</p><button id="cbar-ok">Got it</button></div>
+<script>
+(function(){try{if(localStorage.getItem("rs_cookie_ok")!=="1"){document.getElementById("cbar").classList.add("on");}}catch(e){}
+document.getElementById("cbar-ok").addEventListener("click",function(){try{localStorage.setItem("rs_cookie_ok","1");}catch(e){}document.getElementById("cbar").classList.remove("on");});})();
+</script>
 </body>
 </html>

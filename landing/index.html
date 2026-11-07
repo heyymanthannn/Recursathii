@@ -22,7 +22,7 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
-body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.6}
+body{font-family:'Times New Roman',Times,Georgia,serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.6}
 a{color:inherit;text-decoration:none}
 .wrap{max-width:1120px;margin:0 auto;padding:0 24px}
 .btn{display:inline-flex;align-items:center;gap:8px;border-radius:10px;padding:12px 22px;font-size:15px;font-weight:600;border:1px solid transparent;cursor:pointer;transition:.18s}
@@ -247,8 +247,8 @@ body{letter-spacing:-.006em}
 .js .legal{animation:rise .6s cubic-bezier(.2,.65,.25,1) both}
 
 /* ---------- motion ---------- */
-@keyframes rise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
-.js .reveal{opacity:0;transform:translateY(22px)}
+@keyframes rise{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+.js .reveal{opacity:0;transform:scale(.93) translateY(14px)}
 .js .reveal.in{opacity:1;transform:none;transition:opacity .65s cubic-bezier(.2,.65,.25,1),transform .65s cubic-bezier(.2,.65,.25,1)}
 .js .hero .wrap>*{animation:rise .75s cubic-bezier(.2,.65,.25,1) both}
 .js .hero .wrap>*:nth-child(2){animation-delay:.07s}
@@ -261,7 +261,7 @@ body{letter-spacing:-.006em}
 .nlinks a{position:relative}
 .nlinks a::after{content:'';position:absolute;left:0;right:0;bottom:-5px;height:1.5px;background:var(--vio);transform:scaleX(0);transform-origin:left;transition:transform .25s}
 .nlinks a:hover::after{transform:scaleX(1)}
-@media(prefers-reduced-motion:reduce){.js .reveal,.js .mkchart i,.js .achart i{opacity:1!important;transform:none!important;transition:none!important}.js .hero .wrap>*,.js .mockwrap,.js .legal{animation:none!important}.nlinks a::after{transition:none}}
+@media(prefers-reduced-motion:reduce){.js .reveal,.js .mkchart i,.js .achart i{opacity:1!important;transform:none!important;transition:none!important}.js .hero .wrap>*,.js .mockwrap,.js .legal{animation:none!important}.nlinks a::after{transition:none}.btn:hover,.hcard:hover,.pcard:hover{transform:none!important}}
 
 /* ---------- premium pass v4 ---------- */
 h1{font-size:clamp(38px,5.6vw,64px);font-weight:800;letter-spacing:-.038em;line-height:1.04}
@@ -634,5 +634,27 @@ document.addEventListener('mouseout',function(e){if(!e.relatedTarget&&e.clientY<
 })();
 </script>
 <div class="mcta"><a class="btn btn-primary" href="#pricing">Start free trial</a></div>
+
+<style>
+/* zoom hover effects */
+.btn:hover{transform:scale(1.05)}
+.btn:active{transform:scale(.96)}
+.hcard,.pcard{transition:transform .2s ease,box-shadow .2s ease}
+.hcard:hover,.pcard:hover{transform:scale(1.02)}
+.nlinks a{transition:transform .18s ease}
+.nlinks a:hover{transform:scale(1.04)}
+/* cookie banner */
+#cbar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:80;display:none;gap:14px;align-items:center;background:#131722;border:1px solid #262b3a;border-radius:12px;padding:13px 18px;box-shadow:0 10px 30px rgba(0,0,0,.45);max-width:calc(100vw - 32px);animation:rise .5s ease both}
+#cbar.on{display:flex;flex-wrap:wrap}
+#cbar p{margin:0;font-size:13.5px;color:#aab2c5}
+#cbar button{all:unset;cursor:pointer;font-size:13.5px;font-weight:600;color:#fff;background:linear-gradient(135deg,#8b7bff,#6d5ef5);border-radius:9px;padding:9px 16px;transition:transform .18s ease}
+#cbar button:hover{transform:scale(1.06)}
+@media(max-width:600px){#cbar{flex-direction:column;text-align:center}}
+</style>
+<div id="cbar"><p>This site uses a few cookies to keep things working. No trackers, nothing shared.</p><button id="cbar-ok">Got it</button></div>
+<script>
+(function(){try{if(localStorage.getItem("rs_cookie_ok")!=="1"){document.getElementById("cbar").classList.add("on");}}catch(e){}
+document.getElementById("cbar-ok").addEventListener("click",function(){try{localStorage.setItem("rs_cookie_ok","1");}catch(e){}document.getElementById("cbar").classList.remove("on");});})();
+</script>
 </body>
 </html>
