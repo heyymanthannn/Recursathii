@@ -692,15 +692,24 @@ document.getElementById('signupForm').addEventListener('submit',async function(e
   msg.textContent='';btn.textContent='Creating account…';btn.disabled=true;var slow=null;
   try{
     slow=setTimeout(function(){msg.textContent='Warming up the server \u2014 first load can take up to a minute. Staying on it\u2026';},4000);
-    var r=await fetch('https://recursaathi.onrender.com/api/signup',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name:g('name'),email:g('email'),phone:g('phone'),plan:chosen})});
-    var d=null;var ct=(r.headers.get('content-type')||'');
-    try{if(ct.indexOf('json')>-1)d=await r.json();}catch(_){}
+    var body=JSON.stringify({name:g('name'),email:g('email'),phone:g('phone'),plan:chosen});
+    var r=null,d=null,ct='';
+    for(var attempt=1;attempt<=3;attempt++){
+      try{
+        r=await fetch('https://recursaathi.onrender.com/api/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:body});
+        ct=(r.headers.get('content-type')||'');d=null;
+        try{if(ct.indexOf('json')>-1)d=await r.json();}catch(_){}
+        break;
+      }catch(netErr){
+        if(attempt<3){msg.textContent='Couldn\u2019t reach the server, it may be waking up. Retrying\u2026';await new Promise(function(res){setTimeout(res,3000);});}
+        else{msg.textContent='The signup server isn\u2019t reachable right now. Give it a minute and tap Create account again, or email support@recursaathi.in.';return;}
+      }
+    }
     if(!d){msg.textContent='This demo page has no signup server behind it. Signup works in the full app build, or email support@recursaathi.in and we\u2019ll set you up.';return;}
     if(!r.ok)throw new Error(d.detail||'Signup failed');
     msg.textContent='Account created. Taking you to checkout…';
     setTimeout(function(){window.location.href=d.checkout_url;},600);
-  }catch(err){msg.textContent=err.message||'Something went wrong. Try again.';}
+  }catch(err){msg.textContent=(err&&err.message&&!/fetch/i.test(err.message))?err.message:'Something went wrong. Tap Create account again, or email support@recursaathi.in.';}
   finally{clearTimeout(slow);btn.disabled=false;btn.textContent='Create account';}
 });
 </script>
