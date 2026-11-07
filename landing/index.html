@@ -583,12 +583,12 @@ document.getElementById('signupForm').addEventListener('submit',async function(e
   var f=e.target, msg=document.getElementById('formMsg'), btn=f.querySelector('button');
   msg.textContent='';btn.textContent='Creating account…';btn.disabled=true;
   try{
-    var r=await fetch('/api/signup',{method:'POST',headers:{'Content-Type':'application/json'},
+    var r=await fetch('https://recursaathi.onrender.com/api/signup',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({name:f.name.value,email:f.email.value,phone:f.phone.value,plan:chosen})});
     var d=await r.json();
     if(!r.ok)throw new Error(d.detail||'Signup failed');
     msg.textContent='Account created. Taking you to checkout…';
-    setTimeout(function(){window.location.href=d.checkout_url;},600);
+    setTimeout(function(){window.location.href='https://recursaathi.onrender.com'+d.checkout_url;},600);
   }catch(err){msg.textContent=err.message||'Something went wrong. Try again.';}
   finally{btn.disabled=false;btn.textContent='Create account';}
 });
