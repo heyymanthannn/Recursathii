@@ -357,7 +357,7 @@ src:url(https://cdn.jsdelivr.net/npm/@fontsource-variable/inter@5/files/inter-la
 /* DOM copy of the glass text: transparent, selectable, real hit areas */
 #layer{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none;will-change:transform;z-index:5}
 #layer .hit{pointer-events:auto}
-#layer span,#layer a,#layer button{color:transparent;-webkit-text-fill-color:transparent;text-decoration:none;cursor:default}
+#layer span,#layer a,#layer button,#layer div{color:transparent;-webkit-text-fill-color:transparent;text-decoration:none;cursor:default}
 #layer ::selection{background:rgba(88,101,242,.45);color:transparent;-webkit-text-fill-color:transparent}
 #layer a.hit{cursor:pointer}
 /* definitions view */
@@ -1350,7 +1350,7 @@ const corners = [{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0}];
 function computeH(src, dst) { // 4-point homography, returns 3x3 row-major
   const A = [], b = [];
   for (let i = 0; i < 4; i++) {
-    const [x, y] = src[i], [X, Y] = dst[i];
+    const [x, y] = src[i], { x: X, y: Y } = dst[i];
     A.push([x, y, 1, 0, 0, 0, -X * x, -X * y]); b.push(X);
     A.push([0, 0, 0, x, y, 1, -Y * x, -Y * y]); b.push(Y);
   }
