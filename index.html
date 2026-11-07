@@ -1047,14 +1047,14 @@ function buildPieces() {
     [blockX0, blockY1 - navH], [blockX0 + blockW, blockY1 - navH],
     [blockX0 + blockW, blockY1], [blockX0, blockY1]
   ], halfGap()), 20 * S);
-  addPiece(navShape, { x: 0, y: blockY1 - navH / 2 }, { w: blockW, h: navH }, true, navTex, navUV());
+  addPiece(navShape, { x: 0, y: blockY1 - navH / 2 }, { w: blockW, h: navH }, true, navTex, navUV(), springs);
   for (const cell of cells) {
     const wp = toWorld(cell.pts);
     const shape = roundedShape(insetPoly(wp, halfGap()), 20 * S);
     let cx = 0, cy = 0, minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
     for (const [x, y] of wp) { cx += x / wp.length; cy += y / wp.length;
       minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y); }
-    addPiece(shape, { x: cx, y: cy }, { w: maxX - minX, h: maxY - minY }, false, panelTex, panelUV());
+    addPiece(shape, { x: cx, y: cy }, { w: maxX - minX, h: maxY - minY }, false, panelTex, panelUV(), springs);
   }
 }
 function panelUV() {
@@ -1063,7 +1063,7 @@ function panelUV() {
 function navUV() {
   return { rx: 1 / blockW, ry: 1 / navH, ox: -blockX0 / blockW, oy: -(blockY1 - navH) / navH };
 }
-function addPiece(shape, center, size, isNav, tex, uv) {
+function addPiece(shape, center, size, isNav, tex, uv, springs) {
   const mat = glassMat(true);
   const geo = extrudeOf(shape);
   const mesh = new THREE.Mesh(geo, mat);
