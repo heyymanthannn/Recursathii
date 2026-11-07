@@ -650,7 +650,7 @@ background:linear-gradient(#dcdce0,#bdbdc3);-webkit-background-clip:text;backgro
     <p>Revenue recovery for Indian subscription businesses. Failed payments, overdue invoices and dormant customers, managed end to end.</p>
    </div>
    <div class="fcol"><h4>Product</h4><a href="#how">How it works</a><a href="#features">Features</a><a href="#radar">Recovery Radar</a><a href="#analytics">Analytics</a><a href="#pricing">Pricing</a></div>
-   <div class="fcol"><h4>Company</h4><a href="#faq">FAQ</a><a href="mailto:support@recursaathi.in">support@recursaathi.in</a></div>
+   <div class="fcol"><h4>Company</h4><a href="#faq">FAQ</a><a href="mailto:recursathi@gmail.com">recursathi@gmail.com</a></div>
    <div class="fcol"><h4>Legal</h4><a href="/privacy">Privacy Policy</a><a href="/terms">Terms of Service</a></div>
   </div>
   <div class="fbottom">
@@ -702,14 +702,14 @@ document.getElementById('signupForm').addEventListener('submit',async function(e
         break;
       }catch(netErr){
         if(attempt<3){msg.textContent='Couldn\u2019t reach the server, it may be waking up. Retrying\u2026';await new Promise(function(res){setTimeout(res,3000);});}
-        else{msg.textContent='The signup server isn\u2019t reachable right now. Give it a minute and tap Create account again, or email support@recursaathi.in.';return;}
+        else{msg.textContent='The signup server isn\u2019t reachable right now. Give it a minute and tap Create account again, or email recursathi@gmail.com.';return;}
       }
     }
-    if(!d){msg.textContent='This demo page has no signup server behind it. Signup works in the full app build, or email support@recursaathi.in and we\u2019ll set you up.';return;}
+    if(!d){msg.textContent='This demo page has no signup server behind it. Signup works in the full app build, or email recursathi@gmail.com and we\u2019ll set you up.';return;}
     if(!r.ok)throw new Error(d.detail||'Signup failed');
     msg.textContent='Account created. Taking you to checkout…';
     setTimeout(function(){window.location.href=d.checkout_url;},600);
-  }catch(err){msg.textContent=(err&&err.message&&!/fetch/i.test(err.message))?err.message:'Something went wrong. Tap Create account again, or email support@recursaathi.in.';}
+  }catch(err){msg.textContent=(err&&err.message&&!/fetch/i.test(err.message))?err.message:'Something went wrong. Tap Create account again, or email recursathi@gmail.com.';}
   finally{clearTimeout(slow);btn.disabled=false;btn.textContent='Create account';}
 });
 </script>
