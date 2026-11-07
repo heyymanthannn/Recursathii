@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}RecurSaathi{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="{% if user %}app{% else %}auth{% endif %}">
+{% if user %}
+<aside class="sidebar">
+  <a class="brand" href="/dashboard"><i></i><span>Recur<b>Saathi</b></span></a>
+  <nav class="snav">
+    <a href="/dashboard" class="{{ 'on' if active_tab=='dashboard' }}">Dashboard</a>
+    <a href="/radar" class="{{ 'on' if active_tab=='radar' }}">Recovery Radar</a>
+    <a href="/customers" class="{{ 'on' if active_tab=='customers' }}">Customers</a>
+    <a href="/invoices" class="{{ 'on' if active_tab=='invoices' }}">Invoices</a>
+    <a href="/automations" class="{{ 'on' if active_tab=='automations' }}">Automations</a>
+    <a href="/payments" class="{{ 'on' if active_tab=='payments' }}">Payments</a>
+    <a href="/analytics" class="{{ 'on' if active_tab=='analytics' }}">Analytics</a>
+    <a href="/billing" class="{{ 'on' if active_tab=='subscription' }}">Subscription</a>
+    <a href="/settings" class="{{ 'on' if active_tab=='settings' }}">Settings</a>
+    {% if user and user.role == 'owner' %}<a href="/team" class="{{ 'on' if active_tab=='team' }}">Team</a>{% endif %}
+  </nav>
+  <div class="sfoot">
+    <div class="avatar">{{ user.business[:1]|upper }}</div>
+    <div class="sfootmeta">
+      <div class="bname">{{ user.business }}</div>
+      <a href="/logout">Log out</a>
+    </div>
+  </div>
+</aside>
+<div class="main">
+  <header class="topbar">
+    <div class="ttitle">{{ active_tab|capitalize if active_tab else "Dashboard" }}</div>
+    <div class="tspacer"></div>
+    <a class="bell" href="/notifications" title="Notifications" aria-label="Notifications">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    </a>
+    <div class="profile">
+      <div class="avatar sm">{{ user.business[:1]|upper }}</div>
+      <div class="pmeta">
+        <div class="bname">{{ user.business }}</div>
+        <div class="pplan">{{ user.plan|capitalize }} &middot; {{ user.plan_status }}</div>
+      </div>
+    </div>
+  </header>
+{% else %}
+<header class="pubbar">
+  <a class="brand" href="/"><i></i><span>Recur<b>Saathi</b></span></a>
+  <nav class="pubnav">
+    <a href="/">Home</a>
+    <a href="/signup" class="btn sm">Sign up</a>
+  </nav>
+</header>
+{% endif %}
+<div class="wrap">
+{% block content %}{% endblock %}
+</div>
+{% if user %}
+</div>
+{% else %}
+<footer class="site"><div class="in">
+  <div>&copy; 2026 RecurSaathi</div>
+  <a href="/privacy">Privacy Policy</a>
+  <a href="/terms">Terms of Service</a>
+  <a href="/contact">Contact</a>
+</div></footer>
+{% endif %}
+</body>
+</html>

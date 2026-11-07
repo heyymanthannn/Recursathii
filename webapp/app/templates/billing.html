@@ -1,0 +1,21 @@
+{% extends "base.html" %}{% block title %}Billing · RecurSaathi{% endblock %}{% block content %}
+<h1>Billing</h1>
+<p class="sub">Your RecurSaathi subscription. Upgrade, downgrade or cancel any time.</p>
+<div class="cards">
+{% for key, p in plans.items() %}
+<div class="card" style="{{ 'border-color:var(--purple)' if user.plan==key }}">
+<div class="label">{{ p.name }}</div>
+<div class="kpi {{ 'blue' if key=='starter' else ('purple' if key=='growth' else 'lav') }}">{{ inr(p.amount) if p.amount else "10% of recovered" }}<span class="muted" style="font-size:13px">{{ "/month" if p.amount else "" }}</span></div>
+<div style="margin:10px 0">{% for f in p.features %}<div class="muted">· {{ f }}</div>{% endfor %}</div>
+{% if user.plan==key %}<span class="pill {{ user.plan_status }}">{{ user.plan_status }}</span>
+{% if user.plan_status=='active' or user.plan_status=='trialing' %}<form method="post" action="/billing/cancel" style="margin-top:10px"><button class="btn danger sm">Cancel subscription</button></form>{% endif %}
+{% else %}<form method="post" action="/billing/change-plan" style="margin-top:10px"><input type="hidden" name="plan" value="{{ key }}"><button class="btn sm">Switch to {{ p.name }}</button></form>{% endif %}
+</div>
+{% endfor %}
+</div>
+<div class="muted" style="margin:12px 0">Payment for your subscription goes to RecurSaathi's own account. Your customers' invoice payments never touch this account: they go straight to your bank via your own UPI ID or your own Razorpay keys.</div>
+<h2>Subscription payment history</h2>
+<div class="card">{% if pays %}<table><tr><th>When</th><th>Plan</th><th>Amount</th><th>Status</th><th>Reference</th></tr>
+{% for p in pays %}<tr><td>{{ p.created | datetime }}</td><td>{{ p.plan }}</td><td>{{ inr(p.amount) if p.amount else "-" }}</td><td>{{ p.status }}</td><td>{{ p.reference or "-" }}</td></tr>{% endfor %}</table>
+{% else %}<div class="empty">No subscription payments yet.</div>{% endif %}</div>
+{% endblock %}

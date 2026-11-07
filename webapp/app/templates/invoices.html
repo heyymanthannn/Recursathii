@@ -1,0 +1,28 @@
+{% extends "base.html" %}{% block title %}Invoices · RecurSaathi{% endblock %}{% block content %}
+<h1>Invoices</h1>
+<p class="sub">Create invoices, share payment links, confirm UPI payments.</p>
+{% if status == 'invalid_amount' %}<div class="err">Amount must be a positive number.</div>{% endif %}
+<div class="card formcard" style="margin-bottom:18px">
+<form method="post" action="/invoices" class="stack">
+<div><label>Customer</label><select name="customer_id" required><option value="">Select customer</option>{% for c in custs %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div>
+<div><label>Invoice number</label><input name="number" placeholder="auto-generated if blank"></div>
+<div><label>Amount (Rs)</label><input name="amount" type="number" step="0.01" min="1" required></div>
+<div><label>Description</label><input name="description"></div>
+<div><label>Due date</label><input name="due_date" type="date"></div>
+<button class="btn">Create invoice</button>
+</form></div>
+<form method="get" action="/invoices" class="inline" style="margin-bottom:14px">
+<select name="status" style="width:auto"><option value="">All statuses</option>{% for s in ['pending','overdue','paid'] %}<option value="{{ s }}" {{ 'selected' if status==s }}>{{ s }}</option>{% endfor %}</select>
+<button class="btn ghost sm">Filter</button>
+</form>
+<div class="card">{% if rows %}<table>
+<tr><th>Invoice</th><th>Customer</th><th>Amount</th><th>Due</th><th>Status</th><th>Payment link</th><th>Actions</th></tr>
+{% for i in rows %}<tr>
+<td>{{ i.number }}</td><td>{{ i.customer_name }}</td><td>{{ inr(i.amount) }}</td><td>{{ i.due_date or "-" }}</td>
+<td><span class="pill {{ i.status }}">{{ i.status }}</span></td>
+<td><a href="/invoice/{{ i.token }}" target="_blank">Open page</a> · <a href="/upi-qr/{{ i.id }}.png" target="_blank">QR</a> · <a href="/invoices/{{ i.id }}/pdf">PDF</a></td>
+<td>{% if i.status != 'paid' %}<form method="post" action="/invoices/{{ i.id }}/mark-paid" class="inline">
+<input name="reference" placeholder="UTR / reference" style="width:150px"><button class="btn sm">Mark paid</button></form>{% else %}<a href="/invoice/{{ i.token }}">View</a>{% endif %}</td>
+</tr>{% endfor %}
+</table>{% else %}<div class="empty">No invoices{% if status %} with status "{{ status }}"{% endif %} yet.</div>{% endif %}</div>
+{% endblock %}

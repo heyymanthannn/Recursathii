@@ -1,0 +1,19 @@
+{% extends "base.html" %}{% block title %}Recovery Radar · RecurSaathi{% endblock %}{% block content %}
+<h1>Recovery Radar</h1>
+<p class="sub">Three revenue leaks, ranked by how much money they are holding back.</p>
+<h2><span class="pill overdue">1</span> Overdue unpaid invoices</h2>
+<div class="card">{% if r.overdue %}<table>
+<tr><th>Invoice</th><th>Customer</th><th>Amount</th><th>Due</th><th>Contact</th></tr>
+{% for i in r.overdue %}<tr><td>{{ i.number }}</td><td>{{ i.customer_name }}</td><td>{{ inr(i.amount) }}</td><td>{{ i.due_date }}</td><td>{{ i.email or "" }} {{ i.phone or "" }}</td></tr>{% endfor %}
+</table>{% else %}<div class="empty">Nothing overdue. Good.</div>{% endif %}</div>
+<h2><span class="pill trialing">2</span> Dormant repeat customers</h2>
+<div class="card">{% if r.dormant %}<div class="badge-note" style="margin-bottom:8px">Paid before, but no confirmed payment in the last 45 days.</div>
+<table><tr><th>Customer</th><th>Lifetime paid</th><th>Last paid</th><th>Contact</th></tr>
+{% for c in r.dormant %}<tr><td><a href="/customers/{{ c.id }}">{{ c.name }}</a></td><td>{{ inr(c.lifetime) }}</td><td>{{ c.last_paid_at | datetime }}</td><td>{{ c.email or "" }} {{ c.phone or "" }}</td></tr>{% endfor %}
+</table>{% else %}<div class="empty">No dormant customers detected.</div>{% endif %}</div>
+<h2><span class="pill failed">3</span> Failed card and UPI payments</h2>
+<div class="card">{% if r.failed %}<table>
+<tr><th>When</th><th>Customer</th><th>Amount</th><th>Reason</th></tr>
+{% for e in r.failed %}<tr><td>{{ e.created | datetime }}</td><td>{{ e.customer_name or "-" }}</td><td>{{ inr(e.amount) }}</td><td>{{ e.decline_code or "declined" }}</td></tr>{% endfor %}
+</table>{% else %}<div class="empty">No failed payments. Connect your gateway webhook to see them live.</div>{% endif %}</div>
+{% endblock %}

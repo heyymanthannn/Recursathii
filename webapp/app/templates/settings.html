@@ -1,0 +1,47 @@
+{% extends "base.html" %}{% block title %}Settings · RecurSaathi
+<div class="card" style="margin-top:20px">
+<h2>Password</h2>
+<form method="post" action="/settings/password" class="stack">
+<div><label>Current password</label><input type="password" name="current_password" required></div>
+<div><label>New password</label><input type="password" name="new_password" minlength="8" required></div>
+<button class="btn">Change password</button>
+</form>
+</div>
+{% endblock %}{% block content %}
+<h1>Settings</h1>
+<p class="sub">Business profile, payment gateway and support.</p>
+<div class="grid2">
+<div class="card formcard"><h2 style="margin-top:0">Business profile</h2>
+<form method="post" action="/settings/profile" class="stack">
+<div><label>Your name</label><input name="name" value="{{ user.name or "" }}"></div>
+<div><label>Business name</label><input name="business" value="{{ user.business or "" }}"></div>
+<div><label>Phone</label><input name="phone" value="{{ user.phone or "" }}"></div>
+<div><label>Your UPI ID (customers pay here)</label><input name="upi_vpa" value="{{ user.upi_vpa or "" }}" placeholder="yourname@bank"></div>
+<button class="btn">Save profile</button>
+</form></div>
+<div class="card formcard"><h2 style="margin-top:0">Razorpay gateway (optional)</h2>
+<p class="muted">Add your own Razorpay keys to accept card/UPI checkout on invoice pages. Keys are stored encrypted and used only to collect money into YOUR account. {{ "Connected and verified." if has_rzp else "Not configured yet." }}</p>
+<form method="post" action="/settings/razorpay" class="stack">
+<div><label>Key ID</label><input name="key_id" placeholder="rzp_live_... or rzp_test_..."></div>
+<div><label>Key secret</label><input name="key_secret" type="password"></div>
+<button class="btn ghost">Save keys</button>
+</form>
+<h2>Data backup</h2>
+<p class="muted">Download a full copy of your business data as a database file. Keep it somewhere safe.</p>
+<p><a class="btn ghost sm" href="/settings/backup">Download backup (.sqlite)</a></p>
+<h2>Support</h2>
+<form method="post" action="/support" class="stack">
+<div><label>Message to the RecurSaathi team</label><textarea name="message" rows="3"></textarea></div>
+<button class="btn ghost">Send</button>
+</form></div>
+</div>
+
+<div class="card" style="margin-top:20px">
+<h2>Password</h2>
+<form method="post" action="/settings/password" class="stack">
+<div><label>Current password</label><input type="password" name="current_password" required></div>
+<div><label>New password</label><input type="password" name="new_password" minlength="8" required></div>
+<button class="btn">Change password</button>
+</form>
+</div>
+{% endblock %}

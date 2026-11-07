@@ -1,0 +1,39 @@
+{% extends "base.html" %}{% block title %}Customers · RecurSaathi{% endblock %}{% block content %}
+<h1>Customers</h1>
+<p class="sub">Profiles, payment status and outstanding balances.</p>
+{% if err == 'hasinv' %}<div class="err">This customer still has invoices, so their record can't be deleted. Settle or remove their invoices first.</div>{% endif %}
+<div class="grid2" style="margin-bottom:18px">
+<div class="card formcard"><form method="post" action="/customers" class="stack">
+<div><label>Name</label><input name="name" required></div>
+<div><label>Email</label><input type="email" name="email"></div>
+<div><label>Phone</label><input name="phone"></div>
+<div><label>Notes</label><input name="notes"></div>
+<button class="btn">Add customer</button>
+</form></div>
+<div>
+<form method="get" action="/customers" class="inline"><input name="q" placeholder="Search name, email, phone" value="{{ q }}"><button class="btn ghost">Search</button></form>
+<form method="get" action="/customers" class="inline">
+<select name="seg" style="width:auto">
+{% for key, label in segs.items() %}<option value="{{ key }}" {{ 'selected' if seg == key }}>{{ label }}</option>{% endfor %}
+</select>
+<button class="btn ghost sm">Apply</button>
+</form>
+<a class="btn ghost sm" href="/customers/export" style="margin-top:10px">Export CSV</a>
+</div>
+</div>
+<div class="card">{% if rows %}<table>
+<tr><th>Customer</th><th>Contact</th><th>Invoices</th><th>Outstanding</th><th>Paid to date</th><th>Paid invoices</th><th>Last payment</th><th>WhatsApp</th><th></th></tr>
+{% for r in rows %}<tr>
+<td><a href="/customers/{{ r.id }}">{{ r.name }}</a></td>
+<td>{{ r.email or "" }}<br><span class="muted">{{ r.phone or "" }}</span></td>
+<td>{{ r.invoices }}</td>
+<td>{{ inr(r.outstanding) }}</td>
+<td>{{ inr(r.paid_total) }}</td>
+<td>{{ r.paid_invoices }}</td>
+<td>{{ r.last_purchase | datetime if r.last_purchase else "never" }}</td>
+<td>{% if r.wa_opt_out %}<span class="pill canceled">opted out</span>{% else %}<span class="pill sent">on</span>{% endif %}</td>
+<td class="actcell"><a href="/customers/{{ r.id }}">Open</a>
+<form method="post" action="/customers/{{ r.id }}/delete" class="inline"><button class="btn ghost sm danger">Delete</button></form></td>
+</tr>{% endfor %}
+</table>{% else %}<div class="empty">No customers yet.</div>{% endif %}</div>
+{% endblock %}

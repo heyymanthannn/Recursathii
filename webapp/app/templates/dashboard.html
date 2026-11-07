@@ -1,0 +1,51 @@
+{% extends "base.html" %}{% block title %}Dashboard · RecurSaathi{% endblock %}{% block content %}
+<h1>{{ user.business }}</h1>
+<p class="sub">{{ trial_left if trial_left else "Revenue recovery at a glance." }}</p>
+<div class="cards">
+<div class="card"><div class="label">Total revenue recovered</div><div class="kpi green">{{ inr(m.recovered) }}</div></div>
+<div class="card"><div class="label">Failed payments</div><div class="kpi red">{{ m.failed_count }} <span class="badge-note">({{ inr(m.failed_amount) }})</span></div></div>
+<div class="card"><div class="label">Pending overdue invoices</div><div class="kpi amber">{{ m.overdue_count }}</div></div>
+<div class="card"><div class="label">Recovery success rate</div><div class="kpi blue">{{ m.success_rate }}%</div></div>
+<div class="card"><div class="label">Dormant customers</div><div class="kpi purple"><a href="/radar">view in Radar</a></div></div>
+<div class="card"><div class="label">Outstanding value</div><div class="kpi lav">{{ inr(m.outstanding) }}</div></div>
+</div>
+<div class="filterrow">
+<a class="pill-link {{ 'on' if period != 'weekly' }}" href="/dashboard">Monthly</a>
+<a class="pill-link {{ 'on' if period == 'weekly' }}" href="/dashboard?period=weekly">Weekly</a>
+</div>
+<h2>{{ "Weekly" if period == "weekly" else "Monthly" }} recovered revenue</h2>
+<div class="card chartwrap">
+{% if chart %}{% set mx = chart | map(attribute='amt') | max %}
+<div class="chart">{% for c in chart %}
+<div class="bar" style="--h:{{ (c.amt / mx * 130) | round | int if mx > 0 else 3 }}px"><b>{{ (c.amt/100000) | round(1) }}L</b><span>{{ c.label }}</span></div>
+{% endfor %}
+</div>
+{% else %}<div class="empty">No recovered payments yet. Once invoices are marked paid, this chart fills in.</div>{% endif %}
+</div>
+<h2>Overdue invoices</h2>
+<div class="card">{% if ov %}<table>
+<tr><th>Invoice</th><th>Customer</th><th>Amount</th><th>Due</th><th></th></tr>
+{% for i in ov %}<tr><td>{{ i.number }}</td><td>{{ i.customer_name }}</td><td>{{ inr(i.amount) }}</td><td>{{ i.due_date or "-" }}</td><td><a href="/invoice/{{ i.token }}" target="_blank">Payment page</a></td></tr>{% endfor %}
+</table>{% else %}<div class="empty">Nothing overdue.</div>{% endif %}</div>
+<div class="grid2">
+<div>
+<h2>Recent transactions</h2>
+<div class="card">{% if pays %}<table>
+<tr><th>Customer</th><th>Invoice</th><th>Amount</th><th>Status</th></tr>
+{% for p in pays %}<tr><td>{{ p.customer_name or "-" }}</td><td>{{ p.invoice_number or "-" }}</td><td>{{ inr(p.amount) }}</td><td><span class="pill {{ p.status }}">{{ p.status }}</span></td></tr>{% endfor %}
+</table>{% else %}<div class="empty">No transactions yet.</div>{% endif %}</div>
+<h2>Automated recovery activity</h2>
+<div class="card">{% if acts %}{% for a in acts[:8] %}
+<div class="actrow"><span class="muted">{{ a.created | datetime }}</span><br>{{ a.message }}</div>{% endfor %}{% else %}<div class="empty">Automation activity will appear here.</div>{% endif %}</div>
+</div>
+<div>
+<h2>Failed payments</h2>
+<div class="card">{% if fails %}<table>
+<tr><th>Customer</th><th>Amount</th><th>Reason</th><th>When</th></tr>
+{% for e in fails %}<tr><td>{{ e.customer_name or "-" }}</td><td>{{ inr(e.amount) }}</td><td>{{ e.decline_code or "declined" }}</td><td>{{ e.created | datetime }}</td></tr>{% endfor %}
+</table>{% else %}<div class="empty">No failed payments recorded.</div>{% endif %}</div>
+<h2>Your subscription</h2>
+<div class="card"><div class="muted">Your plan is {{ user.plan_status }} on the {{ user.plan }} plan. <a href="/billing">Manage billing</a></div></div>
+</div>
+</div>
+{% endblock %}

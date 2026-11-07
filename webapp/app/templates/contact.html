@@ -1,0 +1,11 @@
+{% extends "base.html" %}{% block title %}Contact · RecurSaathi{% endblock %}{% block content %}
+<div style="max-width:480px;margin:30px auto">
+<h1>Contact us</h1><p class="sub">Questions, feedback or support.</p>
+<form method="post" action="/contact-send" class="stack">
+<div><label>Your name</label><input name="name" required></div>
+<div><label>Email</label><input type="email" name="email" required></div>
+<div><label>Message</label><textarea name="message" rows="4" required></textarea></div>
+<button class="btn">Send</button>
+</form>
+<p class="muted" style="margin-top:12px">Or email us directly at support@recursaathi.in</p>
+</div>{% endblock %}

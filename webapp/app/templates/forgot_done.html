@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% block content %}
+<div class="center" style="max-width:420px;margin:60px auto">
+<h1>Check your inbox</h1>
+<p class="sub">If that email has an account, a reset link is on its way. It's valid for one hour.</p>
+{% if link %}
+<p class="muted" style="margin-top:16px">Email isn't configured on this install yet, so here is the link directly:</p>
+<p><a href="{{ link }}">{{ link }}</a></p>
+{% endif %}
+<p class="muted" style="margin-top:16px"><a href="/login">Back to login</a></p>
+</div>{% endblock %}

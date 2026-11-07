@@ -1,0 +1,30 @@
+{% extends "base.html" %}{% block title %}Admin · RecurSaathi{% endblock %}{% block content %}
+<h1>Platform admin</h1>
+<p class="sub">Businesses, subscriptions, revenue and support.</p>
+<div class="cards">
+<div class="card"><div class="label">Registered businesses</div><div class="kpi blue">{{ owners | length }}</div></div>
+<div class="card"><div class="label">Active subscriptions</div><div class="kpi green">{{ subs_active | length }}</div></div>
+<div class="card"><div class="label">Trialing</div><div class="kpi purple">{{ trial | length }}</div></div>
+<div class="card"><div class="label">Estimated MRR</div><div class="kpi lav">₹{{ "{:,.0f}".format(mrr) }}</div></div>
+</div>
+<h2>Businesses</h2>
+<div class="card"><table>
+<tr><th>Business</th><th>Owner</th><th>Email</th><th>Plan</th><th>Status</th><th>Set status</th></tr>
+{% for o in owners %}<tr><td>{{ o.business }}</td><td>{{ o.name }}</td><td>{{ o.email }}</td><td>{{ o.plan }}</td><td><span class="pill {{ o.plan_status }}">{{ o.plan_status }}</span></td>
+<td><form method="post" action="/admin/owners/{{ o.id }}" class="inline"><input type="hidden" name="plan_status" value="active"><button class="btn sm ghost">Activate</button></form>
+<form method="post" action="/admin/owners/{{ o.id }}" class="inline"><input type="hidden" name="plan_status" value="canceled"><button class="btn sm danger">Cancel</button></form></td></tr>{% endfor %}
+</table></div>
+<h2>Subscription payment history</h2>
+<div class="card">{% if pays %}<table><tr><th>When</th><th>Plan</th><th>Amount</th><th>Status</th></tr>
+{% for p in pays %}<tr><td>{{ p.created | datetime }}</td><td>{{ p.plan }}</td><td>{{ inr(p.amount) if p.amount else "-" }}</td><td>{{ p.status }}</td></tr>{% endfor %}</table>
+{% else %}<div class="empty">No subscription payments yet.</div>{% endif %}</div>
+<h2>Support inbox</h2>
+<div class="card">{% if support %}{% for s in support %}<div style="padding:10px 0;border-bottom:1px solid #eef2f7">
+<b>{{ s.name }}</b> <span class="muted">{{ s.email }}</span> <span class="pill {{ s.status }}">{{ s.status }}</span>
+<div>{{ s.message }}</div>
+{% if s.status == 'open' %}<form method="post" action="/admin/support/{{ s.id }}/resolve"><button class="btn sm ghost">Mark resolved</button></form>{% endif %}
+</div>{% endfor %}{% else %}<div class="empty">No support messages.</div>{% endif %}</div>
+<h2>Audit log</h2>
+<div class="card"><table><tr><th>When</th><th>User</th><th>Action</th><th>Detail</th></tr>
+{% for a in audit %}<tr><td>{{ a.created | datetime }}</td><td>{{ a.email or a.user_id[:8] }}</td><td>{{ a.action }}</td><td>{{ a.detail }}</td></tr>{% endfor %}</table></div>
+{% endblock %}

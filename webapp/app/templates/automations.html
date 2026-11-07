@@ -1,0 +1,28 @@
+{% extends "base.html" %}{% block title %}Automations · RecurSaathi{% endblock %}{% block content %}
+<h1>Automations</h1>
+<p class="sub">Email and WhatsApp recovery workflows. Turn each one on or off.</p>
+{% if not email_ready or not wa_ready %}<div class="ok">Delivery status: Email is {{ "connected" if email_ready else "not configured yet" }}, WhatsApp is {{ "connected" if wa_ready else "not configured yet" }}. Until configured, messages queue below marked as queued so you can see exactly what would go out. Nothing is faked.</div>{% endif %}
+<div class="grid2">
+{% for k in keys %}
+<div class="card">
+<div class="inline" style="justify-content:space-between">
+<div><b>{{ {'reminder_due':'Payment reminder (due today)','overdue_1':'Overdue notice (1-7 days)','overdue_7':'Final reminder (7+ days)','failed_payment':'Failed payment nudge','payment_confirm':'Payment confirmation','dormant_reactivate':'Dormant customer reactivation'}[k] }}</b>
+<div class="badge-note">{{ 'email + whatsapp' }}</div></div>
+<form method="post" action="/automations/toggle"><input type="hidden" name="key" value="{{ k }}"><input type="hidden" name="enabled" value="{{ '0' if keys[k] else '1' }}"><button class="btn sm {{ 'ghost' if keys[k] else '' }}">{{ 'Disable' if keys[k] else 'Enable' }}</button></form>
+</div>
+<form method="post" action="/automations/template" class="stack" style="margin-top:12px">
+<input type="hidden" name="key" value="{{ k }}">
+<div><label>Email subject</label><input name="subject" value="{{ tpls[k].subject if tpls[k] else defaults[k]['email_subject'] }}"></div>
+<div><label>Message body (email and whatsapp, variables: {customer_name} {business} {number} {amount} {due_date} {pay_link})</label><textarea name="body" rows="5">{{ tpls[k].body if tpls[k] else defaults[k]['email_body'] }}</textarea></div>
+<button class="btn ghost sm">Save template</button>
+</form>
+</div>
+{% endfor %}
+</div>
+<div style="margin:18px 0"><form method="post" action="/automations/run"><button class="btn">Run all workflows now</button></form></div>
+<h2>Message outbox</h2>
+<div class="card">{% if out %}<table>
+<tr><th>When</th><th>Channel</th><th>To</th><th>Workflow</th><th>Status</th><th>Note</th></tr>
+{% for o in out %}<tr><td>{{ o.created | datetime }}</td><td>{{ o.channel }}</td><td>{{ o.dest }}</td><td>{{ o.tpl }}</td><td><span class="pill {{ o.status }}">{{ o.status }}</span></td><td class="muted">{{ o.error or "" }}</td></tr>{% endfor %}
+</table>{% else %}<div class="empty">Nothing queued yet. Run the workflows or let the scheduler tick.</div>{% endif %}</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}{% block title %}Payments · RecurSaathi{% endblock %}{% block content %}
+<h1>Payments</h1>
+<p class="sub">Every collection, attempt and failure, straight from your records.</p>
+<div class="cards">
+<div class="card"><div class="label">Collected</div><div class="kpi green">{{ inr(m.recovered) }}</div></div>
+<div class="card"><div class="label">Failed payments</div><div class="kpi red">{{ m.failed_count }} <span class="badge-note">({{ inr(m.failed_amount) }})</span></div></div>
+<div class="card"><div class="label">Payment attempts</div><div class="kpi blue">{{ m.attempts }}</div></div>
+<div class="card"><div class="label">Success rate</div><div class="kpi purple">{{ m.success_rate }}%</div></div>
+</div>
+<h2>Recent transactions</h2>
+<div class="card">{% if pays %}<table>
+<tr><th>Customer</th><th>Invoice</th><th>Amount</th><th>Method</th><th>Status</th><th>When</th></tr>
+{% for p in pays %}<tr>
+<td>{{ p.customer_name or "-" }}</td><td>{{ p.invoice_number or "-" }}</td><td>{{ inr(p.amount) }}</td>
+<td>{{ p.method or "-" }}</td>
+<td><span class="pill {{ p.status }}">{{ p.status }}</span></td>
+<td class="muted">{{ p.created | datetime }}</td>
+</tr>{% endfor %}
+</table>{% else %}<div class="empty">No transactions yet. They appear the moment an invoice is paid or an attempt is recorded.</div>{% endif %}</div>
+<h2>Failed payments</h2>
+<div class="card">{% if fails %}<table>
+<tr><th>Customer</th><th>Amount</th><th>Reason</th><th>Gateway</th><th>When</th></tr>
+{% for e in fails %}<tr>
+<td>{{ e.customer_name or "-" }}</td><td>{{ inr(e.amount) }}</td>
+<td>{{ e.decline_code or "not reported" }}</td>
+<td>{{ e.gateway or "-" }}</td>
+<td class="muted">{{ e.created | datetime }}</td>
+</tr>{% endfor %}
+</table>{% else %}<div class="empty">No failed payments recorded. Failed webhook events will land here with their decline reasons.</div>{% endif %}</div>
+{% endblock %}

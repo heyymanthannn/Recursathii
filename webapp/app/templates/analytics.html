@@ -1,0 +1,53 @@
+{% extends "base.html" %}{% block title %}Analytics · RecurSaathi{% endblock %}{% block content %}
+<h1>Analytics</h1>
+<p class="sub">Recovery performance from your own records. Nothing here is sample data.</p>
+<div class="cards">
+<div class="card"><div class="label">Revenue recovered</div><div class="kpi green">{{ inr(m.recovered) }}</div></div>
+<div class="card"><div class="label">Outstanding value</div><div class="kpi amber">{{ inr(m.outstanding) }}</div></div>
+<div class="card"><div class="label">Invoices paid</div><div class="kpi blue">{{ m.paid_count }} <span class="badge-note">of {{ m.total }}</span></div></div>
+<div class="card"><div class="label">Recovery success rate</div><div class="kpi purple">{{ m.success_rate }}%</div></div>
+</div>
+<h2>Monthly recovered revenue (last 12 months)</h2>
+<div class="card chartwrap">
+{% if chart %}{% set mx = chart | map(attribute='amt') | max %}
+<div class="chart">{% for c in chart %}
+<div class="bar" style="--h:{{ (c.amt / mx * 150) | round | int if mx > 0 else 3 }}px"><b>{{ (c.amt/100000) | round(1) }}L</b><span>{{ c.label }}</span></div>
+{% endfor %}</div>
+{% else %}<div class="empty">No recovered payments yet. Mark invoices paid and this chart fills in.</div>{% endif %}
+</div>
+<h2>Invoiced vs collected, by month</h2>
+<div class="card">{% if monthly %}<table>
+<tr><th>Month</th><th>Invoices raised</th><th>Invoiced</th><th>Collected</th></tr>
+{% for r in monthly %}<tr><td>{{ r.m }}</td><td>{{ r.invoiced }}</td><td>{{ inr(r.invoiced_amt) }}</td><td>{{ inr(r.recovered) }}</td></tr>{% endfor %}
+</table>{% else %}<div class="empty">No invoices yet.</div>{% endif %}</div>
+<h2>Top decline reasons</h2>
+<div class="card">{% if declines %}<table>
+<tr><th>Reason</th><th>Times</th><th>Value</th></tr>
+{% for d in declines %}<tr><td>{{ d.code }}</td><td>{{ d.n }}</td><td>{{ inr(d.amt) }}</td></tr>{% endfor %}
+</table>{% else %}<div class="empty">No failed payments recorded yet.</div>{% endif %}</div>
+<h2>Automation performance</h2>
+<div class="card">{% if astats %}
+{% set tpls = {} %}
+<table>
+<tr><th>Workflow</th><th>Status</th><th>Messages</th></tr>
+{% for a in astats %}<tr><td>{{ a.tpl }}</td><td><span class="pill {{ a.status }}">{{ a.status }}</span></td><td>{{ a.n }}</td></tr>{% endfor %}
+</table>
+{% else %}<div class="empty">No automated messages yet. Run your workflows and their delivery counts show up here.</div>{% endif %}</div>
+<h2>Dormant reactivation tracking</h2>
+<div class="card">
+<p class="muted" style="margin-top:0">{{ dormant_n }} dormant customer(s) right now. Reactivation notes go out when you run the workflows.</p>
+{% if react %}<table>
+<tr><th>Customer</th><th>Contacted</th><th>Result</th></tr>
+{% for r in react %}<tr>
+<td>{{ r.name }}</td>
+<td class="muted">{{ r.msg_at | datetime }}</td>
+<td>{% if r.paid_after %}<span class="pill paid">returned and paid</span>{% else %}<span class="pill pending">no payment yet</span>{% endif %}</td>
+</tr>{% endfor %}
+</table>{% else %}<div class="empty">No reactivation notes sent yet. Once they go out, you'll see here who came back and paid.</div>{% endif %}
+</div>
+<h2>Download reports</h2>
+<div class="card"><div class="dlrow">
+<a class="btn ghost sm" href="/analytics/export?report=recovery">Recovery report (CSV)</a>
+<a class="btn ghost sm" href="/analytics/export?report=failed">Failed payments report (CSV)</a>
+</div></div>
+{% endblock %}

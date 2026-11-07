@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% block content %}
+<div class="formcard">
+<h1>Team</h1>
+<p class="sub">Give your team access. Staff can run everything day to day; viewers can look but not touch.</p>
+{% if new_pw %}<div class="ok">Member added. Their password is <b>{{ new_pw }}</b> &mdash; shown once, share it with them directly.</div>{% endif %}
+{% if new_err %}<div class="err">{{ new_err }}</div>{% endif %}
+<form method="post" action="/team/add" class="stack">
+  <div><label>Name</label><input name="name" required></div>
+  <div><label>Email</label><input type="email" name="email" required></div>
+  <div><label>Role</label><select name="role">
+    <option value="staff">Staff &mdash; full access except billing and settings</option>
+    <option value="viewer">Viewer &mdash; read-only</option>
+  </select></div>
+  <button class="btn">Add team member</button>
+</form>
+</div>
+<h2>Members</h2>
+<table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th></th></tr></thead><tbody>
+{% for m in team %}<tr><td>{{ m.name }}</td><td>{{ m.email }}</td>
+<td><span class="pill {{ 'sent' if m.role=='staff' else 'pending' }}">{{ m.role }}</span></td>
+<td class="actcell"><form method="post" action="/team/{{ m.id }}/remove"><button class="btn sm ghost">Remove</button></form></td></tr>
+{% else %}<tr><td colspan="4"><div class="empty">No team members yet. Add your first one above.</div></td></tr>{% endfor %}
+</tbody></table>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% block title %}{{ cu.name }} · RecurSaathi{% endblock %}{% block content %}
+<h1>{{ cu.name }}</h1>
+<p class="sub">{{ cu.email or "no email" }} · {{ cu.phone or "no phone" }} · outstanding {{ inr(outstanding) }}</p>
+<div class="grid2">
+<div class="card formcard">
+<h2 style="margin-top:0">Edit customer</h2>
+<form method="post" action="/customers/{{ cu.id }}/edit" class="stack">
+<div><label>Name</label><input name="name" value="{{ cu.name }}"></div>
+<div><label>Email</label><input name="email" value="{{ cu.email or "" }}"></div>
+<div><label>Phone</label><input name="phone" value="{{ cu.phone or "" }}"></div>
+<div><label>Notes</label><input name="notes" value="{{ cu.notes or "" }}"></div>
+<div><label><input type="checkbox" name="wa_opt_out" style="width:auto" {{ "checked" if cu.wa_opt_out }}> WhatsApp opt-out (no automated WhatsApp messages)</label></div>
+<button class="btn">Save</button>
+</form></div>
+<div>
+<h2>Payment history</h2>
+<div class="card">{% if invs %}<table>
+<tr><th>Invoice</th><th>Amount</th><th>Due</th><th>Status</th></tr>
+{% for i in invs %}<tr><td>{{ i.number }}</td><td>{{ inr(i.amount) }}</td><td>{{ i.due_date }}</td><td><span class="pill {{ i.status }}">{{ i.status }}</span></td></tr>{% endfor %}
+</table>{% else %}<div class="empty">No invoices yet.</div>{% endif %}</div>
+<h2>Failed payment events</h2>
+<div class="card">{% if events %}{% for e in events %}<div style="padding:8px 0;border-bottom:1px solid #eef2f7">{{ inr(e.amount) }} · {{ e.decline_code or "declined" }} · <span class="muted">{{ e.created | datetime }}</span></div>{% endfor %}{% else %}<div class="empty">No failed payments.</div>{% endif %}</div>
+</div>
+</div>
+{% endblock %}

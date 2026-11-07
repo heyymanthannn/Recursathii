@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% block content %}
+<div class="center" style="max-width:420px;margin:60px auto">
+{% if not valid %}
+<h1>Link expired</h1>
+<p class="sub">This reset link is no longer valid. Request a fresh one.</p>
+<p class="muted" style="margin-top:16px"><a href="/forgot">Request a new link</a></p>
+{% else %}
+<h1>Set a new password</h1>
+{% if error %}<div class="err">{{ error }}</div>{% endif %}
+<form method="post" action="/reset/{{ token }}" class="stack">
+<div><label>New password</label><input type="password" name="password" minlength="8" required></div>
+<button class="btn">Save and log in</button>
+</form>
+{% endif %}
+</div>{% endblock %}

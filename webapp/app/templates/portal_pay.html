@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Invoice {{ inv.number }} · {{ owner.business }}</title><link rel="stylesheet" href="/static/style.css"></head>
+<body><div class="wrap" style="max-width:560px">
+<div class="center" style="margin-bottom:18px"><div class="brand">Recur<span>Saathi</span></div></div>
+<div class="card">
+<h1 style="font-size:22px">{{ owner.business }}</h1>
+<p class="sub">Invoice {{ inv.number }}{% if inv.description %} · {{ inv.description }}{% endif %}</p>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-top:1px solid #eef2f7;border-bottom:1px solid #eef2f7">
+<div><div class="label">Amount due</div><div class="kpi {{ 'green' if inv.status=='paid' else 'blue' }}">{{ inr(inv.amount) }}</div></div>
+<div style="text-align:right"><span class="pill {{ inv.status }}">{{ inv.status }}</span><div class="muted" style="margin-top:6px">Due {{ inv.due_date or "-" }}</div></div>
+</div>
+<div style="padding:14px 0">
+<div class="label">Billed to</div>
+{{ cu.name }}{% if cu.email %} · {{ cu.email }}{% endif %}{% if cu.phone %} · {{ cu.phone }}{% endif %}
+</div>
+{% if inv.status == 'paid' %}
+<div class="ok">This invoice is paid. Thank you!</div>
+{% if pays %}{% for p in pays %}{% if p.status == 'confirmed' %}<a class="btn ghost" href="/receipt/{{ p.id }}">Download receipt</a>{% endif %}{% endfor %}{% endif %}
+{% else %}
+<div class="card formcard">
+{% if rzp_link %}
+<a class="btn" href="{{ rzp_link }}">Pay now (UPI, cards, netbanking)</a>
+<p class="muted">Secure checkout by Razorpay. Money goes directly to {{ owner.business }}'s account.</p>
+<hr style="border:0;border-top:1px solid #eef2f7">
+{% endif %}
+{% if vpa %}
+<h2>Pay by UPI</h2>
+<div class="center">
+<img class="qr" src="{{ qr }}" alt="UPI QR code">
+<p class="muted">Scan with Google Pay or any UPI app. Payment goes directly to {{ payee or owner.business }} ({{ vpa }}).</p>
+</div>
+<form method="post" action="/invoice/{{ inv.token }}/sent" class="stack">
+<div><label>After paying, enter your UPI reference / UTR number</label><input name="reference" placeholder="e.g. 402312345678"></div>
+<button class="btn ghost">I have paid</button>
+</form>
+<p class="muted">{{ owner.business }} confirms receipt from their dashboard; you'll see the status update here.</p>
+{% else %}
+<div class="err">{{ owner.business }} hasn't connected a payment method yet. Contact them to pay.</div>
+{% endif %}
+</div>
+{% endif %}
+</div>
+<p class="muted center" style="margin-top:14px">Powered by RecurSaathi · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>
+</div></body></html>

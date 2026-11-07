@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% block title %}Notifications · RecurSaathi{% endblock %}{% block content %}
+<h1>Notifications</h1>
+<p class="sub">Your activity feed and message delivery statuses.</p>
+<div class="grid2">
+<div>
+<h2>Recent activity</h2>
+<div class="card">{% if acts %}{% for a in acts %}
+<div class="actrow"><span class="muted">{{ a.created | datetime }}</span><br>{{ a.message }}</div>{% endfor %}
+{% else %}<div class="empty">Nothing yet. Actions like reminders and payments show up here.</div>{% endif %}</div>
+</div>
+<div>
+<h2>Message delivery</h2>
+<p class="muted" style="margin-top:-4px">A message shows sent only when the provider confirms delivery.</p>
+<div class="card">{% if outbox %}<table>
+<tr><th>Channel</th><th>Template</th><th>Status</th><th>When</th></tr>
+{% for o in outbox %}<tr>
+<td>{{ o.channel }}</td><td>{{ o.tpl }}</td>
+<td><span class="pill {{ o.status }}">{{ o.status }}</span>{% if o.error %}<br><span class="muted">{{ o.error }}</span>{% endif %}</td>
+<td class="muted">{{ o.created | datetime }}</td>
+</tr>{% endfor %}
+</table>{% else %}<div class="empty">No messages queued yet.</div>{% endif %}</div>
+</div>
+</div>
+{% endblock %}
