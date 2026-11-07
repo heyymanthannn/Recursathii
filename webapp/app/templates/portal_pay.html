@@ -6,7 +6,7 @@
 <div class="card">
 <h1 style="font-size:22px">{{ owner.business }}</h1>
 <p class="sub">Invoice {{ inv.number }}{% if inv.description %} · {{ inv.description }}{% endif %}</p>
-<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-top:1px solid #eef2f7;border-bottom:1px solid #eef2f7">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-top:1px solid var(--line2);border-bottom:1px solid var(--line2)">
 <div><div class="label">Amount due</div><div class="kpi {{ 'green' if inv.status=='paid' else 'blue' }}">{{ inr(inv.amount) }}</div></div>
 <div style="text-align:right"><span class="pill {{ inv.status }}">{{ inv.status }}</span><div class="muted" style="margin-top:6px">Due {{ inv.due_date or "-" }}</div></div>
 </div>
@@ -22,7 +22,7 @@
 {% if rzp_link %}
 <a class="btn" href="{{ rzp_link }}">Pay now (UPI, cards, netbanking)</a>
 <p class="muted">Secure checkout by Razorpay. Money goes directly to {{ owner.business }}'s account.</p>
-<hr style="border:0;border-top:1px solid #eef2f7">
+<hr style="border:0;border-top:1px solid var(--line2)">
 {% endif %}
 {% if vpa %}
 <h2>Pay by UPI</h2>

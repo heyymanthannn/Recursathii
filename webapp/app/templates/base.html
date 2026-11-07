@@ -6,7 +6,8 @@
 <title>{% block title %}RecurSaathi{% endblock %}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body class="{% if user %}app{% else %}auth{% endif %}">
@@ -14,16 +15,16 @@
 <aside class="sidebar">
   <a class="brand" href="/dashboard"><i></i><span>Recur<b>Saathi</b></span></a>
   <nav class="snav">
-    <a href="/dashboard" class="{{ 'on' if active_tab=='dashboard' }}">Dashboard</a>
-    <a href="/radar" class="{{ 'on' if active_tab=='radar' }}">Recovery Radar</a>
-    <a href="/customers" class="{{ 'on' if active_tab=='customers' }}">Customers</a>
-    <a href="/invoices" class="{{ 'on' if active_tab=='invoices' }}">Invoices</a>
-    <a href="/automations" class="{{ 'on' if active_tab=='automations' }}">Automations</a>
-    <a href="/payments" class="{{ 'on' if active_tab=='payments' }}">Payments</a>
-    <a href="/analytics" class="{{ 'on' if active_tab=='analytics' }}">Analytics</a>
-    <a href="/billing" class="{{ 'on' if active_tab=='subscription' }}">Subscription</a>
-    <a href="/settings" class="{{ 'on' if active_tab=='settings' }}">Settings</a>
-    {% if user and user.role == 'owner' %}<a href="/team" class="{{ 'on' if active_tab=='team' }}">Team</a>{% endif %}
+    <a href="/dashboard" class="{{ 'on' if active_tab=='dashboard' }}"><span class="msym">dashboard</span><span class="navtext">Dashboard</span></a>
+    <a href="/radar" class="{{ 'on' if active_tab=='radar' }}"><span class="msym">radar</span><span class="navtext">Recovery Radar</span></a>
+    <a href="/customers" class="{{ 'on' if active_tab=='customers' }}"><span class="msym">group</span><span class="navtext">Customers</span></a>
+    <a href="/invoices" class="{{ 'on' if active_tab=='invoices' }}"><span class="msym">receipt_long</span><span class="navtext">Invoices</span></a>
+    <a href="/automations" class="{{ 'on' if active_tab=='automations' }}"><span class="msym">bolt</span><span class="navtext">Automations</span></a>
+    <a href="/payments" class="{{ 'on' if active_tab=='payments' }}"><span class="msym">payments</span><span class="navtext">Payments</span></a>
+    <a href="/analytics" class="{{ 'on' if active_tab=='analytics' }}"><span class="msym">analytics</span><span class="navtext">Analytics</span></a>
+    <a href="/billing" class="{{ 'on' if active_tab=='subscription' }}"><span class="msym">card_membership</span><span class="navtext">Subscription</span></a>
+    <a href="/settings" class="{{ 'on' if active_tab=='settings' }}"><span class="msym">settings</span><span class="navtext">Settings</span></a>
+    {% if user and user.role == 'owner' %}<a href="/team" class="{{ 'on' if active_tab=='team' }}"><span class="msym">groups</span><span class="navtext">Team</span></a>{% endif %}
   </nav>
   <div class="sfoot">
     <div class="avatar">{{ user.business[:1]|upper }}</div>
@@ -36,6 +37,7 @@
 <div class="main">
   <header class="topbar">
     <div class="ttitle">{{ active_tab|capitalize if active_tab else "Dashboard" }}</div>
+    <div class="wschip"><span class="msym">workspaces</span>{{ user.business }}</div>
     <div class="tspacer"></div>
     <a class="bell" href="/notifications" title="Notifications" aria-label="Notifications">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>

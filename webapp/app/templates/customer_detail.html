@@ -19,7 +19,7 @@
 {% for i in invs %}<tr><td>{{ i.number }}</td><td>{{ inr(i.amount) }}</td><td>{{ i.due_date }}</td><td><span class="pill {{ i.status }}">{{ i.status }}</span></td></tr>{% endfor %}
 </table>{% else %}<div class="empty">No invoices yet.</div>{% endif %}</div>
 <h2>Failed payment events</h2>
-<div class="card">{% if events %}{% for e in events %}<div style="padding:8px 0;border-bottom:1px solid #eef2f7">{{ inr(e.amount) }} · {{ e.decline_code or "declined" }} · <span class="muted">{{ e.created | datetime }}</span></div>{% endfor %}{% else %}<div class="empty">No failed payments.</div>{% endif %}</div>
+<div class="card">{% if events %}{% for e in events %}<div style="padding:8px 0;border-bottom:1px solid var(--line2)">{{ inr(e.amount) }} · {{ e.decline_code or "declined" }} · <span class="muted">{{ e.created | datetime }}</span></div>{% endfor %}{% else %}<div class="empty">No failed payments.</div>{% endif %}</div>
 </div>
 </div>
 {% endblock %}

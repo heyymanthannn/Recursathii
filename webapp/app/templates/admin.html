@@ -19,7 +19,7 @@
 {% for p in pays %}<tr><td>{{ p.created | datetime }}</td><td>{{ p.plan }}</td><td>{{ inr(p.amount) if p.amount else "-" }}</td><td>{{ p.status }}</td></tr>{% endfor %}</table>
 {% else %}<div class="empty">No subscription payments yet.</div>{% endif %}</div>
 <h2>Support inbox</h2>
-<div class="card">{% if support %}{% for s in support %}<div style="padding:10px 0;border-bottom:1px solid #eef2f7">
+<div class="card">{% if support %}{% for s in support %}<div style="padding:10px 0;border-bottom:1px solid var(--line2)">
 <b>{{ s.name }}</b> <span class="muted">{{ s.email }}</span> <span class="pill {{ s.status }}">{{ s.status }}</span>
 <div>{{ s.message }}</div>
 {% if s.status == 'open' %}<form method="post" action="/admin/support/{{ s.id }}/resolve"><button class="btn sm ghost">Mark resolved</button></form>{% endif %}
