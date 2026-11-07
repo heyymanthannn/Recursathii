@@ -667,7 +667,7 @@ document.getElementById('signupForm').addEventListener('submit',async function(e
   var g=function(n){return ((f.elements[n]||{}).value||'').trim();};
   msg.textContent='';btn.textContent='Creating account…';btn.disabled=true;
   try{
-    var r=await fetch('/api/signup',{method:'POST',headers:{'Content-Type':'application/json'},
+    var r=await fetch('https://recursaathi.onrender.com/api/signup',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({name:g('name'),email:g('email'),phone:g('phone'),plan:chosen})});
     var d=null;var ct=(r.headers.get('content-type')||'');
     try{if(ct.indexOf('json')>-1)d=await r.json();}catch(_){}
