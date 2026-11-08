@@ -11,17 +11,17 @@ from . import config, db
 WELCOME_DISCOUNT_PCT = int(os.environ.get("WELCOME_DISCOUNT_PCT", "20"))
 WELCOME_FROM_NAME = os.environ.get("WELCOME_FROM_NAME", "Team RecurSaathi")
 
-def upi_uri(plan: str, merchant_id: str) -> str:
+def upi_uri(plan: str, merchant_id: str, amount: float | None = None) -> str:
     from .config import PLANS
-    amt = PLANS[plan]["amount"] / 100
+    amt = amount if amount is not None else PLANS[plan]["amount"] / 100
     note = f"RecurSaathi {plan} {merchant_id}"
     vpa = config.MANUAL_UPI_ID
     payee = config.MANUAL_UPI_PAYEE.replace(" ", "%20")
     return (f"upi://pay?pa={vpa}&pn={payee}&am={amt:.2f}&cu=INR&tn={note.replace(' ', '%20')}")
 
-def qr_png(plan: str, merchant_id: str) -> bytes:
+def qr_png(plan: str, merchant_id: str, amount: float | None = None) -> bytes:
     import qrcode
-    img = qrcode.make(upi_uri(plan, merchant_id))
+    img = qrcode.make(upi_uri(plan, merchant_id, amount))
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     return buf.getvalue()

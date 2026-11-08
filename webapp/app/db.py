@@ -5,7 +5,7 @@ failure event and WhatsApp message is written through here, so state survives
 restarts. Swap PAYRECOVERY_DB for a Postgres/Supabase URL later without
 touching the engine.
 """
-import os, sqlite3
+import os, sqlite3, time
 
 DB_PATH = os.environ.get("PAYRECOVERY_DB", "data/payrecovery.db")
 
@@ -28,6 +28,10 @@ def init():
           decline_code TEXT, mandate_id TEXT, playbook TEXT,
           retries_due TEXT, retries_done INTEGER, recovered INTEGER
         );
+        CREATE TABLE IF NOT EXISTS coupons(
+          code TEXT PRIMARY KEY, merchant_id TEXT, pct INTEGER,
+          active INTEGER DEFAULT 1, created REAL, redeemed INTEGER DEFAULT 0
+        );
         CREATE TABLE IF NOT EXISTS messages(
           id INTEGER PRIMARY KEY AUTOINCREMENT, to_phone TEXT, event_id TEXT,
           playbook TEXT, body TEXT, at REAL
@@ -37,6 +41,12 @@ def init():
         for stmt in (
             "ALTER TABLE merchants ADD COLUMN next_month_discount INTEGER DEFAULT 0",
             "ALTER TABLE merchants ADD COLUMN welcome_sent INTEGER DEFAULT 0",
+            "ALTER TABLE merchants ADD COLUMN created REAL DEFAULT 0",
+            "ALTER TABLE merchants ADD COLUMN discount_pct INTEGER DEFAULT 0",
+            "ALTER TABLE merchants ADD COLUMN coupon_code TEXT DEFAULT ''",
+            "ALTER TABLE merchants ADD COLUMN retention_state TEXT DEFAULT ''",
+            "ALTER TABLE merchants ADD COLUMN retention_outcome TEXT DEFAULT ''",
+            "ALTER TABLE merchants ADD COLUMN retention_at REAL DEFAULT 0",
         ):
             try:
                 c.execute(stmt)
@@ -46,12 +56,46 @@ def init():
 def save_merchant(m):
     with _conn() as c:
         init()
+        existing = c.execute("SELECT created FROM merchants WHERE id=?", (m["id"],)).fetchone()
+        created = m.get("created") or (existing["created"] if existing and existing["created"] else time.time())
         c.execute(
             "INSERT OR REPLACE INTO merchants(id,email,name,phone,plan,status,"
-            "subscription_id,next_month_discount,welcome_sent) VALUES(?,?,?,?,?,?,?,?,?)",
+            "subscription_id,next_month_discount,welcome_sent,created,discount_pct,"
+            "coupon_code,retention_state,retention_outcome,retention_at) "
+            "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (m["id"], m.get("email"), m.get("name"), m.get("phone"),
              m.get("plan"), m.get("status"), m.get("subscription_id"),
-             m.get("next_month_discount", 0), m.get("welcome_sent", 0)))
+             m.get("next_month_discount", 0), m.get("welcome_sent", 0),
+             created, m.get("discount_pct", 0), m.get("coupon_code", ""),
+             m.get("retention_state", ""), m.get("retention_outcome", ""),
+             m.get("retention_at", 0)))
+
+# ---- coupons ----
+def issue_coupon(merchant_id: str, pct: int) -> str:
+    """One coupon code per merchant; reusable until redeemed."""
+    with _conn() as c:
+        init()
+        row = c.execute("SELECT code FROM coupons WHERE merchant_id=? AND active=1", (merchant_id,)).fetchone()
+        if row:
+            return row["code"]
+        code = "RS" + os.urandom(3).hex().upper()
+        c.execute("INSERT INTO coupons(code,merchant_id,pct,active,created) VALUES(?,?,?,?,?)",
+                  (code, merchant_id, pct, 1, time.time()))
+        return code
+
+def find_coupon(code: str):
+    code = (code or "").strip().upper()
+    if not code:
+        return None
+    with _conn() as c:
+        init()
+        r = c.execute("SELECT * FROM coupons WHERE code=?", (code,)).fetchone()
+        return dict(r) if r else None
+
+def mark_coupon_redeemed(code: str):
+    with _conn() as c:
+        init()
+        c.execute("UPDATE coupons SET redeemed=1, active=0 WHERE code=?", (code,))
 
 def load_merchants() -> dict:
     init()

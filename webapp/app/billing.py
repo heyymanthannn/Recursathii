@@ -18,6 +18,7 @@ class Merchant:
         self.subscription_id = None
         self.name = ""
         self.phone = ""
+        self.created = __import__("time").time()
         self.events: list = []
 
 MERCHANTS: dict[str, Merchant] = {}
@@ -34,7 +35,8 @@ def onboard(merchant_id: str, email: str, plan: str) -> Merchant:
 def _persist(m: Merchant):
     db.save_merchant({"id": m.id, "email": m.email, "name": getattr(m, "name", ""),
                       "phone": getattr(m, "phone", ""), "plan": m.plan,
-                      "status": m.status, "subscription_id": m.subscription_id})
+                      "status": m.status, "subscription_id": m.subscription_id,
+                      "created": getattr(m, "created", 0)})
 
 def subscription_link(plan: str, sub_id: str = "sub_placeholder") -> str:
     """Real flow: create the subscription with the Razorpay SDK and return its

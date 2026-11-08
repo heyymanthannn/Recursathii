@@ -30,6 +30,20 @@ def render(name, request, user=None, **ctx):
 
 def inr(p): return f"\u20b9{p/100:,.0f}"
 
+
+def _wa_link(o):
+    """One-tap WhatsApp deep link for a queued message, so the owner can send
+    it from their own WhatsApp until a WhatsApp API token is connected."""
+    if o.get("channel") != "whatsapp" or o.get("status") in ("sent", "skipped"):
+        return ""
+    num = (o.get("dest") or "").replace(" ", "")
+    if not num:
+        return ""
+    if not num.startswith("+"):
+        num = "+91" + num.lstrip("0")
+    from urllib.parse import quote as _q
+    return f"https://wa.me/{num.lstrip('+')}?text={_q(o.get('body') or '')}"
+
 def base_url(request):
     return str(request.base_url).rstrip("/")
 
@@ -284,6 +298,7 @@ async def automations_page(request: Request):
     keys = models.get_automations(user["id"])
     tpls = {k: models.get_template(user["id"], k) for k in models.AUTO_KEYS}
     out = models.list_outbox(user["id"])
+    out = [{**o, "wa_link": _wa_link(o)} for o in out]
     return render("automations.html", request, user=user, tab="automations", keys=keys,
                   tpls=tpls, out=out, defaults=auto.DEFAULTS, inr=inr,
                   email_ready=notify.smtp_ready(), wa_ready=notify.whatsapp_ready())
@@ -454,6 +469,7 @@ async def notifications_page(request: Request):
         return RedirectResponse("/login", status_code=303)
     acts = models.list_activities(user["id"], limit=50)
     outbox = models.list_outbox(user["id"], limit=50)
+    outbox = [{**o, "wa_link": _wa_link(o)} for o in outbox]
     return render("notifications.html", request, user=user, tab="notifications", acts=acts, outbox=outbox)
 
 # ---------- subscription (alias of billing) ----------

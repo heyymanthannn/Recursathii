@@ -12,11 +12,12 @@
 <h2>Message delivery</h2>
 <p class="muted" style="margin-top:-4px">A message shows sent only when the provider confirms delivery.</p>
 <div class="card">{% if outbox %}<table>
-<tr><th>Channel</th><th>Template</th><th>Status</th><th>When</th></tr>
+<tr><th>Channel</th><th>Template</th><th>Status</th><th>When</th><th></th></tr>
 {% for o in outbox %}<tr>
 <td>{{ o.channel }}</td><td>{{ o.tpl }}</td>
 <td><span class="pill {{ o.status }}">{{ o.status }}</span>{% if o.error %}<br><span class="muted">{{ o.error }}</span>{% endif %}</td>
 <td class="muted">{{ o.created | datetime }}</td>
+<td>{% if o.wa_link %}<a class="btn sm ghost" href="{{ o.wa_link }}" target="_blank" rel="noopener">Open in WhatsApp</a>{% endif %}</td>
 </tr>{% endfor %}
 </table>{% else %}<div class="empty">No messages queued yet.</div>{% endif %}</div>
 </div>

@@ -22,7 +22,7 @@
 <div style="margin:18px 0"><form method="post" action="/automations/run"><button class="btn">Run all workflows now</button></form></div>
 <h2>Message outbox</h2>
 <div class="card">{% if out %}<table>
-<tr><th>When</th><th>Channel</th><th>To</th><th>Workflow</th><th>Status</th><th>Note</th></tr>
-{% for o in out %}<tr><td>{{ o.created | datetime }}</td><td>{{ o.channel }}</td><td>{{ o.dest }}</td><td>{{ o.tpl }}</td><td><span class="pill {{ o.status }}">{{ o.status }}</span></td><td class="muted">{{ o.error or "" }}</td></tr>{% endfor %}
+<tr><th>When</th><th>Channel</th><th>To</th><th>Workflow</th><th>Status</th><th>Note</th><th></th></tr>
+{% for o in out %}<tr><td>{{ o.created | datetime }}</td><td>{{ o.channel }}</td><td>{{ o.dest }}</td><td>{{ o.tpl }}</td><td><span class="pill {{ o.status }}">{{ o.status }}</span></td><td class="muted">{{ o.error or "" }}</td><td>{% if o.wa_link %}<a class="btn sm ghost" href="{{ o.wa_link }}" target="_blank" rel="noopener">Open in WhatsApp</a>{% endif %}</td></tr>{% endfor %}
 </table>{% else %}<div class="empty">Nothing queued yet. Run the workflows or let the scheduler tick.</div>{% endif %}</div>
 {% endblock %}

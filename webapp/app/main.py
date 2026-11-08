@@ -6,7 +6,7 @@ Onboarding + checkout links  -> /onboard, /checkout/{plan}
 Recovery dashboard           -> /dashboard/{merchant_id} (JSON + /dashboard.html)
 """
 import hmac, hashlib, os
-from fastapi import FastAPI, Request, HTTPException, Header
+from fastapi import FastAPI, Request, HTTPException, Header, Form
 from fastapi.responses import FileResponse, JSONResponse
 from . import engine, billing, playbooks, youpi, config, manual_upi
 from .config import WEBHOOK_SECRET, BILLING_WEBHOOK_SECRET, PLANS
@@ -70,7 +70,7 @@ async def api_signup(request: Request):
     billing._persist(m)
     provider, url = "stub", ""
     if config.MANUAL_UPI_ID:
-        provider, url = "manual", f"/pay/{mid}"
+        provider, url = "manual", f"/checkout/{mid}"
     elif _os.environ.get("RAZORPAY_KEY_ID"):
         provider = "razorpay"
         try:
@@ -91,14 +91,85 @@ async def api_signup(request: Request):
     return {"merchant_id": mid, "status": m.status, "plan": plan,
             "provider": provider, "checkout_url": url}
 
-@app.get("/pay/{merchant_id}")
-async def pay_page(merchant_id: str):
-    """Manual UPI payment page: QR + amount, direct to the owner's bank."""
-    from . import manual_upi
+def _merchant_row(merchant_id: str) -> dict | None:
+    from . import db
+    return db.load_merchants().get(merchant_id)
+
+
+def _pay_amount(plan: str, row: dict | None) -> float:
+    """Full plan price, minus any coupon discount already applied."""
+    full = PLANS[plan]["amount"] / 100
+    pct = (row or {}).get("discount_pct") or 0
+    return round(full * (100 - pct) / 100, 2)
+
+
+@app.get("/checkout/{merchant_id}")
+async def checkout_page(merchant_id: str):
+    """Checkout: plan summary, coupon entry, live-updating UPI QR."""
+    from . import manual_upi, db
+    from fastapi.responses import HTMLResponse
     m = billing.MERCHANTS.get(merchant_id)
     if not m or not config.MANUAL_UPI_ID:
-        raise HTTPException(status_code=404, detail="payment page not found")
-    amt = PLANS[m.plan]["amount"] / 100
+        raise HTTPException(status_code=404, detail="checkout page not found")
+    row = _merchant_row(merchant_id)
+    full = PLANS[m.plan]["amount"] / 100
+    amt = _pay_amount(m.plan, row)
+    pct = (row or {}).get("discount_pct") or 0
+    coupon_msg = ""
+    if pct:
+        coupon_msg = f'<div class="ok" style="color:#00d4a0;font-weight:600">Coupon applied: {pct}% off. You pay &#8377;{amt:,.0f} instead of &#8377;{full:,.0f}.</div>'
+    if m.status == "active":
+        coupon_msg = '<div class="ok" style="color:#00d4a0;font-weight:600">Your account is already active - no payment needed.</div>'
+    html = f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Checkout - RecurSaathi</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<style>body{{background:#0a0e1a;color:#e8ecf6;font-family:Inter,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:24px;margin:0}}
+.c{{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:38px 32px;max-width:440px;width:100%;text-align:center}}
+h1{{font-family:'Space Grotesk';font-size:24px;letter-spacing:-.02em;margin:0 0 6px}}
+.amt{{font-size:34px;font-family:'Space Grotesk';font-weight:700;color:#00d4a0;margin:14px 0 4px}}
+img{{width:200px;height:200px;border-radius:14px;background:#fff;padding:10px;margin:14px 0}}
+.vpa{{font-family:monospace;font-size:14px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:9px 13px;display:inline-block}}
+p{{color:#9aa3b8;font-size:14px;line-height:1.6}}
+.st{{color:#ffd166;font-size:13px;margin-top:18px}}
+form{{margin-top:16px;display:flex;gap:8px;justify-content:center}}
+input{{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:10px 12px;color:#e8ecf6;font-size:14px;width:150px;text-transform:uppercase}}
+button{{background:#00d4a0;border:0;border-radius:10px;padding:10px 16px;font-weight:600;color:#06251d;cursor:pointer}}
+.strike{{text-decoration:line-through;color:#9aa3b8}}</style></head><body>
+<div class="c"><h1>Checkout</h1>
+<p>RecurSaathi {m.plan} plan &middot; 14-day free trial of the platform, then monthly. Money goes straight to the bank, no middleman.</p>
+{coupon_msg}
+<div class="amt">&#8377;{amt:,.0f}{f' <span class="strike" style="font-size:16px">&#8377;{full:,.0f}</span>' if pct else ''}<span style="font-size:15px;color:#9aa3b8">/month &middot; {m.plan} plan</span></div>
+<img src="/pay-qr/{merchant_id}.png" alt="UPI QR code">
+<div class="vpa">{config.MANUAL_UPI_ID}</div>
+<form method="post" action="/checkout/{merchant_id}/coupon">
+<input name="code" placeholder="Coupon code" maxlength="20" {'value=' + chr(34) + (row.get('coupon_code') or '') + chr(34) if row and row.get('coupon_code') else ''} {'disabled' if pct else ''}>
+<button {'disabled' if pct else ''}>Apply</button></form>
+<p style="margin-top:14px">Scan the QR with Google Pay or any UPI app. The amount is locked to the exact total shown.</p>
+<p style="margin-top:6px">Your account activates as soon as we confirm the payment (usually within a few hours).</p>
+<div class="st">You'll hear from us on {m.email} once it's live.</div></div></body></html>"""
+    return HTMLResponse(html)
+
+
+@app.post("/checkout/{merchant_id}/coupon")
+async def checkout_coupon(merchant_id: str, code: str = Form("")):
+    from fastapi.responses import RedirectResponse
+    from . import retention
+    res = retention.apply_coupon(merchant_id, code)
+    if res.get("ok"):
+        return RedirectResponse(f"/checkout/{merchant_id}?applied=1", status_code=303)
+    return RedirectResponse(f"/checkout/{merchant_id}?error=invalid", status_code=303)
+
+
+@app.post("/retention/call-outcome")
+async def retention_call_outcome(request: Request):
+    """Voice provider reports the call outcome: merchant's stated reason."""
+    from . import retention
+    import json as _json
+    data = await request.json()
+    mid = data.get("merchant_id") or ""
+    return retention.record_call_outcome(mid, data.get("reason") or "")
     html = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>Pay with Google Pay - RecurSaathi</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
@@ -128,7 +199,8 @@ async def pay_qr(merchant_id: str):
     m = billing.MERCHANTS.get(merchant_id)
     if not m or not config.MANUAL_UPI_ID:
         raise HTTPException(status_code=404, detail="qr not found")
-    return Response(content=manual_upi.qr_png(m.plan, merchant_id), media_type="image/png")
+    row = _merchant_row(merchant_id)
+    return Response(content=manual_upi.qr_png(m.plan, merchant_id, _pay_amount(m.plan, row)), media_type="image/png")
 
 @app.post("/admin/mark-paid")
 async def admin_mark_paid(request: Request, x_admin_token: str = Header(default="")):
@@ -213,6 +285,62 @@ async def youpi_webhook(request: Request):
     payload = _json.loads(raw.decode("utf-8") or "{}")
     return youpi.ingest_outcome(payload)
 
+
+
+# ---------------- Automatic recovery scheduler ----------------
+# On Render there is no external cron, so a background thread in the app
+# process runs the recovery workflows every 5 minutes: reminders/overdue/
+# failed-payment nudges are queued and delivered, and anything that queued
+# while a channel (SMTP / WhatsApp) was not configured is retried so it
+# flushes the moment the channel is connected.
+import threading as _threading
+import time as _time
+from . import automations as _auto, notify as _notify, models as _models, retention as _retention
+
+def _automation_worker():
+    n = 0
+    while True:
+        _time.sleep(60)
+        n += 1
+        try:
+            # Retention agent: chase unpaid signups 5 minutes after they appear.
+            try:
+                _retention.run_retention()
+            except Exception:
+                pass
+        except Exception:
+            pass
+        if n % 5:
+            continue
+        try:
+            owners = _models.q("SELECT * FROM users WHERE role='owner' AND plan_status IN ('active','trialing')")
+            for o in owners:
+                try:
+                    _auto.run_for_owner(o, config.BASE_URL)
+                except Exception:
+                    pass
+            # flush messages that queued while a channel was missing
+            try:
+                pending = _models.q("SELECT * FROM outbox WHERE status IN ('pending','no_channel') ORDER BY created LIMIT 50")
+                for row in pending:
+                    try:
+                        _notify.deliver(row)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+        except Exception:
+            pass
+
+@app.on_event("startup")
+def _start_automation_worker():
+    t = _threading.Thread(target=_automation_worker, name="automation-worker", daemon=True)
+    t.start()
+
+@app.get("/health/channels")
+async def health_channels():
+    """Which outbound channels are connected (no secrets returned)."""
+    return {"email": _notify.smtp_ready(), "whatsapp": _notify.whatsapp_ready()}
 
 # ---------------- RecurSaathi platform web app ----------------
 from fastapi.staticfiles import StaticFiles
