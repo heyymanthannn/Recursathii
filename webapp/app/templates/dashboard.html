@@ -1,14 +1,40 @@
 {% extends "base.html" %}{% block title %}Dashboard · RecurSaathi{% endblock %}{% block content %}
-<h1>{{ user.business }}</h1>
-<p class="sub">{{ trial_left if trial_left else "Revenue recovery at a glance." }}</p>
-<div class="cards">
-<div class="card"><div class="label"><span class="msym kicon">savings</span>Total revenue recovered</div><div class="kpi green">{{ inr(m.recovered) }}</div></div>
-<div class="card"><div class="label"><span class="msym kicon">error</span>Failed payments</div><div class="kpi red">{{ m.failed_count }} <span class="badge-note">({{ inr(m.failed_amount) }})</span></div></div>
-<div class="card"><div class="label"><span class="msym kicon">schedule</span>Pending overdue invoices</div><div class="kpi amber">{{ m.overdue_count }}</div></div>
-<div class="card"><div class="label"><span class="msym kicon">trending_up</span>Recovery success rate</div><div class="kpi blue">{{ m.success_rate }}%</div></div>
-<div class="card"><div class="label"><span class="msym kicon">person_search</span>Dormant customers</div><div class="kpi purple"><a href="/radar">view in Radar</a></div></div>
-<div class="card"><div class="label"><span class="msym kicon">account_balance_wallet</span>Outstanding value</div><div class="kpi lav">{{ inr(m.outstanding) }}</div></div>
+<div class="dhead">
+  <div>
+    <h1>{{ user.business }}</h1>
+    <p class="sub">{{ trial_left if trial_left else "Revenue recovery at a glance." }}</p>
+  </div>
+  <div class="dqactions">
+    <a class="btn" href="/invoices"><span class="msym">add</span>New invoice</a>
+    <a class="btn ghost" href="/customers"><span class="msym">person_add</span>Add customer</a>
+    <a class="btn ghost" href="/campaigns"><span class="msym">campaign</span>New campaign</a>
+  </div>
 </div>
+
+<div class="cards">
+<div class="card"><div class="label"><span class="msym kicon">account_balance_wallet</span>Total outstanding</div><div class="kpi lav">{{ inr(m.outstanding) }}</div></div>
+<div class="card"><div class="label"><span class="msym kicon">savings</span>Recovered revenue</div><div class="kpi green">{{ inr(m.recovered) }}</div></div>
+<div class="card"><div class="label"><span class="msym kicon">error</span>Failed payments</div><div class="kpi red">{{ m.failed_count }} <span class="badge-note">({{ inr(m.failed_amount) }})</span></div></div>
+<div class="card"><div class="label"><span class="msym kicon">schedule</span>Overdue invoices</div><div class="kpi amber">{{ m.overdue_count }}</div></div>
+<div class="card"><div class="label"><span class="msym kicon">trending_up</span>Recovery rate</div><div class="kpi blue">{{ m.success_rate }}%</div></div>
+<div class="card"><div class="label"><span class="msym kicon">person_search</span>Dormant customers</div><div class="kpi purple"><a href="/radar">view in Radar</a></div></div>
+</div>
+
+<h2>Workspaces</h2>
+<div class="tiles">
+  <a class="tile" href="/dashboard"><span class="msym">dashboard</span><b>Overview</b><i>Metrics and recent activity</i></a>
+  <a class="tile" href="/radar"><span class="msym">radar</span><b>Recovery Radar</b><i>Overdue, dormant and failed, ranked</i></a>
+  <a class="tile" href="/customers"><span class="msym">group</span><b>Customers</b><i>Directory and segments</i></a>
+  <a class="tile" href="/invoices"><span class="msym">receipt_long</span><b>Invoices</b><i>Create, track and remind</i></a>
+  <a class="tile" href="/payments"><span class="msym">payments</span><b>Payments</b><i>UPI, history and reconciliation</i></a>
+  <a class="tile" href="/automations"><span class="msym">bolt</span><b>Automations</b><i>Reminders and repayment calls</i></a>
+  <a class="tile" href="/campaigns"><span class="msym">campaign</span><b>Campaigns</b><i>Reactivation runs</i></a>
+  <a class="tile" href="/analytics"><span class="msym">analytics</span><b>Analytics</b><i>Trends and exports</i></a>
+  <a class="tile" href="/integrations"><span class="msym">extension</span><b>Integrations</b><i>Connections status</i></a>
+  <a class="tile" href="/billing"><span class="msym">card_membership</span><b>Subscription</b><i>Plans and billing</i></a>
+  <a class="tile" href="/settings"><span class="msym">settings</span><b>Settings</b><i>Business profile and keys</i></a>
+</div>
+
 <div class="filterrow">
 <a class="pill-link {{ 'on' if period != 'weekly' }}" href="/dashboard">Monthly</a>
 <a class="pill-link {{ 'on' if period == 'weekly' }}" href="/dashboard?period=weekly">Weekly</a>
@@ -22,11 +48,13 @@
 </div>
 {% else %}<div class="empty">No recovered payments yet. Once invoices are marked paid, this chart fills in.</div>{% endif %}
 </div>
+
 <h2>Overdue invoices</h2>
 <div class="card">{% if ov %}<table>
 <tr><th>Invoice</th><th>Customer</th><th>Amount</th><th>Due</th><th></th></tr>
 {% for i in ov %}<tr><td>{{ i.number }}</td><td>{{ i.customer_name }}</td><td>{{ inr(i.amount) }}</td><td>{{ i.due_date or "-" }}</td><td><a href="/invoice/{{ i.token }}" target="_blank">Payment page</a></td></tr>{% endfor %}
 </table>{% else %}<div class="empty">Nothing overdue.</div>{% endif %}</div>
+
 <div class="grid2">
 <div>
 <h2>Recent transactions</h2>
@@ -34,16 +62,19 @@
 <tr><th>Customer</th><th>Invoice</th><th>Amount</th><th>Status</th></tr>
 {% for p in pays %}<tr><td>{{ p.customer_name or "-" }}</td><td>{{ p.invoice_number or "-" }}</td><td>{{ inr(p.amount) }}</td><td><span class="pill {{ p.status }}">{{ p.status }}</span></td></tr>{% endfor %}
 </table>{% else %}<div class="empty">No transactions yet.</div>{% endif %}</div>
+
 <h2>Automated recovery activity</h2>
 <div class="card">{% if acts %}{% for a in acts[:8] %}
 <div class="actrow"><span class="muted">{{ a.created | datetime }}</span><br>{{ a.message }}</div>{% endfor %}{% else %}<div class="empty">Automation activity will appear here.</div>{% endif %}</div>
 </div>
+
 <div>
 <h2>Failed payments</h2>
 <div class="card">{% if fails %}<table>
 <tr><th>Customer</th><th>Amount</th><th>Reason</th><th>When</th></tr>
 {% for e in fails %}<tr><td>{{ e.customer_name or "-" }}</td><td>{{ inr(e.amount) }}</td><td>{{ e.decline_code or "declined" }}</td><td>{{ e.created | datetime }}</td></tr>{% endfor %}
 </table>{% else %}<div class="empty">No failed payments recorded.</div>{% endif %}</div>
+
 <h2>Your subscription</h2>
 <div class="card"><div class="muted">Your plan is {{ user.plan_status }} on the {{ user.plan }} plan. <a href="/billing">Manage billing</a></div></div>
 </div>

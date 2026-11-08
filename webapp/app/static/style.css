@@ -216,3 +216,18 @@ body.app .card:hover{transform:translateY(-2px)}
 .cbar button{all:unset;cursor:pointer;font-size:13px;font-weight:650;color:#fff;background:var(--vio);border-radius:9px;padding:8px 15px}
 .cbar button:hover{background:var(--vio-d)}
 @media(max-width:600px){.cbar{flex-direction:column;text-align:center}}
+
+/* ---------- dashboard overview ---------- */
+.dhead{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap}
+.dqactions{display:flex;gap:9px;flex-wrap:wrap}
+.dqactions .msym{font-size:17px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin:0 0 8px}
+@media(max-width:1000px){.tiles{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:700px){.tiles{grid-template-columns:repeat(2,1fr)}}
+.tile{display:flex;flex-direction:column;gap:3px;padding:15px 16px;background:#fff;border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);text-decoration:none;transition:.18s;position:relative;overflow:hidden}
+.tile::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(79,70,229,.05),transparent 55%);opacity:0;transition:.18s}
+.tile:hover{border-color:rgba(79,70,229,.35);box-shadow:var(--sh-glow);transform:translateY(-2px);text-decoration:none}
+.tile:hover::after{opacity:1}
+.tile .msym{font-size:21px;color:var(--vio);margin-bottom:3px}
+.tile b{font-size:13.5px;font-weight:600;color:var(--ink);letter-spacing:-.01em}
+.tile i{font-style:normal;font-size:12px;color:var(--mut);line-height:1.4}
