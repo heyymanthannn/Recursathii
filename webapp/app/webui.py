@@ -1,8 +1,8 @@
 """Owner web app: dashboard, customers, invoices, radar, automations, billing."""
-import csv, io, secrets, time
+import csv, io, os, secrets, time
 from fastapi import APIRouter, Depends, HTTPException, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
-from . import models, auth, vault, payments, notify, automations as auto, config
+from . import models, auth, vault, payments, notify, automations as auto, config, retention as ret
 
 def _role_gate(request: Request):
     u = auth.current_user(request)
@@ -501,6 +501,39 @@ async def analytics_export(request: Request, report: str = "recovery"):
                     headers={"Content-Disposition": f"attachment; filename={fname}"})
 
 # ---------- notifications ----------
+
+# ---------- campaigns ----------
+@router.get("/campaigns", response_class=HTMLResponse)
+async def campaigns_page(request: Request):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    rad = models.radar(user["id"])
+    camp = [o for o in models.list_outbox(user["id"]) if o["tpl"] == "dormant_reactivate"]
+    return render("campaigns.html", request, user=user, tab="campaigns",
+                  dormant=rad["dormant"], camp=camp, inr=inr)
+
+@router.post("/campaigns/run")
+async def campaigns_run(request: Request):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    counts = auto.run_dormant_reactivation(user)
+    models.log_audit(user["id"], "campaign.run", str(counts))
+    return RedirectResponse("/campaigns", status_code=303)
+
+# ---------- integrations ----------
+@router.get("/integrations", response_class=HTMLResponse)
+async def integrations_page(request: Request):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    return render("integrations.html", request, user=user, tab="integrations",
+                  rzp_connected=bool(payments.owner_creds(user)),
+                  email_ready=notify.smtp_ready(), wa_ready=notify.whatsapp_ready(),
+                  voice_ready=bool(ret.CALL_URL and ret.CALL_TOKEN),
+                  upi_ready=bool(os.environ.get("MANUAL_UPI_ID")))
+
 @router.get("/notifications", response_class=HTMLResponse)
 async def notifications_page(request: Request):
     user = guard(request)

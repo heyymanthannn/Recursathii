@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% block title %}Campaigns · RecurSaathi{% endblock %}{% block content %}
+<h1>Campaigns</h1>
+<p class="sub">Win back dormant customers with reactivation messages.</p>
+<h2>Dormant customers</h2>
+<div class="card">
+{% if dormant %}
+<form method="post" action="/campaigns/run" style="margin-bottom:10px"><button class="btn" type="submit">Run reactivation campaign now</button></form>
+<table><tr><th>Customer</th><th>Lifetime paid</th><th>Last paid</th><th>Contact</th></tr>
+{% for c in dormant %}<tr><td><a href="/customers/{{ c.id }}">{{ c.name }}</a></td><td>{{ inr(c.lifetime) }}</td><td>{{ c.last_paid_at | datetime }}</td><td>{{ c.email or "" }} {{ c.phone or "" }}</td></tr>{% endfor %}
+</table>
+<div class="badge-note" style="margin-top:8px">Dormant means they paid before but have had no confirmed payment in 45 days. One run queues one email per customer per day (WhatsApp too, unless they opted out).</div>
+{% else %}<div class="empty">No dormant customers right now. When a repeat customer goes quiet for 45 days, they appear here.</div>{% endif %}
+</div>
+<h2>Reactivation messages</h2>
+<div class="card">
+{% if camp %}<table><tr><th>When</th><th>Channel</th><th>To</th><th>Status</th></tr>
+{% for o in camp %}<tr><td>{{ o.created | datetime }}</td><td>{{ o.channel }}</td><td>{{ o.dest }}</td><td><span class="pill {{ o.status }}">{{ o.status }}</span></td></tr>{% endfor %}</table>
+{% else %}<div class="empty">No reactivation messages yet. Run the campaign above to queue the first batch.</div>{% endif %}
+</div>
+{% endblock %}

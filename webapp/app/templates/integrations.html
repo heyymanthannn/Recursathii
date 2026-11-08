@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% block title %}Integrations · RecurSaathi{% endblock %}{% block content %}
+<h1>Integrations</h1>
+<p class="sub">What RecurSaathi is connected to right now. Each row shows the real state, never a placeholder.</p>
+<div class="card">
+<table><tr><th>Integration</th><th>Status</th><th>What it powers</th></tr>
+<tr><td>Manual UPI collection</td><td><span class="pill {{ 'paid' if upi_ready else 'failed' }}">{{ "Connected" if upi_ready else "Not connected" }}</span></td><td>Invoice and checkout UPI QR codes, Google Pay and any UPI app</td></tr>
+<tr><td>Razorpay</td><td><span class="pill {{ 'paid' if rzp_connected else 'failed' }}">{{ "Connected" if rzp_connected else "Not connected" }}</span></td><td>Autopay retries in RBI windows, payment webhooks, failed-payment recovery</td></tr>
+<tr><td>Email (SMTP)</td><td><span class="pill {{ 'paid' if email_ready else 'failed' }}">{{ "Connected" if email_ready else "Not connected" }}</span></td><td>Invoice emails, reminders, receipts, reactivation campaigns</td></tr>
+<tr><td>WhatsApp</td><td><span class="pill {{ 'paid' if wa_ready else 'failed' }}">{{ "Connected" if wa_ready else "Not connected" }}</span></td><td>WhatsApp nudges and reactivation messages</td></tr>
+<tr><td>Voice calls</td><td><span class="pill {{ 'paid' if voice_ready else 'failed' }}">{{ "Connected" if voice_ready else "Not connected" }}</span></td><td>AI repayment calls to overdue customers</td></tr>
+</table>
+</div>
+<div class="badge-note">Razorpay keys are saved under Settings. Email, WhatsApp and voice credentials are set on the server. While an integration is not connected, its messages queue safely and send the moment it is connected.</div>
+{% endblock %}

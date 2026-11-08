@@ -24,7 +24,9 @@
     <a href="/invoices" class="{{ 'on' if active_tab=='invoices' }}"><span class="msym">receipt_long</span><span class="navtext">Invoices</span></a>
     <a href="/automations" class="{{ 'on' if active_tab=='automations' }}"><span class="msym">bolt</span><span class="navtext">Automations</span></a>
     <a href="/payments" class="{{ 'on' if active_tab=='payments' }}"><span class="msym">payments</span><span class="navtext">Payments</span></a>
+    <a href="/campaigns" class="{{ 'on' if active_tab=='campaigns' }}"><span class="msym">campaign</span><span class="navtext">Campaigns</span></a>
     <a href="/analytics" class="{{ 'on' if active_tab=='analytics' }}"><span class="msym">analytics</span><span class="navtext">Analytics</span></a>
+    <a href="/integrations" class="{{ 'on' if active_tab=='integrations' }}"><span class="msym">extension</span><span class="navtext">Integrations</span></a>
     <a href="/billing" class="{{ 'on' if active_tab=='subscription' }}"><span class="msym">card_membership</span><span class="navtext">Subscription</span></a>
     <a href="/settings" class="{{ 'on' if active_tab=='settings' }}"><span class="msym">settings</span><span class="navtext">Settings</span></a>
     {% if user and user.role == 'owner' %}<a href="/team" class="{{ 'on' if active_tab=='team' }}"><span class="msym">groups</span><span class="navtext">Team</span></a>{% endif %}
