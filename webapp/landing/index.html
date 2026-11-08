@@ -169,7 +169,9 @@ img{max-width:100%}
 .nlinks{display:flex;gap:24px;font-size:14px;color:var(--mut);font-weight:500}
 .nlinks a{position:relative;padding:4px 0;transition:color .2s}
 .nlinks a:hover{color:var(--ink)}
-.nbtn{margin-left:auto}
+.nlogin{margin-left:auto;font-weight:600;font-size:14.5px;color:var(--ink);text-decoration:none;opacity:.85}
+.nlogin:hover{opacity:1}
+.nbtn{margin-left:0}
 @media(max-width:860px){.nlinks{display:none}}
 
 /* hero */
@@ -389,6 +391,7 @@ footer a:hover{color:var(--ink)}
       <a href="#pricing">Pricing</a>
       <a href="#faq">FAQ</a>
     </div>
+    <a class="nlogin" href="/login">Log in</a>
     <button class="btn btn-primary btn-sm nbtn" data-form="growth">Start free trial</button>
   </div>
 </nav>
