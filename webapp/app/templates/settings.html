@@ -9,7 +9,7 @@
 </div>
 {% endblock %}{% block content %}
 <h1>Settings</h1>
-<p class="sub">Business profile, payment gateway and support.</p>
+<p class="sub">Business profile, your own sending channels, payment gateway and support.</p>
 <div class="grid2">
 <div class="card formcard"><h2 style="margin-top:0">Business profile</h2>
 <form method="post" action="/settings/profile" class="stack">
@@ -19,6 +19,49 @@
 <div><label>Your UPI ID (customers pay here)</label><input name="upi_vpa" value="{{ user.upi_vpa or "" }}" placeholder="yourname@bank"></div>
 <button class="btn">Save profile</button>
 </form></div>
+<div class="card" style="margin-top:20px">
+<h2>Your business connection</h2>
+<p class="muted">Customer emails and WhatsApp messages go out as <b>your business</b>: from your own email address and your own WhatsApp Business number. RecurSaathi never contacts your customers from its own accounts, and nothing sends until you connect. Pause everything here anytime.</p>
+{% set ctest = request.query_params.get("ctest", "") %}
+{% if ctest %}<p class="muted"><b>{{ ctest }}</b></p>{% endif %}
+<div class="grid2">
+<div class="card formcard"><h3 style="margin-top:0">Business email</h3>
+<p class="muted">{{ "Connected" if cn.smtp_user and cn.smtp_host else "Not connected" }}{% if cn.paused %} &middot; automations paused{% endif %}. Works with any SMTP mailbox: Gmail (use an app password), Zoho, Brevo, your own domain.</p>
+<form method="post" action="/settings/connect" class="stack">
+<div><label>Sender name customers see</label><input name="business_name" value="{{ cn.business_name or user.business or '' }}"></div>
+<div><label>SMTP host</label><input name="smtp_host" value="{{ cn.smtp_host or '' }}" placeholder="smtp.gmail.com"></div>
+<div><label>SMTP port</label><input name="smtp_port" value="{{ cn.smtp_port or 587 }}"></div>
+<div><label>SMTP username (your business email)</label><input name="smtp_user" value="{{ cn.smtp_user or '' }}"></div>
+<div><label>SMTP password / app password</label><input name="smtp_pass" type="password" placeholder="{{ 'saved, leave blank to keep' if cn.smtp_pass_enc else '' }}"></div>
+<button class="btn">Save email connection</button>
+</form>
+<form method="post" action="/settings/connect/test" class="stack" style="margin-top:10px">
+<input type="hidden" name="channel" value="email">
+<div><label>Send a test email to</label><input name="dest" value="{{ cn.smtp_user or '' }}"></div>
+<button class="btn ghost">Send test email</button>
+</form>
+</div>
+<div class="card formcard"><h3 style="margin-top:0">WhatsApp Business</h3>
+<p class="muted">{{ "Connected" if cn.wa_phone_id and cn.wa_token_enc else "Not connected" }}. Needs a Meta developer app with WhatsApp Cloud API access.</p>
+<form method="post" action="/settings/connect/wa" class="stack">
+<div><label>WhatsApp phone number ID</label><input name="wa_phone_id" value="{{ cn.wa_phone_id or '' }}" placeholder="123456789012345"></div>
+<div><label>Access token</label><input name="wa_token" type="password" placeholder="{{ 'saved, leave blank to keep' if cn.wa_token_enc else '' }}"></div>
+<button class="btn">Save WhatsApp connection</button>
+</form>
+<form method="post" action="/settings/connect/test" class="stack" style="margin-top:10px">
+<input type="hidden" name="channel" value="whatsapp">
+<button class="btn ghost">Verify WhatsApp connection</button>
+</form>
+</div>
+</div>
+<div style="margin-top:14px">
+<form method="post" action="/settings/connect/pause" style="display:inline">
+{% if cn.paused %}<input type="hidden" name="paused" value="0"><button class="btn">Resume automations</button>
+{% else %}<input type="hidden" name="paused" value="1"><button class="btn ghost">Pause automations</button>{% endif %}
+</form>
+<p class="muted" style="margin-top:10px">Reminder schedules and message templates live on the Automations page. Every message sent or queued is listed under Notifications; every rupee collected is under Payments. Your UPI ID for customer payments is in Business profile above.</p>
+</div>
+</div>
 <div class="card formcard"><h2 style="margin-top:0">Razorpay gateway (optional)</h2>
 <p class="muted">Add your own Razorpay keys to accept card/UPI checkout on invoice pages. Keys are stored encrypted and used only to collect money into YOUR account. {{ "Connected and verified." if has_rzp else "Not configured yet." }}</p>
 <form method="post" action="/settings/razorpay" class="stack">

@@ -157,7 +157,7 @@ async def dashboard(request: Request):
         trial_left = f"{max(days,0)} days left in your free trial" if days >= 0 else "Your trial has ended"
     return render("dashboard.html", request, user=user, tab="dashboard", m=m, chart=chart,
                   acts=acts, pays=pays, fails=fails, ov=ov, inr=inr, trial_left=trial_left, period=period,
-                  channel_note=notify.smtp_ready() or notify.whatsapp_ready())
+                  channel_note=notify.retailer_email_ready(user["id"]) or notify.retailer_whatsapp_ready(user["id"]))
 
 # ---------- customers ----------
 @router.get("/customers", response_class=HTMLResponse)
@@ -370,7 +370,7 @@ async def automations_page(request: Request):
     out = [{**o, "wa_link": _wa_link(o)} for o in out]
     return render("automations.html", request, user=user, tab="automations", keys=keys,
                   tpls=tpls, out=out, defaults=auto.DEFAULTS, inr=inr,
-                  email_ready=notify.smtp_ready(), wa_ready=notify.whatsapp_ready())
+                  email_ready=notify.retailer_email_ready(user["id"]), wa_ready=notify.retailer_whatsapp_ready(user["id"]))
 
 @router.post("/automations/toggle")
 async def automations_toggle(request: Request, key: str = Form(""), enabled: str = Form("")):
@@ -571,9 +571,9 @@ async def integrations_page(request: Request):
         return RedirectResponse("/login", status_code=303)
     return render("integrations.html", request, user=user, tab="integrations",
                   rzp_connected=bool(payments.owner_creds(user)),
-                  email_ready=notify.smtp_ready(), wa_ready=notify.whatsapp_ready(),
+                  email_ready=notify.retailer_email_ready(user["id"]), wa_ready=notify.retailer_whatsapp_ready(user["id"]),
                   voice_ready=bool(ret.CALL_URL and ret.CALL_TOKEN),
-                  upi_ready=bool(os.environ.get("MANUAL_UPI_ID")))
+                  upi_ready=bool((user.get("upi_vpa") or "").strip()))
 
 @router.get("/notifications", response_class=HTMLResponse)
 async def notifications_page(request: Request):
@@ -602,7 +602,8 @@ async def settings_page(request: Request):
     if not user:
         return RedirectResponse("/login", status_code=303)
     has_rzp = bool(payments.owner_creds(user))
-    return render("settings.html", request, user=user, tab="settings", has_rzp=has_rzp, inr=inr)
+    cn = models.get_connect(user["id"]) or {}
+    return render("settings.html", request, user=user, tab="settings", has_rzp=has_rzp, inr=inr, cn=cn)
 
 @router.post("/settings/profile")
 async def settings_profile(request: Request, name: str = Form(""), business: str = Form(""),
@@ -625,6 +626,67 @@ async def settings_razorpay(request: Request, key_id: str = Form(""), key_secret
         creds = payments.owner_creds(user)
         ok = bool(creds) and not payments.api(creds, "GET", "/payments?count=1").get("error")
         models.log_audit(user["id"], "settings.razorpay", "verified" if ok else "saved-not-verified")
+    return RedirectResponse("/settings", status_code=303)
+
+# ---------- retailer-owned connection (customer messages go out as the retailer) ----------
+@router.post("/settings/connect")
+async def settings_connect(request: Request, business_name: str = Form(""),
+                           smtp_host: str = Form(""), smtp_port: str = Form("587"),
+                           smtp_user: str = Form(""), smtp_pass: str = Form("")):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    if user.get("role") != "owner":
+        return RedirectResponse("/settings", status_code=303)
+    models.save_connect(
+        user["id"],
+        business_name=(business_name or user.get("business") or user.get("name") or "").strip(),
+        smtp_host=smtp_host.strip(), smtp_port=int(smtp_port or 587),
+        smtp_user=smtp_user.strip(),
+        smtp_pass_enc=vault.encrypt(smtp_pass) if smtp_pass else None)
+    models.log_audit(user["id"], "settings.connect", "email")
+    return RedirectResponse("/settings", status_code=303)
+
+@router.post("/settings/connect/wa")
+async def settings_connect_wa(request: Request, wa_phone_id: str = Form(""), wa_token: str = Form("")):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    if user.get("role") != "owner":
+        return RedirectResponse("/settings", status_code=303)
+    models.save_connect(user["id"], wa_phone_id=wa_phone_id.strip(),
+                        wa_token_enc=vault.encrypt(wa_token) if wa_token else None)
+    models.log_audit(user["id"], "settings.connect", "whatsapp")
+    return RedirectResponse("/settings", status_code=303)
+
+@router.post("/settings/connect/test")
+async def settings_connect_test(request: Request, channel: str = Form("email"), dest: str = Form("")):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    if channel == "email":
+        to = dest.strip() or (models.get_connect(user["id"]) or {}).get("smtp_user", "")
+        st, err = notify.send_email(
+            to, "Test email from your business connection",
+            "This is a test message sent from your own business email through RecurSaathi. "
+            "Your customer reminders will arrive from this same address.",
+            owner_id=user["id"])
+        msg = {"sent": "test email sent", "no_channel": "email not connected yet"}.get(st, f"test failed: {err}")
+    else:
+        ok, err = notify.verify_retailer_whatsapp(user["id"])
+        msg = "whatsapp connection verified" if ok else f"whatsapp not verified: {err}" if err != "not configured" else "whatsapp not configured yet"
+    from urllib.parse import quote
+    return RedirectResponse(f"/settings?ctest={quote(msg)}", status_code=303)
+
+@router.post("/settings/connect/pause")
+async def settings_connect_pause(request: Request, paused: str = Form("")):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    if user.get("role") != "owner":
+        return RedirectResponse("/settings", status_code=303)
+    models.set_connect_paused(user["id"], 1 if paused == "1" else 0)
+    models.log_audit(user["id"], "settings.connect.pause", paused)
     return RedirectResponse("/settings", status_code=303)
 
 @router.get("/settings/backup")
@@ -656,8 +718,17 @@ async def upi_qr(request: Request, iid: str):
     inv = models.one("SELECT * FROM invoices WHERE id=? AND owner_id=?", (iid, user["id"]))
     if not inv:
         return Response(status_code=404)
-    vpa = user.get("upi_vpa") or config.MANUAL_UPI_ID
-    payee = (user.get("payee_name") or user.get("name") or "").replace(" ", "%20")
+    vpa = (user.get("upi_vpa") or "").strip()
+    if not vpa:
+        # Retailer-owned rule: a customer invoice QR goes to the retailer's own UPI,
+        # never to RecurSaathi's. No VPA on file -> show a setup prompt, not a payment.
+        from PIL import Image, ImageDraw
+        img = Image.new("RGB", (480, 140), "white")
+        d = ImageDraw.Draw(img)
+        d.text((20, 52), "Add your UPI ID in Settings first.", fill=(23, 32, 64))
+        buf = _io.BytesIO(); img.save(buf, format="PNG")
+        return Response(content=buf.getvalue(), media_type="image/png")
+    payee = (user.get("payee_name") or user.get("business") or user.get("name") or "").replace(" ", "%20")
     uri = f"upi://pay?pa={vpa}&pn={payee}&am={inv['amount']/100:.2f}&cu=INR&tn=Invoice%20{inv['number']}"
     img = qrcode.make(uri)
     buf = _io.BytesIO()

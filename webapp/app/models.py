@@ -84,6 +84,14 @@ def init():
             c.execute("ALTER TABLE users ADD COLUMN trial_started_at REAL")
         if "billing_cycle" not in cols:
             c.execute("ALTER TABLE users ADD COLUMN billing_cycle TEXT DEFAULT 'monthly'")
+        c.executescript("""
+        CREATE TABLE IF NOT EXISTS connect(
+          owner_id TEXT PRIMARY KEY, business_name TEXT, logo TEXT,
+          smtp_host TEXT, smtp_port INTEGER, smtp_user TEXT, smtp_pass_enc TEXT,
+          mail_from_name TEXT, wa_phone_id TEXT, wa_token_enc TEXT,
+          paused INTEGER DEFAULT 0, created REAL
+        );
+        """)
 
 def q(sql, args=()):
     with conn() as c:
@@ -478,3 +486,38 @@ def clear_reset(uid_):
 
 def change_password(uid_, pw_hash):
     ex("UPDATE users SET pw_hash=? WHERE id=?", (pw_hash, uid_))
+
+
+# ---- retailer-owned connection (business email + WhatsApp Business) ----
+def get_connect(owner_id):
+    return one("SELECT * FROM connect WHERE owner_id=?", (owner_id,))
+
+def save_connect(owner_id, business_name="", logo="", smtp_host="", smtp_port=587,
+                 smtp_user="", smtp_pass_enc=None, mail_from_name="", wa_phone_id="",
+                 wa_token_enc=None, paused=0):
+    cur = get_connect(owner_id)
+    row = dict(cur) if cur else {}
+    vals = {
+        "owner_id": owner_id,
+        "business_name": (business_name or row.get("business_name", "")).strip(),
+        "logo": logo if logo else row.get("logo", ""),
+        "smtp_host": smtp_host if smtp_host else row.get("smtp_host", ""),
+        "smtp_port": int(smtp_port or row.get("smtp_port") or 587),
+        "smtp_user": (smtp_user or row.get("smtp_user", "")).strip(),
+        "smtp_pass_enc": smtp_pass_enc if smtp_pass_enc is not None else row.get("smtp_pass_enc", ""),
+        "mail_from_name": mail_from_name if mail_from_name else row.get("mail_from_name", ""),
+        "wa_phone_id": (wa_phone_id or row.get("wa_phone_id", "")).strip(),
+        "wa_token_enc": wa_token_enc if wa_token_enc is not None else row.get("wa_token_enc", ""),
+        "paused": int(row.get("paused", 0)) if paused is None else int(paused),
+        "created": row.get("created") or now(),
+    }
+    ex("INSERT OR REPLACE INTO connect(owner_id,business_name,logo,smtp_host,smtp_port,"
+       "smtp_user,smtp_pass_enc,mail_from_name,wa_phone_id,wa_token_enc,paused,created) "
+       "VALUES(:owner_id,:business_name,:logo,:smtp_host,:smtp_port,:smtp_user,"
+       ":smtp_pass_enc,:mail_from_name,:wa_phone_id,:wa_token_enc,:paused,:created)", vals)
+    return get_connect(owner_id)
+
+def set_connect_paused(owner_id, paused):
+    ex("INSERT OR IGNORE INTO connect(owner_id,paused,created) VALUES(?,?,?)",
+       (owner_id, int(paused), now()))
+    ex("UPDATE connect SET paused=? WHERE owner_id=?", (int(paused), owner_id))

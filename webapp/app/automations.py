@@ -175,6 +175,9 @@ def run_due_calls(owner, base_url):
 def run_for_owner(owner, base_url):
     """Queue + attempt delivery for everything due. Returns counts."""
     keys = models.get_automations(owner["id"])
+    cn = models.get_connect(owner["id"])
+    if cn and cn.get("paused"):
+        return {"queued": 0, "sent": 0, "no_channel": 0, "skipped": 0, "failed": 0}
     counts = {"queued": 0, "sent": 0, "no_channel": 0, "skipped": 0, "failed": 0}
     today = time.strftime("%Y-%m-%d")
     if keys.get("due_call", True):
