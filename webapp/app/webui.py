@@ -111,7 +111,14 @@ async def signup(request: Request, name: str = Form(""), business: str = Form(""
         d = auto.DEFAULTS[k]
         models.set_template(u["id"], k, d["email_subject"], d["email_body"])
     models.log_audit(u["id"], "signup", email)
-    resp = RedirectResponse("/dashboard", status_code=303)
+    import uuid as _uuid
+    from . import billing as _billing
+    mid = "m_" + _uuid.uuid4().hex[:10]
+    _m = _billing.onboard(mid, email, u["plan"] or "starter")
+    _m.name = name
+    _m.phone = phone.strip()
+    _billing._persist(_m)
+    resp = RedirectResponse(f"/checkout/{mid}", status_code=303)  # signup lands on checkout, not dashboard
     auth.start_session(resp, u["id"])
     return resp
 
