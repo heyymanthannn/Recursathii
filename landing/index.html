@@ -10,677 +10,489 @@
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"SoftwareApplication","name":"RecurSaathi","applicationCategory":"BusinessApplication","operatingSystem":"Web","description":"Failed payment and revenue recovery for Indian subscription businesses.","offers":{"@type":"Offer","price":"2999","priceCurrency":"INR"}}
 </script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
+/* ============ RecurSaathi — Apple-style liquid glass ============ */
 :root{
-  --ink:#0a0d14; --mut:#5b6472; --faint:#8a93a3;
-  --vio:#6d5ef5; --vio-d:#5a4ce0; --blue:#2f6bff;
-  --bg:#fff; --soft:#f7f8fb; --line:#e7e9f0;
-  --sh:0 1px 2px rgba(16,24,40,.05); --sh2:0 12px 32px rgba(16,24,40,.08);
+  --ink:#1d1d1f; --mut:#515154; --faint:#86868b;
+  --blue:#0071e3; --blue-d:#0066cc;
+  --vio:#7c6cf8; --cyan:#5ac8fa; --pink:#ff9ac4; --amber:#ffb84d;
+  --bg:#f5f5f7; --line:rgba(0,0,0,.08);
+  --glass:rgba(255,255,255,.55);
+  --glass-strong:rgba(255,255,255,.72);
+  --r-lg:28px; --r-md:22px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{font-family:'Times New Roman',Times,Georgia,serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.6}
+html{scroll-behavior:smooth;scroll-padding-top:76px}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI",Inter,Roboto,sans-serif;
+  color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.55;overflow-x:hidden}
 a{color:inherit;text-decoration:none}
-.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
-.btn:hover{transform:scale(1.05)}
-.btn{display:inline-flex;align-items:center;gap:8px;border-radius:10px;padding:12px 22px;font-size:15px;font-weight:600;border:1px solid transparent;cursor:pointer;transition:transform .18s ease,background .18s ease}
-.btn-primary{background:var(--vio);color:#fff;box-shadow:0 1px 2px rgba(109,94,245,.4)}
-.btn-primary:hover{background:var(--vio-d);transform:translateY(-1px)}
-.btn-ghost{background:#fff;color:var(--ink);border-color:var(--line)}
-.btn-ghost:hover{border-color:#c9cede;background:var(--soft)}
-.btn-lg{padding:14px 26px;font-size:16px}
+img{max-width:100%}
+.wrap{max-width:1120px;margin:0 auto;padding:0 22px}
+.wrap-wide{max-width:1240px;margin:0 auto;padding:0 22px}
+
+/* aurora backdrop */
+.aurora{position:fixed;inset:0;z-index:-2;overflow:hidden;pointer-events:none}
+.aurora i{position:absolute;border-radius:50%;filter:blur(90px);opacity:.5;will-change:transform}
+.aurora .b1{width:52vw;height:52vw;background:radial-gradient(circle at 30% 30%,rgba(124,108,248,.55),transparent 65%);top:-18vw;left:-12vw;animation:drift1 26s ease-in-out infinite alternate}
+.aurora .b2{width:46vw;height:46vw;background:radial-gradient(circle at 60% 40%,rgba(90,200,250,.5),transparent 65%);top:16vh;right:-16vw;animation:drift2 32s ease-in-out infinite alternate}
+.aurora .b3{width:40vw;height:40vw;background:radial-gradient(circle at 50% 50%,rgba(255,154,196,.42),transparent 65%);bottom:-14vw;left:18vw;animation:drift3 38s ease-in-out infinite alternate}
+.aurora .b4{width:34vw;height:34vw;background:radial-gradient(circle at 50% 50%,rgba(255,184,77,.35),transparent 65%);bottom:8vh;right:6vw;animation:drift1 30s ease-in-out infinite alternate-reverse}
+@keyframes drift1{from{transform:translate(0,0) scale(1)}to{transform:translate(6vw,4vh) scale(1.12)}}
+@keyframes drift2{from{transform:translate(0,0) scale(1)}to{transform:translate(-7vw,6vh) scale(1.08)}}
+@keyframes drift3{from{transform:translate(0,0) scale(1.05)}to{transform:translate(5vw,-5vh) scale(.95)}}
+
+/* glass primitives */
+.glass{position:relative;background:var(--glass);backdrop-filter:blur(28px) saturate(170%);-webkit-backdrop-filter:blur(28px) saturate(170%);border-radius:var(--r-lg);border:1px solid rgba(255,255,255,.65);box-shadow:0 12px 40px rgba(31,38,135,.09),inset 0 1px 0 rgba(255,255,255,.85)}
+.glass::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(115deg,rgba(255,255,255,.5) 0%,rgba(255,255,255,0) 24%,rgba(255,255,255,0) 72%,rgba(255,255,255,.28) 100%);opacity:.7}
+.gsoft{background:rgba(255,255,255,.4);box-shadow:0 8px 28px rgba(31,38,135,.07),inset 0 1px 0 rgba(255,255,255,.8)}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;padding:13px 26px;font-size:15.5px;font-weight:600;border:1px solid transparent;cursor:pointer;transition:transform .22s cubic-bezier(.2,.7,.3,1.2),box-shadow .22s,background .22s;white-space:nowrap}
+.btn:hover{transform:translateY(-2px)}
+.btn:active{transform:translateY(0) scale(.98)}
+.btn-primary{background:linear-gradient(135deg,#6d5ef5,#8a7bff 55%,#5ac8fa);color:#fff;box-shadow:0 8px 24px rgba(109,94,245,.35),inset 0 1px 0 rgba(255,255,255,.4)}
+.btn-primary:hover{box-shadow:0 12px 32px rgba(109,94,245,.45)}
+.btn-ghost{background:rgba(255,255,255,.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:var(--ink);border-color:rgba(255,255,255,.7);box-shadow:0 4px 16px rgba(31,38,135,.08)}
+.btn-ghost:hover{background:rgba(255,255,255,.8)}
+.btn-lg{padding:16px 32px;font-size:17px}
+.btn-sm{padding:9px 18px;font-size:14px}
 
 /* nav */
-.nav{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.82);backdrop-filter:saturate(180%) blur(14px);border-bottom:1px solid var(--line)}
-.nav .wrap{display:flex;align-items:center;gap:34px;height:64px}
+.nav{position:sticky;top:12px;z-index:60;margin:12px auto 0;max-width:1140px;width:calc(100% - 24px);border-radius:999px;background:rgba(255,255,255,.55);backdrop-filter:blur(26px) saturate(180%);-webkit-backdrop-filter:blur(26px) saturate(180%);border:1px solid rgba(255,255,255,.7);box-shadow:0 10px 34px rgba(31,38,135,.12),inset 0 1px 0 rgba(255,255,255,.9)}
+.nav .in{display:flex;align-items:center;gap:26px;height:58px;padding:0 10px 0 24px}
 .logo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:17px;letter-spacing:-.02em}
-.logo i{width:22px;height:22px;border-radius:6px;background:linear-gradient(135deg,var(--vio),var(--blue));display:inline-block}
-.logo b{font-weight:700}.logo span{color:var(--mut);font-weight:500}
-.nlinks{display:flex;gap:26px;font-size:14.5px;color:var(--mut)}
+.logo i{width:26px;height:26px;border-radius:8px;background:conic-gradient(from 210deg,var(--vio),var(--cyan),var(--pink),var(--vio));display:inline-block;box-shadow:0 3px 10px rgba(124,108,248,.4),inset 0 1px 0 rgba(255,255,255,.5)}
+.nlinks{display:flex;gap:24px;font-size:14px;color:var(--mut);font-weight:500}
+.nlinks a{position:relative;padding:4px 0;transition:color .2s}
 .nlinks a:hover{color:var(--ink)}
 .nbtn{margin-left:auto}
-@media(max-width:820px){.nlinks{display:none}}
+@media(max-width:860px){.nlinks{display:none}}
 
 /* hero */
-.hero{padding:84px 0 64px;text-align:center}
-.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--vio);background:#f2f0ff;border:1px solid #e4e0ff;border-radius:999px;padding:6px 14px;margin-bottom:22px}
-h1{font-size:clamp(34px,5.2vw,58px);line-height:1.08;letter-spacing:-.03em;font-weight:700}
-h1 em{font-style:normal;color:var(--vio)}
-.sub{font-size:clamp(16px,2vw,19px);color:var(--mut);max-width:640px;margin:20px auto 0}
-.ctas{display:flex;gap:12px;justify-content:center;margin-top:32px;flex-wrap:wrap}
-.micro{margin-top:16px;font-size:13px;color:var(--faint)}
+.hero{padding:86px 0 40px;text-align:center;position:relative}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#4b3fd4;background:rgba(124,108,248,.14);border:1px solid rgba(124,108,248,.28);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-radius:999px;padding:7px 16px;margin-bottom:26px}
+h1{font-size:clamp(42px,6.6vw,78px);line-height:1.04;letter-spacing:-.045em;font-weight:700}
+h1 .grad{background:linear-gradient(100deg,#6d5ef5 10%,#9a6bff 40%,#5ac8fa 90%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{font-size:clamp(17px,2.1vw,21px);color:var(--mut);max-width:660px;margin:22px auto 0}
+.ctas{display:flex;gap:14px;justify-content:center;margin-top:34px;flex-wrap:wrap}
+.micro{margin-top:18px;font-size:13px;color:var(--faint)}
 
 /* dashboard mock */
-.mockwrap{margin:56px auto 0;max-width:960px;padding:0 24px}
-.mock{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--sh2);overflow:hidden}
-.mockbar{display:flex;gap:6px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--soft)}
-.mockbar i{width:9px;height:9px;border-radius:50%;background:#dfe3ec}
-.mockbody{display:grid;grid-template-columns:150px 1fr;min-height:300px}
-.mockside{border-right:1px solid var(--line);padding:16px 12px;display:flex;flex-direction:column;gap:8px}
-.mockside i{height:9px;border-radius:5px;background:#eef0f6;display:block}
-.mockside i.on{background:#e8e5ff}
-.mockmain{padding:20px}
-.mkrow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
-.mkt{border:1px solid var(--line);border-radius:10px;padding:12px 14px}
-.mkt s{display:block;font-size:10.5px;color:var(--faint);text-decoration:none}
-.mkt b{font-size:18px;letter-spacing:-.01em}
-.mkchart{display:flex;align-items:flex-end;gap:8px;height:110px;border:1px solid var(--line);border-radius:10px;padding:14px}
-.mkchart i{flex:1;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,var(--vio),var(--blue));opacity:.9}
-.mnote{text-align:center;font-size:12px;color:var(--faint);margin-top:12px}
-@media(max-width:640px){.mockbody{grid-template-columns:1fr}.mockside{display:none}.mkrow{grid-template-columns:repeat(2,1fr)}}
+.mockwrap{margin:60px auto 0;max-width:1020px;position:relative}
+.mock{overflow:hidden;padding:0}
+.mockbar{display:flex;align-items:center;gap:7px;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.5)}
+.mockbar i{width:10px;height:10px;border-radius:50%;background:rgba(0,0,0,.14)}
+.mockbar b{margin-left:12px;font-size:12.5px;font-weight:600;color:var(--faint);letter-spacing:.02em}
+.mockin{padding:26px 28px 30px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.stat{border-radius:var(--r-md);padding:16px 18px;background:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.65);box-shadow:inset 0 1px 0 rgba(255,255,255,.85)}
+.stat small{display:block;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
+.stat b{display:block;font-size:clamp(19px,2.4vw,26px);letter-spacing:-.02em;margin-top:5px}
+.stat.g b{background:linear-gradient(90deg,#34c759,#2bd47d);-webkit-background-clip:text;background-clip:text;color:transparent}
+.stat.o b{background:linear-gradient(90deg,#ff9f0a,#ffb84d);-webkit-background-clip:text;background-clip:text;color:transparent}
+.stat.r b{background:linear-gradient(90deg,#ff5f57,#ff7b72);-webkit-background-clip:text;background-clip:text;color:transparent}
+.mockgrid{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;margin-top:16px}
+@media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}.mockgrid{grid-template-columns:1fr}}
+.chartbox,.movesbox{border-radius:var(--r-md);padding:18px 20px;background:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.65);box-shadow:inset 0 1px 0 rgba(255,255,255,.85)}
+.chartbox h4,.movesbox h4{font-size:12.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);margin-bottom:12px}
+.mkchart{display:flex;align-items:flex-end;gap:7px;height:120px}
+.mkchart i{flex:1;border-radius:8px 8px 3px 3px;background:linear-gradient(180deg,#8a7bff,#5ac8fa);opacity:.92;transform-origin:bottom}
+.moves{list-style:none;display:flex;flex-direction:column;gap:10px;font-size:14px}
+.moves li{display:flex;gap:10px;align-items:flex-start}
+.moves .dot{flex:none;width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#6d5ef5,#5ac8fa);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px;box-shadow:0 3px 8px rgba(109,94,245,.35)}
+.moves b{font-weight:600}
+.mocknote{margin-top:14px;font-size:12.5px;color:var(--faint);text-align:center}
+
+/* what's new */
+.whatsnew{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:34px auto 0}
+.wnchip{display:inline-flex;align-items:center;gap:9px;border-radius:999px;padding:9px 16px;font-size:13.5px;background:rgba(255,255,255,.5);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.7);box-shadow:0 6px 18px rgba(31,38,135,.07)}
+.wnchip .tag{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#fff;border-radius:999px;padding:3px 9px}
+.wnchip .tag.new{background:linear-gradient(135deg,#34c759,#2bd47d)}
+.wnchip .tag.imp{background:linear-gradient(135deg,#6d5ef5,#8a7bff)}
+.wnchip .d{color:var(--faint);font-weight:600}
 
 /* sections */
-section{padding:76px 0}
-section.alt{background:var(--soft)}
-.shead{text-align:center;max-width:620px;margin:0 auto 44px}
-h2{font-size:clamp(26px,3.4vw,36px);letter-spacing:-.025em;line-height:1.15;font-weight:700}
-h2 em{font-style:normal;color:var(--vio)}
-.ssub{color:var(--mut);margin-top:12px;font-size:16.5px}
+section{padding:96px 0}
+.shead{text-align:center;max-width:760px;margin:0 auto 52px}
+.shead .kick{display:block;font-size:13.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#6d5ef5;margin-bottom:14px}
+h2{font-size:clamp(30px,4.4vw,52px);line-height:1.08;letter-spacing:-.035em;font-weight:700}
+.shead p{margin-top:16px;font-size:17px;color:var(--mut)}
+.alt{background:transparent}
 
-/* features */
+/* how it works */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+@media(max-width:860px){.steps{grid-template-columns:1fr}}
+.step{padding:30px 28px}
+.stepnum{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;color:#fff;background:linear-gradient(135deg,#6d5ef5,#5ac8fa);box-shadow:0 8px 20px rgba(109,94,245,.35),inset 0 1px 0 rgba(255,255,255,.4);margin-bottom:18px}
+.step h3{font-size:21px;letter-spacing:-.02em;margin-bottom:9px}
+.step p{font-size:15px;color:var(--mut)}
+
+/* features grid */
 .fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
-.fcard{background:#fff;border:1px solid var(--line);border-radius:14px;padding:26px;box-shadow:var(--sh);transition:.2s}
-.fcard:hover{box-shadow:var(--sh2);transform:translateY(-2px)}
-.ficon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#f2f0ff;margin-bottom:14px}
-.ficon svg{width:19px;height:19px;stroke:var(--vio);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.fcard h3{font-size:16.5px;font-weight:600;letter-spacing:-.01em;margin-bottom:7px}
+@media(max-width:980px){.fgrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){.fgrid{grid-template-columns:1fr}}
+.fcard{padding:26px 26px 24px;border-radius:var(--r-md)}
+.fcard .ric{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:21px;margin-bottom:15px;background:rgba(124,108,248,.14);border:1px solid rgba(124,108,248,.2)}
+.fcard h3{font-size:19px;letter-spacing:-.02em;margin-bottom:8px}
 .fcard p{font-size:14.5px;color:var(--mut)}
-@media(max-width:900px){.fgrid{grid-template-columns:1fr 1fr}}
-@media(max-width:600px){.fgrid{grid-template-columns:1fr}}
+.badge{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#1d7a37;background:rgba(52,199,89,.16);border:1px solid rgba(52,199,89,.3);border-radius:999px;padding:3px 10px;margin-bottom:12px}
 
-/* radar split */
-.rsplit{display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:center}
-@media(max-width:880px){.rsplit{grid-template-columns:1fr}}
-.rlist{display:flex;flex-direction:column;gap:12px;margin-top:26px}
-.ritem{display:flex;gap:14px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;box-shadow:var(--sh);align-items:flex-start}
-.rnum{flex:none;width:26px;height:26px;border-radius:8px;font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center}
-.rnum.a{background:#f59e0b}.rnum.b{background:var(--vio)}.rnum.c{background:#dc2626}
-.ritem b{font-size:15px;display:block}
-.ritem p{font-size:13.5px;color:var(--mut)}
+/* radar */
+.rgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:stretch}
+@media(max-width:860px){.rgrid{grid-template-columns:1fr}}
+.rlist{display:flex;flex-direction:column;gap:14px}
+.ritem{padding:22px 24px;border-radius:var(--r-md);display:flex;gap:16px;align-items:flex-start}
+.ritem .ic{flex:none;width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:19px;background:rgba(90,200,250,.16);border:1px solid rgba(90,200,250,.25)}
+.ritem h3{font-size:17.5px;margin-bottom:5px;letter-spacing:-.01em}
+.ritem p{font-size:14px;color:var(--mut)}
+.radarpanel{padding:26px}
+.radarpanel h4{font-size:12.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);margin-bottom:14px}
+.rrow{display:flex;justify-content:space-between;align-items:center;padding:13px 4px;border-bottom:1px solid rgba(0,0,0,.06);font-size:14.5px}
+.rrow:last-of-type{border-bottom:none}
+.rrow .who b{display:block;font-weight:600}
+.rrow .who span{font-size:12.5px;color:var(--faint)}
+.rrow .amt{font-weight:700;letter-spacing:-.01em}
+.pill{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:999px;padding:4px 10px}
+.pill.red{color:#c0201a;background:rgba(255,95,87,.16);border:1px solid rgba(255,95,87,.3)}
+.pill.amber{color:#a05a00;background:rgba(255,159,10,.16);border:1px solid rgba(255,159,10,.3)}
+.pill.blue{color:#0058b0;background:rgba(0,113,227,.12);border:1px solid rgba(0,113,227,.25)}
+.panelnote{margin-top:12px;font-size:12px;color:var(--faint);text-align:center}
 
 /* analytics */
-.adata{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--sh2);padding:28px;max-width:920px;margin:0 auto}
-.arow{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
-.ak{border:1px solid var(--line);border-radius:12px;padding:16px 18px}
-.ak s{display:block;font-size:12px;color:var(--faint);text-decoration:none}
-.ak b{font-size:24px;letter-spacing:-.02em}
-.ak i{font-style:normal;font-size:12px;font-weight:600;display:block;margin-top:2px}
-.up{color:#16a34a}.dn{color:#dc2626}
-.achart{display:flex;align-items:flex-end;gap:10px;height:150px}
-.achart i{flex:1;border-radius:8px 8px 3px 3px;background:linear-gradient(180deg,var(--vio),var(--blue))}
-.afoot{display:flex;gap:10px;margin-top:10px}
-.afoot span{flex:1;text-align:center;font-size:11px;color:var(--faint)}
-.anote{text-align:center;font-size:12px;color:var(--faint);margin-top:12px}
-@media(max-width:640px){.arow{grid-template-columns:1fr 1fr}}
+.acenter{max-width:880px;margin:0 auto}
+.achart{display:flex;align-items:flex-end;gap:10px;height:190px;margin-top:8px}
+.achart i{flex:1;border-radius:10px 10px 4px 4px;background:linear-gradient(180deg,#8a7bff,#5ac8fa);opacity:.92;transform-origin:bottom}
+.alabels{display:flex;gap:10px;margin-top:8px}
+.alabels span{flex:1;text-align:center;font-size:11.5px;color:var(--faint);font-weight:600}
 
 /* pricing */
 .pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:stretch}
-.pcard:hover{transform:scale(1.02)}.pcard{background:#fff;border:1px solid var(--line);border-radius:16px;padding:30px 26px;box-shadow:var(--sh);display:flex;flex-direction:column;position:relative}
-.pcard.pop{border:1.5px solid var(--vio);box-shadow:0 12px 36px rgba(109,94,245,.14)}
-.ptag{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--vio);color:#fff;font-size:11.5px;font-weight:600;border-radius:999px;padding:4px 14px;white-space:nowrap}
-.pcard h3{font-size:16px;font-weight:600}
-.pfor{font-size:13px;color:var(--faint);margin-top:2px}
-.pprice{font-size:34px;font-weight:700;letter-spacing:-.02em;margin:16px 0 2px}
-.pprice span{font-size:14px;color:var(--faint);font-weight:500}
-.pfeat{list-style:none;margin:18px 0 24px;display:flex;flex-direction:column;gap:9px;font-size:14px;color:var(--mut)}
-.pfeat li{display:flex;gap:9px;align-items:flex-start}
-.pfeat svg{flex:none;width:16px;height:16px;margin-top:3px;stroke:var(--vio);fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-.pcard .btn{margin-top:auto;justify-content:center}
-@media(max-width:900px){.pgrid{grid-template-columns:1fr;max-width:420px;margin:0 auto}}
+@media(max-width:880px){.pgrid{grid-template-columns:1fr;max-width:440px;margin:0 auto}}
+.pcard{padding:32px 30px;display:flex;flex-direction:column;border-radius:var(--r-lg)}
+.pcard .plan{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.pcard h3{font-size:26px;letter-spacing:-.02em;margin-top:6px}
+.pcard .cap{font-size:14px;color:var(--mut);margin-top:6px}
+.price{font-size:clamp(30px,3.6vw,40px);font-weight:700;letter-spacing:-.03em;margin:20px 0 4px}
+.price small{font-size:15px;font-weight:600;color:var(--faint)}
+.pcard ul{list-style:none;margin:18px 0 24px;display:flex;flex-direction:column;gap:9px;font-size:14px;color:var(--mut)}
+.pcard ul li::before{content:"✓";color:#34c759;font-weight:700;margin-right:9px}
+.pcard .btn{margin-top:auto}
+.pcard.hot{background:linear-gradient(160deg,rgba(124,108,248,.16),rgba(90,200,250,.14)),rgba(255,255,255,.6);box-shadow:0 18px 48px rgba(109,94,245,.2),inset 0 1px 0 rgba(255,255,255,.9)}
+.pop{position:absolute;top:-13px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#fff;background:linear-gradient(135deg,#6d5ef5,#8a7bff);border-radius:999px;padding:5px 14px;box-shadow:0 6px 16px rgba(109,94,245,.4)}
+.pcardwrap{position:relative}
+.pnote{text-align:center;margin-top:26px;font-size:13.5px;color:var(--faint)}
+
+/* who for */
+.chips{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:26px}
+.chip{border-radius:999px;padding:8px 16px;font-size:13px;font-weight:600;background:rgba(255,255,255,.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.7);box-shadow:0 4px 14px rgba(31,38,135,.06)}
+.wgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+@media(max-width:980px){.wgrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.wgrid{grid-template-columns:1fr}}
+.wcard{padding:24px 22px;border-radius:var(--r-md)}
+.wcard h3{font-size:17px;margin-bottom:7px}
+.wcard p{font-size:13.5px;color:var(--mut)}
+.moneynote{text-align:center;margin-top:30px;font-size:15px;color:var(--mut)}
+.moneynote b{color:var(--ink)}
+
+/* cta band */
+.ctaband{padding:30px 0 90px}
+.ctapanel{padding:64px 30px;text-align:center;background:linear-gradient(140deg,rgba(109,94,245,.9),rgba(122,110,250,.75) 45%,rgba(90,200,250,.75));box-shadow:0 30px 70px rgba(109,94,245,.35),inset 0 1px 0 rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.5)}
+.ctapanel h2{color:#fff}
+.ctapanel p{color:rgba(255,255,255,.85);font-size:17px;margin-top:12px}
+.ctapanel .ctas{margin-top:30px}
+.ctapanel .micro{color:rgba(255,255,255,.7)}
 
 /* faq */
-.faq{max-width:720px;margin:0 auto}
-.faq details{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px 22px;margin-bottom:12px;box-shadow:var(--sh)}
-.faq summary{font-size:15.5px;font-weight:600;cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.faqlist{max-width:780px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.faq details{border-radius:var(--r-md);padding:0;overflow:hidden}
+.faq summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:20px 24px;font-size:16.5px;font-weight:600;letter-spacing:-.01em}
 .faq summary::-webkit-details-marker{display:none}
-.faq summary::after{content:'+';color:var(--faint);font-size:20px;font-weight:400;transition:.2s}
-.faq details[open] summary::after{transform:rotate(45deg)}
-.faq p{margin-top:10px;font-size:14.5px;color:var(--mut)}
+.faq summary .plus{flex:none;width:26px;height:26px;border-radius:50%;background:rgba(124,108,248,.14);border:1px solid rgba(124,108,248,.25);display:flex;align-items:center;justify-content:center;font-size:16px;color:#6d5ef5;transition:transform .25s}
+.faq details[open] .plus{transform:rotate(45deg)}
+.faq details p{padding:0 24px 20px;font-size:14.5px;color:var(--mut)}
 
 /* footer */
-footer{border-top:1px solid var(--line);background:var(--soft);padding:52px 0 36px}
-.fgrid2{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:32px}
-@media(max-width:720px){.fgrid2{grid-template-columns:1fr 1fr}}
-.fcol h4{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:12px}
-.fcol a{display:block;font-size:14px;color:var(--mut);padding:4px 0}
-.fcol a:hover{color:var(--ink)}
-.fbrand p{font-size:14px;color:var(--mut);margin-top:10px;max-width:280px}
-.fbottom{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);margin-top:36px;padding-top:22px;font-size:13px;color:var(--faint)}
+footer{padding:60px 0 40px;border-top:1px solid var(--line)}
+.fgrid2{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:30px}
+@media(max-width:860px){.fgrid2{grid-template-columns:1fr 1fr}}
+footer p{font-size:13.5px;color:var(--mut);max-width:300px}
+footer h4{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-bottom:14px}
+footer ul{list-style:none;display:flex;flex-direction:column;gap:9px;font-size:14px;color:var(--mut)}
+footer a:hover{color:var(--ink)}
+.fbottom{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-top:44px;padding-top:22px;border-top:1px solid var(--line);font-size:12.5px;color:var(--faint)}
+.flag{display:inline-flex;align-items:center;gap:6px}
 
-/* modal (working signup) */
-.modal{position:fixed;inset:0;background:rgba(10,13,20,.5);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
-.modal.open{display:flex}
-.modal-card{background:#fff;border-radius:16px;padding:36px 32px;width:100%;max-width:400px;position:relative;box-shadow:0 24px 60px rgba(10,13,20,.25)}
-.modal-card h3{font-size:22px;font-weight:700;letter-spacing:-.01em}
-.msub{font-size:14px;color:var(--mut);margin:6px 0 20px}
-.modal-card input{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 14px;font-size:15px;font-family:inherit;margin-bottom:10px;outline:none}
-.modal-card input:focus{border-color:var(--vio);box-shadow:0 0 0 3px rgba(109,94,245,.12)}
-.modal-card .btn{width:100%;justify-content:center;border:none;font-family:inherit}
-.mclose{position:absolute;top:14px;right:16px;background:none;border:none;font-size:22px;color:var(--faint);cursor:pointer}
-.mnote{font-size:13.5px;color:var(--mut);margin-top:12px;min-height:18px}
-/* ================= HAND-CRAFT PASS v3 (human-built SaaS look) ================= */
-:root{--mono:'SF Mono',ui-monospace,Menlo,Consolas,'Liberation Mono',monospace}
-body{letter-spacing:-.006em}
-.kpi,.pprice,.ak b,.mkt b,.bname,.pprice span{font-variant-numeric:tabular-nums}
-::selection{background:#eceaff;color:#1a1147}
-:focus-visible{outline:2px solid var(--vio);outline-offset:2px;border-radius:6px}
-*{scrollbar-width:thin;scrollbar-color:#cdd2de transparent}
-::-webkit-scrollbar{width:10px;height:10px}
-::-webkit-scrollbar-thumb{background:#cdd2de;border-radius:8px;border:2px solid #fff;background-clip:padding-box}
-::-webkit-scrollbar-track{background:transparent}
-/* hero: soft stage light + faint grid, like a well-lit product page */
-.hero{position:relative}
-.hero::before{content:'';position:absolute;left:50%;top:-40px;width:860px;height:540px;transform:translateX(-50%);pointer-events:none;z-index:-1;background:
-  radial-gradient(560px 320px at 50% 16%,rgba(109,94,245,.10),transparent 68%),
-  radial-gradient(430px 260px at 66% 32%,rgba(47,107,255,.07),transparent 70%)}
-.hero::after{content:'';position:absolute;left:0;right:0;top:0;height:440px;pointer-events:none;z-index:-2;
-  background-image:linear-gradient(rgba(16,24,40,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(16,24,40,.045) 1px,transparent 1px);
-  background-size:44px 44px;
-  -webkit-mask-image:radial-gradient(620px 320px at 50% 0,#000 30%,transparent 74%);
-  mask-image:radial-gradient(620px 320px at 50% 0,#000 30%,transparent 74%)}
-/* capability chips: what the engine actually does, stated plainly */
-.caps{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:22px}
-.caps span{font-size:12.5px;font-weight:500;color:var(--mut);background:#fff;border:1px solid var(--line);border-radius:999px;padding:5px 12px;display:inline-flex;align-items:center;gap:7px}
-.caps span::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--vio);opacity:.75}
-/* small-caps section labels, Linear style */
-.slabel{display:block;text-align:center;font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--vio);margin-bottom:12px}
-.slabel::before{content:'';display:inline-block;width:22px;height:1px;background:var(--vio);vertical-align:middle;margin-right:10px;opacity:.45}
-.slabel::after{content:'';display:inline-block;width:22px;height:1px;background:var(--vio);vertical-align:middle;margin-left:10px;opacity:.45}
-.rsplit .slabel{text-align:left}
-.rsplit .slabel::before{display:none}
-.rsplit .slabel::after{display:none}
-/* changelog strip: dated real entries, the most human thing a SaaS page has */
-.chlog{max-width:660px;margin:28px auto 0;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:var(--sh);overflow:hidden}
-.chlog h4{font-size:11.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);padding:12px 16px 9px;border-bottom:1px solid var(--line2)}
-.chlog .crow{display:flex;gap:12px;align-items:baseline;padding:10px 16px;font-size:13.5px;flex-wrap:wrap}
-.chlog .crow+.crow{border-top:1px solid var(--line2)}
-.chlog .cdate{flex:none;font-family:var(--mono);font-size:11.5px;color:var(--faint);min-width:56px}
-.chlog .ctag{flex:none;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border-radius:5px;padding:2px 7px}
-.chlog .ctag.new{background:#e8f7ee;color:#15803d}
-.chlog .ctag.impr{background:#f0edff;color:var(--vio)}
-.chlog .crow p{color:var(--mut);font-size:13px}
-/* buttons: quiet depth instead of the hover pop */
-.btn-primary{box-shadow:0 1px 2px rgba(16,24,40,.12),inset 0 0 0 1px rgba(255,255,255,.14)}
-.btn-primary:hover{transform:none;box-shadow:0 3px 12px rgba(109,94,245,.26)}
-.btn-ghost{box-shadow:0 1px 2px rgba(16,24,40,.04)}
-/* cards: gentle lift, border warms toward the accent */
-.fcard{background:linear-gradient(180deg,#fff,#fdfdff)}
-.fcard:hover{transform:translateY(-3px);border-color:#ded9ff}
-.fcard,.ritem,.ak,.mkt{transition:.18s}
-/* mock: sits on the page, not above it */
-.mock{border-radius:18px}
-/* pricing */
-.pcard.pop .btn{box-shadow:0 2px 10px rgba(109,94,245,.25)}
-/* faq: quieter cards */
-.faq details{box-shadow:var(--sh)}
-/* modal + popup match */
-.modal-card{border:1px solid var(--line)}
-.pop-card{border:1px solid #dcd6ff;box-shadow:0 20px 50px rgba(109,94,245,.16),0 1px 2px rgba(16,24,40,.06)}
-/* ================= HERO BACKGROUND (sunset art) ================= */
+/* signup modal */
+.modal{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .28s}
+.modal.open{opacity:1;pointer-events:auto}
+.modal .veil{position:absolute;inset:0;background:rgba(20,20,30,.35);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%)}
+.mcard{position:relative;width:100%;max-width:460px;padding:36px 34px 30px;border-radius:32px;transform:translateY(14px) scale(.97);transition:transform .32s cubic-bezier(.2,.8,.3,1.15)}
+.modal.open .mcard{transform:none}
+.mclose{position:absolute;top:16px;right:18px;width:32px;height:32px;border-radius:50%;border:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.6);color:var(--mut);font-size:16px;cursor:pointer}
+.mcard h3{font-size:24px;letter-spacing:-.02em}
+.mcard .msub{font-size:14px;color:var(--mut);margin-top:6px}
+.mcard form{margin-top:22px;display:flex;flex-direction:column;gap:12px}
+.mcard input{width:100%;border-radius:14px;border:1px solid rgba(0,0,0,.1);background:rgba(255,255,255,.75);padding:13px 15px;font-size:15px;font-family:inherit;outline:none;transition:border .2s,box-shadow .2s}
+.mcard input:focus{border-color:#6d5ef5;box-shadow:0 0 0 4px rgba(109,94,245,.18)}
+.mcard .btn{width:100%}
+.fmsg{font-size:13.5px;color:#c0201a;min-height:18px}
+.fmsg.ok{color:#1d7a37}
 
-/* ---------- legal pages ---------- */
-.legal{max-width:780px;margin:0 auto;padding:64px 24px 80px}
-.legal h1{font-size:34px;letter-spacing:-.025em}
-.legal .lup{font-size:13px;color:var(--faint);margin:8px 0 26px}
-.legal h2{font-size:18px;font-weight:600;letter-spacing:-.01em;margin:30px 0 8px}
-.legal p{color:var(--mut);font-size:15px}
-.legal a{color:var(--vio)}
-.js .legal{animation:rise .6s cubic-bezier(.2,.65,.25,1) both}
+/* promo popup */
+.popwrap{position:fixed;inset:0;z-index:90;display:flex;align-items:flex-end;justify-content:center;padding:26px;opacity:0;pointer-events:none;transition:opacity .3s}
+.popwrap.open{opacity:1;pointer-events:auto}
+.popwrap .veil{position:absolute;inset:0;background:rgba(20,20,30,.28);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.popcard{position:relative;width:100%;max-width:440px;padding:30px 30px 26px;border-radius:28px;transform:translateY(18px);transition:transform .3s cubic-bezier(.2,.8,.3,1.15)}
+.popwrap.open .popcard{transform:none}
+.popcard h3{font-size:21px;letter-spacing:-.02em}
+.popcard p{font-size:14.5px;color:var(--mut);margin-top:8px}
+.popcard .ctas{justify-content:flex-start;margin-top:20px}
+.pclose{position:absolute;top:14px;right:16px;width:30px;height:30px;border-radius:50%;border:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.6);color:var(--mut);font-size:15px;cursor:pointer}
+.pdismiss{background:none;border:none;color:var(--faint);font-size:13px;cursor:pointer;margin-top:12px}
 
-/* ---------- motion ---------- */
-@keyframes rise{from{opacity:0;transform:translateY(24px) scale(.9)}to{opacity:1;transform:translateY(0) scale(1)}}
-.js .reveal.in{animation:rise .65s cubic-bezier(.2,.65,.25,1)}
-.js .hero .wrap>*{animation:rise .75s cubic-bezier(.2,.65,.25,1) both}
-.js .hero .wrap>*:nth-child(2){animation-delay:.07s}
-.js .hero .wrap>*:nth-child(3){animation-delay:.14s}
-.js .hero .wrap>*:nth-child(4){animation-delay:.21s}
-.js .hero .wrap>*:nth-child(5){animation-delay:.28s}
-.js .mockwrap{animation:rise .9s .3s cubic-bezier(.2,.65,.25,1) both}
-.js .mkchart.in i,.js .achart.in i{animation:growbar .9s cubic-bezier(.2,.65,.25,1);transform-origin:bottom}
-@keyframes growbar{from{transform:scaleY(.05)}to{transform:scaleY(1)}}
-.nlinks a{position:relative}
-.nlinks a::after{content:'';position:absolute;left:0;right:0;bottom:-5px;height:1.5px;background:var(--vio);transform:scaleX(0);transform-origin:left;transition:transform .25s}
-.nlinks a:hover::after{transform:scaleX(1)}.nlinks a{transition:transform .18s ease}.nlinks a:hover{transform:scale(1.04)}
-@media(prefers-reduced-motion:reduce){.js .reveal.in,.js .mkchart.in i,.js .achart.in i{animation:none!important}.js .hero .wrap>*,.js .mockwrap,.js .legal{animation:none!important}.nlinks a::after{transition:none}.nlinks a{transition:none}
+/* cookie bar */
+.cbar{position:fixed;left:50%;bottom:18px;transform:translate(-50%,90px);z-index:80;display:flex;align-items:center;gap:14px;max-width:620px;width:calc(100% - 32px);padding:14px 16px 14px 22px;border-radius:999px;font-size:13.5px;color:var(--mut);opacity:0;transition:transform .4s cubic-bezier(.2,.8,.3,1.1),opacity .4s}
+.cbar.on{transform:translate(-50%,0);opacity:1}
 
-/* ---------- premium pass v4 ---------- */
-h1{font-size:clamp(38px,5.6vw,64px);font-weight:800;letter-spacing:-.038em;line-height:1.04}
-.sub{font-size:clamp(17px,2vw,20px);line-height:1.55}
-h2{font-size:clamp(28px,3.8vw,42px);letter-spacing:-.03em}
-section{padding:96px 0}
-.slabel{font-size:12px;letter-spacing:.14em}
-.eyebrow{background:rgba(242,240,255,.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 1px 2px rgba(16,24,40,.05)}
-.btn{border-radius:12px;padding:13px 24px;letter-spacing:-.01em}
-.btn-primary{background:linear-gradient(135deg,#6d28d9,#8b5cf6);box-shadow:0 6px 20px -6px rgba(109,40,217,.5),inset 0 1px 0 rgba(255,255,255,.18)}
-.btn-primary:hover{box-shadow:0 10px 28px -8px rgba(109,40,217,.55);transform:translateY(-1px)}
-.btn-ghost{border-color:#e6e2f7;background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.05)}
-.fcard{border-radius:18px;padding:26px;background:linear-gradient(180deg,#fff,#fcfbff);box-shadow:0 1px 2px rgba(16,24,40,.04),0 16px 40px -20px rgba(16,24,40,.14)}
-.fcard:hover{transform:translateY(-4px);box-shadow:0 2px 4px rgba(16,24,40,.05),0 24px 48px -20px rgba(109,40,217,.18)}
-.ficon{width:44px;height:44px;border-radius:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.6)}
-.nav{backdrop-filter:blur(14px) saturate(1.4);-webkit-backdrop-filter:blur(14px) saturate(1.4);background:rgba(255,255,255,.72);border-bottom:1px solid rgba(16,24,40,.06)}
-.logo{font-weight:800;letter-spacing:-.03em;font-size:18px}
-.pcard{border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 20px 48px -24px rgba(16,24,40,.16)}
-.pcard:hover{transform:translateY(-4px)}
-.pcard.pop{border:1.5px solid var(--vio);box-shadow:0 12px 40px -12px rgba(109,40,217,.25)}
-.ptag{background:linear-gradient(135deg,#6d28d9,#8b5cf6);box-shadow:0 4px 12px -4px rgba(109,40,217,.5)}
-.modal-card{border-radius:20px;box-shadow:0 32px 80px -24px rgba(16,24,40,.35)}
-.mockwrap{box-shadow:0 40px 100px -32px rgba(16,24,40,.35),0 2px 6px rgba(16,24,40,.08)}
-.mkt{font-weight:600}
-.rnum{font-weight:700;letter-spacing:-.02em}
-@media(max-width:760px){section{padding:72px 0}}
-
-
-.trust{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:34px}
-.trust span{font-size:12.5px;font-weight:600;letter-spacing:.02em;color:var(--mut);border:1px solid var(--line);border-radius:999px;padding:7px 14px;background:#fff}
-.trustnote{text-align:center;color:var(--faint);font-size:12.5px;margin-top:14px}
-#whofor .fgrid{grid-template-columns:1fr 1fr}
-@media(max-width:600px){#whofor .fgrid{grid-template-columns:1fr}}
-#cbar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:80;display:none;gap:14px;align-items:center;background:#131722;border:1px solid #262b3a;border-radius:12px;padding:13px 18px;box-shadow:0 10px 30px rgba(0,0,0,.45);max-width:calc(100vw - 32px);animation:rise .5s ease both}
-#cbar.on{display:flex;flex-wrap:wrap}
-#cbar p{margin:0;font-size:13.5px;color:#aab2c5}
-#cbar button{all:unset;cursor:pointer;font-size:13.5px;font-weight:600;color:#fff;background:linear-gradient(135deg,#8b7bff,#6d5ef5);border-radius:9px;padding:9px 16px;transition:transform .18s ease}
-#cbar button:hover{transform:scale(1.06)}
-@media(max-width:600px){#cbar{flex-direction:column;text-align:center}}
-</style>
-<style>
-
-/* ---------- design polish v5 ---------- */
-#features{background:linear-gradient(180deg,#fff 0%,#faf9ff 60%,#fff 100%)}
-#radar{background:linear-gradient(180deg,#fff 0%,#f7f6fe 55%,#fff 100%)}
-#pricing{background:linear-gradient(180deg,#fff 0%,#faf9ff 50%,#fff 100%)}
-.faq details{padding:18px 22px;border-radius:14px;transition:background .2s}
-.faq details[open]{background:#fbfaff}
-.faq summary{font-weight:600;letter-spacing:-.01em;cursor:pointer}
-.faq details[open] summary{color:var(--vio)}
-.mcta{display:none}
-@media(max-width:760px){
-  .mcta{display:block;position:fixed;left:12px;right:12px;bottom:12px;z-index:80}
-  .mcta .btn{width:100%;justify-content:center;box-shadow:0 12px 30px -8px rgba(109,40,217,.5)}
-  footer{padding-bottom:88px}
-}
-@media(prefers-reduced-motion:reduce){.faq details{transition:none}}
-
-/* ---------- friendly pass v6 ---------- */
-.btn-primary{background:linear-gradient(135deg,#7c3aed,#ec4899)}
-.nbtn{background:linear-gradient(135deg,#7c3aed,#ec4899)}
-.hgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:8px}
-.hcard:hover{transform:scale(1.02)}.hcard{background:#fff;border:1px solid #eee6fb;border-radius:20px;padding:28px 26px;box-shadow:0 10px 30px -18px rgba(76,29,149,.25)}
-.hnum{display:inline-flex;width:44px;height:44px;border-radius:50%;align-items:center;justify-content:center;font-weight:800;color:#fff;background:linear-gradient(135deg,#7c3aed,#ec4899);margin-bottom:14px;font-size:18px}
-.ftag{display:inline-block;font-size:12px;font-weight:700;color:#7c3aed;background:#f6f2ff;border:1px solid #e6d9fd;border-radius:999px;padding:3px 10px;margin:8px 0 6px}
-#how{background:linear-gradient(180deg,#fff 0%,#fdf5fb 55%,#fff 100%)}
-.fcard h3{margin-bottom:0}
-@media(max-width:900px){.hgrid{grid-template-columns:1fr}}
-@media(prefers-reduced-motion:reduce){.hcard{transition:none}}
-
-/* ---------- modulify-style cta band ---------- */
-.ctaband{text-align:center;padding:96px 0 88px;background:linear-gradient(135deg,#7c3aed,#ec4899);border-radius:0}
-.ctaband h2{color:#fff;font-size:clamp(30px,4.6vw,48px)}
-.ctaband h2 em{font-style:normal;opacity:.92}
-.ctaband p{color:rgba(255,255,255,.88);max-width:520px;margin:14px auto 26px}
-.ctaband .btn-primary{background:#fff;color:#6d28d9}
-.ctaband .micro{color:rgba(255,255,255,.75);margin-top:14px}
-</style>
-
-
-<style>
-/* ---------- apple/nike pass v8: photo hero out, clean stage in ---------- */
-.hero{background:#fff;padding:118px 0 72px;position:relative;overflow:hidden}
-.hero::before,.hero::after{content:'';position:absolute;border-radius:50%;filter:blur(90px);z-index:0;pointer-events:none;opacity:.55}
-.hero::before{width:540px;height:540px;left:-140px;top:-180px;background:radial-gradient(circle at 35% 35%,rgba(124,58,237,.34),transparent 70%);animation:drift1 16s ease-in-out infinite alternate}
-.hero::after{width:580px;height:580px;right:-160px;top:-80px;background:radial-gradient(circle at 60% 40%,rgba(236,72,153,.26),transparent 70%);animation:drift2 20s ease-in-out infinite alternate}
-@keyframes drift1{from{transform:translate(0,0) scale(1)}to{transform:translate(130px,70px) scale(1.16)}}
-@keyframes drift2{from{transform:translate(0,0) scale(1.06)}to{transform:translate(-110px,90px) scale(.94)}}
-.hero .wrap{position:relative;z-index:1}
-.hero .eyebrow{background:rgba(255,255,255,.85);border:1px solid #ececf2;color:#0a0a0c;box-shadow:0 1px 2px rgba(16,24,40,.06)}
-.hero h1{font-size:clamp(42px,7.2vw,94px);font-weight:800;letter-spacing:-.045em;line-height:1.02;color:#0a0a0c}
-.hero h1 em{font-style:normal;background:linear-gradient(90deg,#7c3aed,#ec4899,#f59e0b,#7c3aed);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:sheen 7s linear infinite}
-@keyframes sheen{to{background-position:-220% 0}}
-.hero .sub{color:#4b5563;max-width:640px;margin-left:auto;margin-right:auto}
-.hero .micro{color:#9ca3af}
-.hero .caps span{background:rgba(255,255,255,.9);border:1px solid #ececf2;color:#0a0a0c;box-shadow:0 1px 2px rgba(16,24,40,.05)}
-.hero .caps span::before{background:linear-gradient(135deg,#7c3aed,#ec4899)}
-.hero .btn-primary,.hero .btn-ghost,.btn,.nbtn{border-radius:999px}
-.hero .btn-primary{background:#0a0a0c;color:#fff;box-shadow:0 10px 26px -12px rgba(10,10,12,.55)}
-.hero .btn-primary:hover{background:#2a2a30;transform:translateY(-2px)}
-.hero .btn-ghost{background:rgba(255,255,255,.7);border:1px solid #d8d8e2;color:#0a0a0c}
-.hero .btn-ghost:hover{border-color:#0a0a0c;transform:translateY(-2px)}
-.hero .ctas{gap:14px}
-.js .hero .wrap>*:nth-child(6){animation-delay:.35s}
-.mockwrap{position:relative}
-.js .mockwrap{animation:rise .9s .28s cubic-bezier(.2,.65,.25,1) both,floaty 7s 1.4s ease-in-out infinite alternate}
-@keyframes floaty{from{transform:translateY(0) rotate(0deg)}to{transform:translateY(-10px) rotate(.25deg)}}
-.mock{transition:transform .5s cubic-bezier(.2,.65,.25,1)}
-.mock:hover{transform:perspective(1200px) rotateX(2.4deg) scale(1.008)}
+/* reveal */
+.js .reveal{opacity:0;transform:translateY(26px);transition:opacity .7s cubic-bezier(.2,.65,.25,1),transform .7s cubic-bezier(.2,.65,.25,1)}
+.js .reveal.in{opacity:1;transform:none}
+.js .mkchart.in i,.js .achart.in i{animation:growbar .9s cubic-bezier(.2,.65,.25,1)}
+@keyframes growbar{from{transform:scaleY(.06)}to{transform:scaleY(1)}}
 @media(prefers-reduced-motion:reduce){
- .hero::before,.hero::after{animation:none}
- .hero h1 em{animation:none}
- .js .mockwrap{animation:rise .9s .28s cubic-bezier(.2,.65,.25,1) both}
- .mock{transition:none}
+  .aurora i{animation:none}
+  .js .reveal{opacity:1;transform:none;transition:none}
+  .js .mkchart.in i,.js .achart.in i{animation:none}
+  html{scroll-behavior:auto}
 }
-</style>
-<style>
-@font-face{font-family:'Inter';font-style:normal;font-weight:100 900;font-display:swap;
-src:url(https://cdn.jsdelivr.net/npm/@fontsource-variable/inter@5/files/inter-latin-wght-normal.woff2) format('woff2-variations');}
-*{margin:0;padding:0;box-sizing:border-box}
-#glasshero{position:relative;height:100vh;min-height:620px;overflow:hidden;background:#050507;font-family:'Inter',-apple-system,'Segoe UI',sans-serif}
-#gl{position:absolute;inset:0;width:100%;height:100%;display:block}
-/* DOM copy of the glass text: transparent, selectable, real hit areas */
-#layer{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none;will-change:transform;z-index:5}
-#layer .hit{pointer-events:auto}
-#layer span,#layer a,#layer button,#layer div{color:transparent;-webkit-text-fill-color:transparent;text-decoration:none;cursor:default}
-#layer ::selection{background:rgba(88,101,242,.45);color:transparent;-webkit-text-fill-color:transparent}
-#layer a.hit{cursor:pointer}
-/* definitions view */
-#hud{position:absolute;inset:0;background:#050507;opacity:0;pointer-events:none;transition:opacity .4s ease;z-index:8}
-#hud.on{opacity:1;pointer-events:auto}
-#hud .col{position:absolute;left:32.4vw;top:calc(35.9vh - 1.1em);width:33.9vw}
-#hud h2{font-weight:650;font-size:1.36vw;letter-spacing:-.022em;color:#fff;margin-bottom:1.05vw}
-#hud p{font-size:.73vw;line-height:1.72;color:rgba(255,255,255,.6);margin-bottom:1.05vw}
-#hud p b{font-weight:600;color:#fff}
-#backtext{position:absolute;left:21.9vw;top:23.8vh;transform:translate(-50%,-50%);z-index:9;
-font-weight:500;font-size:.66vw;color:#fff;cursor:pointer;opacity:0;pointer-events:none;transition:color .2s ease,opacity .3s ease;letter-spacing:.01em}
-#backtext.on{opacity:1;pointer-events:auto}
-#backtext:hover{color:#b9abff}
-/* static fallback (no WebGL / reduced motion) */
-#fallback{display:none;position:absolute;inset:0;overflow:auto;background:#050507;color:#dcdce0;z-index:20}
-#fallback .nav{display:flex;align-items:center;gap:14px;padding:22px 6.5%}
-#fallback .mark{width:18px;height:18px;border-radius:5px;background:#e8e8ec}
-#fallback .name{font-weight:600;color:#fff}
-#fallback .links{color:rgba(255,255,255,.6);font-size:13px;margin-left:auto}
-#fallback .links a{color:rgba(255,255,255,.6);text-decoration:none;margin:0 6px}
-#fallback .hero{padding:9vh 6.5% 6vh}
-#fallback .eyebrow{font-size:11px;letter-spacing:.2em;color:rgba(255,255,255,.38);font-weight:500;margin-bottom:34px}
-#fallback h1{font-weight:500;font-size:min(7.8vw,20vh);letter-spacing:-.045em;line-height:.97;
-background:linear-gradient(#dcdce0,#bdbdc3);-webkit-background-clip:text;background-clip:text;color:transparent}
-#fallback .sub{margin-top:30px;color:rgba(255,255,255,.55);font-size:17px;line-height:1.45}
-#fallback .row{margin-top:38px;display:flex;align-items:center;gap:26px}
-#fallback .pill{background:#e9e9ec;color:#0f0f12;font-weight:500;font-size:14px;padding:12px 26px;border-radius:8px;text-decoration:none}
-#fallback .paper{color:rgba(255,255,255,.8);text-decoration:none;font-size:14px}
-#fallback .paper:hover,#fallback .pill:hover{opacity:.85}
-#fallback .foot{display:flex;justify-content:space-between;color:rgba(255,255,255,.34);font-size:11px;padding:26px 6.5% 40px}
-#fallback .terms{padding:40px 6.5% 80px;max-width:760px}
-#fallback .terms h2{font-weight:650;font-size:24px;color:#fff;margin-bottom:24px}
-#fallback .terms p{color:rgba(255,255,255,.6);line-height:1.72;font-size:15px;margin-bottom:18px}
-#fallback .terms b{color:#fff}
+@media(max-width:640px){
+  section{padding:66px 0}
+  .hero{padding:56px 0 20px}
+  .ctapanel{padding:48px 22px}
+}
 </style>
 </head>
 <body>
-<script>document.documentElement.classList.add('js')</script>
+<div class="aurora" aria-hidden="true"><i class="b1"></i><i class="b2"></i><i class="b3"></i><i class="b4"></i></div>
 
 <nav class="nav">
- <div class="wrap">
-  <a class="logo" href="#"><i></i><span>Recur<b>Saathi</b></span></a>
-  <div class="nlinks">
-   <a href="#how">How it works</a><a href="#features">Features</a><a href="#radar">Recovery Radar</a><a href="#analytics">Analytics</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a>
+  <div class="in">
+    <a class="logo" href="#top"><i></i><b>Recur</b>Saathi</a>
+    <div class="nlinks">
+      <a href="#features">Features</a>
+      <a href="#radar">Recovery Radar</a>
+      <a href="#analytics">Analytics</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <button class="btn btn-primary btn-sm nbtn" data-form="growth">Start free trial</button>
   </div>
-  <button class="btn btn-primary nbtn" data-form="growth">Start free trial</button>
- </div>
 </nav>
 
-<header id="glasshero">
-<canvas id="gl"></canvas>
-<div id="layer" aria-hidden="false"></div>
-<div id="hud"><div class="col">
-<h2>Recovery, in five moves.</h2>
-<p><b>Retry ladder</b> — every failed payment is retried on RBI timings, so temporary bank declines recover instead of expiring.</p>
-<p><b>WhatsApp nudges</b> — a friendly nudge with a one-tap payment link follows each failed retry.</p>
-<p><b>UPI one-tap</b> — customers pay from the message itself; the webhook confirms and the subscription continues.</p>
-<p><b>Recovery radar</b> — overdue invoices and quiet customers surface before they go cold.</p>
-<p><b>Weekly reports</b> — a plain summary of what was attempted, what recovered, and what is still pending.</p>
-</div></div>
-<div id="backtext" role="button" tabindex="0">&#8592; Back</div>
-<div id="fallback">
-<div class="nav"><div class="mark"></div><div class="name">RecurSaathi</div>
-<div class="links"><a href="#how">How it works</a>&middot;<a href="#features">Features</a>&middot;<a href="#pricing">Pricing</a><a href="#start">Start free</a></div></div>
-<div class="hero">
-<div class="eyebrow">PAYMENT RECOVERY FOR INDIAN SUBSCRIPTIONS</div>
-<h1>Failed<br>payments.</h1>
-<p class="sub">RecurSaathi chases failed card and UPI payments with RBI-timed<br>retries and WhatsApp nudges. Set it up once, it runs every day.</p>
-<div class="row"><a class="pill" href="#start">Start free</a><a class="paper" href="#how">See how it works &#8594;</a></div>
-</div>
-<div class="foot"><span>&copy; RecurSaathi</span><span>RBI-timed retries</span></div>
-<div class="terms" id="terms">
-<h2>Recovery, in five moves.</h2>
-<p><b>Retry ladder</b> &mdash; every failed payment is retried on RBI timings, so temporary bank declines recover instead of expiring.</p>
-<p><b>WhatsApp nudges</b> &mdash; a friendly nudge with a one-tap payment link follows each failed retry.</p>
-<p><b>UPI one-tap</b> &mdash; customers pay from the message itself; the webhook confirms and the subscription continues.</p>
-<p><b>Recovery radar</b> &mdash; overdue invoices and quiet customers surface before they go cold.</p>
-<p><b>Weekly reports</b> &mdash; a plain summary of what was attempted, what recovered, and what is still pending.</p>
-</div>
-</div>
+<header class="hero" id="top">
+  <div class="wrap">
+    <span class="eyebrow">PAYMENT RECOVERY FOR INDIAN SUBSCRIPTIONS</span>
+    <h1>Failed payments.<br><span class="grad">Recovered.</span></h1>
+    <p class="sub">RecurSaathi chases failed card and UPI payments with RBI-timed retries and WhatsApp nudges. Set it up once, it runs every day.</p>
+    <div class="ctas">
+      <button class="btn btn-primary btn-lg" data-form="growth">Start free</button>
+      <a class="btn btn-ghost btn-lg" href="#how">See how it works</a>
+    </div>
+    <p class="micro">14 days free · no card needed to start</p>
+  </div>
+
+  <div class="mockwrap">
+    <div class="mock glass">
+      <div class="mockbar"><i></i><i></i><i></i><b>recursaathi · dashboard</b></div>
+      <div class="mockin">
+        <div class="stats">
+          <div class="stat g"><small>Recovered revenue</small><b>₹1,84,500</b></div>
+          <div class="stat"><small>Failed payments</small><b>₹92,300</b></div>
+          <div class="stat r"><small>Overdue invoices</small><b>₹38,120</b></div>
+          <div class="stat o"><small>Recovery rate</small><b>64%</b></div>
+        </div>
+        <div class="mockgrid">
+          <div class="chartbox">
+            <h4>Recovered revenue · monthly</h4>
+            <div class="mkchart"><i style="height:34%"></i><i style="height:52%"></i><i style="height:44%"></i><i style="height:70%"></i><i style="height:58%"></i><i style="height:86%"></i><i style="height:64%"></i><i style="height:96%"></i></div>
+          </div>
+          <div class="movesbox">
+            <h4>Recovery, in five moves</h4>
+            <ul class="moves">
+              <li><span class="dot">1</span><span><b>Retry ladder</b> — RBI-timed retries recover temporary bank declines.</span></li>
+              <li><span class="dot">2</span><span><b>WhatsApp nudges</b> — a friendly nudge follows each failed retry.</span></li>
+              <li><span class="dot">3</span><span><b>UPI one-tap</b> — customers pay from the message itself.</span></li>
+              <li><span class="dot">4</span><span><b>Recovery radar</b> — overdue invoices surface before they go cold.</span></li>
+              <li><span class="dot">5</span><span><b>Weekly reports</b> — what was attempted, what recovered.</span></li>
+            </ul>
+          </div>
+        </div>
+        <p class="mocknote">Product preview. Your dashboard starts empty and fills with your own numbers.</p>
+      </div>
+    </div>
+    <div class="whatsnew">
+      <span class="wnchip"><span class="tag new">New</span> Manual UPI mode — collect on your own UPI handle with a QR, zero fees, no KYC <span class="d">· Nov 7</span></span>
+      <span class="wnchip"><span class="tag imp">Improved</span> Segmentation &amp; reactivation reports — dormant-customer lists you can act on <span class="d">· Nov 7</span></span>
+    </div>
+  </div>
 </header>
 
-<div class="mockwrap">
- <div class="mock">
-  <div class="mockbar"><i></i><i></i><i></i></div>
-  <div class="mockbody">
-   <div class="mockside"><i class="on"></i><i style="width:80%"></i><i style="width:65%"></i><i style="width:72%"></i><i style="width:55%"></i><i style="width:60%"></i></div>
-   <div class="mockmain">
-    <div class="mkrow">
-     <div class="mkt"><s>Recovered revenue</s></div>
-     <div class="mkt"><s>Failed payments</s></div>
-     <div class="mkt"><s>Overdue invoices</s></div>
-     <div class="mkt"><s>Recovery rate</s></div>
+<section id="how">
+  <div class="wrap">
+    <div class="shead reveal"><span class="kick">How it works</span><h2>Three steps,<br>then it runs itself.</h2><p>No engineers, no gateway paperwork. If you can make an invoice, you can run RecurSaathi.</p></div>
+    <div class="steps">
+      <div class="step glass reveal"><span class="stepnum">1</span><h3>Add your customers</h3><p>Type them in or upload a CSV. Add invoices with amounts and due dates, in rupees.</p></div>
+      <div class="step glass reveal"><span class="stepnum">2</span><h3>Choose your follow-ups</h3><p>Friendly WhatsApp and email reminders, UPI QR payment pages, and RBI-timed retries when you connect Razorpay.</p></div>
+      <div class="step glass reveal"><span class="stepnum">3</span><h3>Watch money come back</h3><p>Recoveries, follow-ups and every rupee of overdue balance land in one dashboard, updated as money moves.</p></div>
     </div>
-    <div class="mkchart"><i style="height:35%"></i><i style="height:52%"></i><i style="height:44%"></i><i style="height:70%"></i><i style="height:58%"></i><i style="height:86%"></i><i style="height:64%"></i><i style="height:96%"></i></div>
-   </div>
   </div>
- </div>
- <p class="mnote">Product preview. Your dashboard starts empty and fills with your own numbers.</p>
-<div class="chlog">
- <h4>What's new</h4>
- <div class="crow"><span class="cdate">Nov 7</span><span class="ctag new">New</span><b>Manual UPI mode</b><p>&mdash; collect on your own UPI handle with a QR, zero fees, no KYC</p></div>
- <div class="crow"><span class="cdate">Nov 7</span><span class="ctag impr">Improved</span><b>Segmentation &amp; reactivation reports</b><p>&mdash; dormant-customer lists you can act on</p></div>
-</div>
-</div>
-
-<section id="how" class="alt">
- <div class="wrap">
-  <div class="shead">
-   <span class="slabel">How it works</span>
-   <h2>Three steps, <em>then it runs itself</em></h2>
-   <p class="ssub">No engineers, no gateway paperwork. If you can make an invoice, you can run RecurSaathi.</p>
-  </div>
-  <div class="hgrid">
-   <div class="hcard reveal"><span class="hnum">1</span><h3>Add your customers</h3><p>Type them in or upload a CSV. Add invoices with amounts and due dates, in rupees.</p></div>
-   <div class="hcard reveal"><span class="hnum">2</span><h3>Choose your follow-ups</h3><p>Friendly WhatsApp and email reminders, UPI QR payment pages, and RBI-timed retries when you connect Razorpay.</p></div>
-   <div class="hcard reveal"><span class="hnum">3</span><h3>Watch money come back</h3><p>Recoveries, follow-ups and every rupee of overdue balance land in one dashboard, updated as money moves.</p></div>
-  </div>
- </div>
 </section>
 
 <section id="features">
- <div class="wrap">
-  <div class="shead">
-   <span class="slabel">Ready to use</span>
-   <h2>Every feature here is <em>ready to use today</em></h2>
-   <p class="ssub">Nothing on this page is a promise or a waitlist item. Create your account and it is already in your dashboard.</p>
+  <div class="wrap">
+    <div class="shead reveal"><span class="kick">Ready to use</span><h2>Every feature here is live today.</h2><p>Nothing on this page is a promise or a waitlist item. Create your account and it is already in your dashboard.</p></div>
+    <div class="fgrid">
+      <div class="fcard glass reveal"><span class="ric">📊</span><span class="badge">Ready to use</span><h3>Revenue analytics</h3><p>Recovered revenue, failed payment value, recovery rate and outstanding balance, updated as money moves.</p></div>
+      <div class="fcard glass reveal"><span class="ric">👥</span><span class="badge">Ready to use</span><h3>Customer management</h3><p>Profiles, payment history and outstanding balances for every customer. Search, segment and export to CSV any time.</p></div>
+      <div class="fcard glass reveal"><span class="ric">🧾</span><span class="badge">Ready to use</span><h3>Invoices &amp; payment pages</h3><p>Create invoices and share a public payment page with a UPI QR. Customers pay you directly.</p></div>
+      <div class="fcard glass reveal"><span class="ric">💬</span><span class="badge">Ready to use</span><h3>Email &amp; WhatsApp automations</h3><p>Due reminders, overdue follow-ups, failed-payment nudges and payment confirmations. Editable templates, per-workflow toggles, customer opt-out.</p></div>
+      <div class="fcard glass reveal"><span class="ric">🔁</span><span class="badge">Ready to use</span><h3>Razorpay Autopay retries</h3><p>Autopay retries inside the RBI windows (24 hours, 72 hours, day 7), routed by decline code, never blind-retried on invalid cards. Signature-verified webhooks mark every result.</p></div>
+      <div class="fcard glass reveal"><span class="ric">📱</span><span class="badge">Ready to use</span><h3>Manual UPI mode</h3><p>No gateway required. Generate a UPI QR for your own handle and confirm payments as they arrive. Zero fees, no KYC.</p></div>
+      <div class="fcard glass reveal"><span class="ric">🔗</span><span class="badge">Ready to use</span><h3>Customer payment portal</h3><p>Every customer gets their own page with the invoices they owe and a UPI QR. They pay you directly; you confirm with one tap.</p></div>
+      <div class="fcard glass reveal"><span class="ric">🧲</span><span class="badge">Ready to use</span><h3>Segmentation &amp; reactivation</h3><p>Dormant repeat customers are flagged after 45 days of silence and grouped so you can win them back with one campaign.</p></div>
+      <div class="fcard glass reveal"><span class="ric">🔒</span><span class="badge">Ready to use</span><h3>Safe by design</h3><p>We store gateway tokens, never card numbers. Passwords are hashed, webhooks are signature-verified and every action lands in an audit trail.</p></div>
+    </div>
   </div>
-  <div class="fgrid">
-   <div class="fcard"><div class="ficon"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></div><h3>Revenue analytics</h3><span class="ftag">Ready to use</span><p>Recovered revenue, failed payment value, recovery rate and outstanding balance, updated as money moves.</p></div>
-   <div class="fcard"><div class="ficon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/></svg></div><h3>Customer management</h3><span class="ftag">Ready to use</span><p>Profiles, payment history and outstanding balances for every customer. Search, segment and export to CSV any time.</p></div>
-   <div class="fcard"><div class="ficon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg></div><h3>Invoices &amp; payment pages</h3><span class="ftag">Ready to use</span><p>Create invoices and share a public payment page with a UPI QR. Customers pay you directly.</p></div>
-   <div class="fcard"><div class="ficon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><h3>Email &amp; WhatsApp automations</h3><span class="ftag">Ready to use</span><p>Due reminders, overdue follow-ups, failed-payment nudges and payment confirmations. Editable templates, per-workflow toggles, customer opt-out.</p></div>
-   <div class="fcard"><div class="ficon"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div><h3>Razorpay Autopay retries</h3><span class="ftag">Ready to use</span><p>Autopay retries inside the RBI windows (24 hours, 72 hours, day 7), routed by decline code, never blind-retried on invalid cards. Signature-verified webhooks mark payments the moment they land.</p></div>
-   <div class="fcard"><div class="ficon"><svg viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/></svg></div><h3>Manual UPI mode</h3><span class="ftag">Ready to use</span><p>No gateway required. Generate a UPI QR for your own handle and confirm payments as they arrive. Zero fees, no KYC.</p></div>
-   <div class="fcard reveal"><div class="ficon"><svg viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/></svg></div><h3>Customer payment portal</h3><span class="ftag">Ready to use</span><p>Every customer gets their own page with the invoices they owe and a UPI QR. They pay you directly; you confirm with one tap.</p></div>
-   <div class="fcard reveal"><div class="ficon"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div><h3>Segmentation &amp; reactivation</h3><span class="ftag">Ready to use</span><p>Dormant repeat customers are flagged after 45 days of silence and grouped so you can win them back with one campaign.</p></div>
-   <div class="fcard reveal"><div class="ficon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><h3>Safe by design</h3><span class="ftag">Ready to use</span><p>We store gateway tokens, never card numbers. Passwords are hashed, webhooks are signature-verified and every action lands in an audit trail.</p></div>
-  </div>
- </div>
 </section>
 
-<section id="radar" class="alt">
- <div class="wrap">
-  <div class="rsplit">
-   <div>
-    <span class="slabel">Recovery Radar</span>
-    <h2>Recovery Radar surfaces <em>revenue leaks</em></h2>
-    <p class="ssub">Three revenue leaks, ranked by how much they're holding back, so you always know what to fix first.</p>
-    <div class="rlist">
-     <div class="ritem"><span class="rnum a">1</span><div><b>Overdue invoices</b><p>Who owes you, how much and since when, with contact details at hand.</p></div></div>
-     <div class="ritem"><span class="rnum b">2</span><div><b>Dormant repeat customers</b><p>Repeat customers who have stopped paying, flagged automatically after 45 days without a payment.</p></div></div>
-     <div class="ritem"><span class="rnum c">3</span><div><b>Failed card and UPI payments</b><p>Every decline with its reason code, so you can tell a retry problem from a churn problem.</p></div></div>
+<section id="radar">
+  <div class="wrap">
+    <div class="shead reveal"><span class="kick">Recovery Radar</span><h2>Three revenue leaks, ranked for you.</h2><p>Ranked by how much they're holding back, so you always know what to fix first.</p></div>
+    <div class="rgrid">
+      <div class="rlist">
+        <div class="ritem glass reveal"><span class="ic">⏰</span><div><h3>Overdue invoices</h3><p>Who owes you, how much and since when, with contact details at hand.</p></div></div>
+        <div class="ritem glass reveal"><span class="ic">😴</span><div><h3>Dormant customers</h3><p>Repeat customers who have stopped paying, flagged automatically after 45 days without a payment.</p></div></div>
+        <div class="ritem glass reveal"><span class="ic">📉</span><div><h3>Decline reasons</h3><p>Every decline with its reason code, so you can tell a retry problem from a churn problem.</p></div></div>
+      </div>
+      <div class="radarpanel glass reveal">
+        <h4>Recovery Radar</h4>
+        <div class="rrow"><div class="who"><b>Sunrise Academy</b><span>Invoice INV-204 · 12 days overdue</span></div><span class="amt">₹12,400</span><span class="pill red">Overdue</span></div>
+        <div class="rrow"><div class="who"><b>Fit Zone Studio</b><span>Membership · dormant 47 days</span></div><span class="amt">₹8,000</span><span class="pill amber">Dormant</span></div>
+        <div class="rrow"><div class="who"><b>Kiran Textiles</b><span>UPI Autopay · insufficient funds</span></div><span class="amt">₹5,640</span><span class="pill blue">Retry due</span></div>
+        <div class="rrow"><div class="who"><b>Bright Books Co.</b><span>Invoice INV-198 · 3 days overdue</span></div><span class="amt">₹2,100</span><span class="pill red">Overdue</span></div>
+        <p class="panelnote">Preview. Your radar fills from your own books.</p>
+      </div>
     </div>
-   </div>
-   <div>
-    <div class="adata">
-     <div style="font-size:13px;font-weight:600;margin-bottom:14px">Recovery Radar</div>
-     <div class="rlist" style="margin-top:0">
-      <div class="ritem"><span class="rnum a">1</span><div><b>Overdue invoices</b><p>Ranked by outstanding amount</p></div></div>
-      <div class="ritem"><span class="rnum b">2</span><div><b>Dormant customers</b><p>Flagged after 45 days</p></div></div>
-      <div class="ritem"><span class="rnum c">3</span><div><b>Failed payments</b><p>Grouped by decline reason</p></div></div>
-     </div>
-     <p class="anote">Preview. Your radar fills from your own books.</p>
-    </div>
-   </div>
   </div>
- </div>
 </section>
 
 <section id="analytics">
- <div class="wrap">
-  <div class="shead">
-   <span class="slabel">Analytics</span>
-   <h2>Analytics that <em>prove the return</em></h2>
-   <p class="ssub">Monthly recovery trends, success rates and a complete activity trail for every automated message.</p>
+  <div class="wrap">
+    <div class="shead reveal"><span class="kick">Analytics</span><h2>Analytics that show the money.</h2><p>Monthly recovery trends, success rates and a complete activity trail for every automated message.</p></div>
+    <div class="acenter glass reveal apanel">
+      <div class="achart"><i style="height:30%"></i><i style="height:44%"></i><i style="height:38%"></i><i style="height:60%"></i><i style="height:52%"></i><i style="height:74%"></i><i style="height:66%"></i><i style="height:94%"></i></div>
+      <div class="alabels"><span>Apr</span><span>May</span><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span></div>
+      <p class="panelnote">Preview. Your analytics come only from your own invoices and payments.</p>
+    </div>
   </div>
-  <div class="adata">
-   <div class="arow">
-    <div class="ak"><s>Recovered revenue</s></div>
-    <div class="ak"><s>Failed payments</s></div>
-    <div class="ak"><s>Overdue invoices</s></div>
-    <div class="ak"><s>Recovery rate</s></div>
-   </div>
-   <div class="achart"><i style="height:35%"></i><i style="height:52%"></i><i style="height:44%"></i><i style="height:70%"></i><i style="height:58%"></i><i style="height:86%"></i><i style="height:64%"></i><i style="height:96%"></i></div>
-   <div class="afoot"><span>Apr</span><span>May</span><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span></div>
-  </div>
-  <p class="anote">Preview. Your analytics come only from your own invoices and payments.</p>
- </div>
 </section>
 
-<section id="pricing" class="alt">
- <div class="wrap">
-  <div class="shead">
-   <span class="slabel">Pricing</span>
-   <h2>Simple pricing that <em>scales with you</em></h2>
-   <p class="ssub">Every plan starts with a 14-day free trial. No card needed, and the features above are ready from day one.</p>
+<section id="pricing">
+  <div class="wrap">
+    <div class="shead reveal"><span class="kick">Pricing</span><h2>Simple pricing that pays for itself.</h2><p>Every plan starts with a 14-day free trial. No card needed, and the features above are ready from day one.</p></div>
+    <div class="pgrid">
+      <div class="pcardwrap reveal"><div class="pcard glass"><span class="plan">Starter</span><h3>Starter</h3><p class="cap">Up to ₹1 lakh monthly revenue</p><div class="price">₹2,999<small>/mo</small></div><ul><li>All features from day one</li><li>Manual UPI mode included</li><li>14-day free trial</li></ul><button class="btn btn-ghost" data-form="starter">Start free trial</button></div></div>
+      <div class="pcardwrap reveal"><span class="pop">Most popular</span><div class="pcard glass hot"><span class="plan">Growth</span><h3>Growth</h3><p class="cap">Up to ₹10 lakh monthly revenue</p><div class="price">₹7,999<small>/mo</small></div><ul><li>All features from day one</li><li>Razorpay Autopay retries</li><li>WhatsApp &amp; email automations</li></ul><button class="btn btn-primary" data-form="growth">Start free trial</button></div></div>
+      <div class="pcardwrap reveal"><div class="pcard glass"><span class="plan">Scale</span><h3>Scale</h3><p class="cap">Above ₹10 lakh monthly revenue</p><div class="price">10%<small> of recovered</small></div><ul><li>All features from day one</li><li>Priority support</li><li>Custom onboarding</li></ul><button class="btn btn-ghost" data-form="scale">Start free trial</button></div></div>
+    </div>
+    <p class="pnote">14 days free · no card needed to start</p>
   </div>
-  <div class="pgrid">
-   <div class="pcard">
-    <h3>Starter</h3><p class="pfor">Up to &#8377;1 lakh monthly revenue</p>
-    <div class="pprice">&#8377;2,999<span>/month</span></div>
-    <ul class="pfeat">
-     <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Full Recovery Radar</li>
-     <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Email + WhatsApp automations</li>
-     <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Manual UPI mode with QR</li>
-     <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Customer payment portal</li>
-    </ul>
-    <button class="btn btn-ghost" data-form="starter">Start free trial</button>
-   </div>
-   <div class="pcard pop">
-    <span class="ptag">Most popular</span>
-    <h3>Growth</h3><p class="pfor">Up to &#8377;10 lakh monthly revenue</p>
-    <div class="pprice">&#8377;7,999<span>/month</span></div>
-    <ul class="pfeat">
-     <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Everything in Starter</li>
-     <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Razorpay card &amp; UPI Autopay retries</li>
-     <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Custom recovery templates</li>
-     <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Priority support</li>
-    </ul>
-    <button class="btn btn-primary" data-form="growth">Start free trial</button>
-   </div>
-   <div class="pcard">
-    <h3>Scale</h3><p class="pfor">Above &#8377;10 lakh monthly revenue</p>
-    <div class="pprice">10%<span> of recovered</span></div>
-    <ul class="pfeat">
-     <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Everything in Growth</li>
-     <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Pay only when we recover</li>
-     <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Dedicated onboarding</li>
-     <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Custom decline-code routing</li>
-    </ul>
-    <button class="btn btn-ghost" data-form="scale">Start free trial</button>
-   </div>
-  </div>
- </div>
 </section>
 
 <section id="whofor">
- <div class="wrap">
-  <div class="shead">
-   <span class="slabel">Who it's for</span>
-   <h2>Built for businesses <em>that live on recurring revenue</em></h2>
-   <p class="ssub">If customers pay you every month, every failed payment is a bill you end up chasing by hand. RecurSaathi takes over that chase.</p>
+  <div class="wrap">
+    <div class="shead reveal"><span class="kick">Who it's for</span><h2>Built for businesses that bill monthly.</h2><p>If customers pay you every month, every failed payment is a bill you end up chasing by hand. RecurSaathi takes over that chase.</p></div>
+    <div class="wgrid">
+      <div class="wcard glass reveal"><h3>Edtech &amp; coaching</h3><p>Course fees, batch renewals and mentorship plans. Failed UPI Autopay mandates get followed up on schedule, without a finance team.</p></div>
+      <div class="wcard glass reveal"><h3>Fitness &amp; studios</h3><p>Monthly memberships and class packs. Renewal reminders and recovery nudges go out before anyone has to make an awkward call.</p></div>
+      <div class="wcard glass reveal"><h3>D2C subscriptions</h3><p>Boxes, refills and replenishment plans. Retries follow RBI windows so a bank hiccup doesn't cost you the customer.</p></div>
+      <div class="wcard glass reveal"><h3>Agencies &amp; services</h3><p>Retainers, maintenance plans and memberships. Overdue invoices get polite, persistent follow-ups while you stay the good guy.</p></div>
+    </div>
+    <div class="chips reveal"><span class="chip">Razorpay subscriptions</span><span class="chip">UPI Autopay</span><span class="chip">Manual UPI</span><span class="chip">Google Pay</span></div>
+    <p class="moneynote reveal">Money always moves account to account: from your customer straight to you. <b>RecurSaathi never holds your funds.</b></p>
   </div>
-  <div class="fgrid">
-   <div class="fcard"><div class="ficon"><svg viewBox="0 0 24 24"><path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/></svg></div><h3>Edtech &amp; coaching</h3><p>Course fees, batch renewals and mentorship plans. Failed UPI Autopay mandates get followed up on schedule, without a finance team.</p></div>
-   <div class="fcard"><div class="ficon"><svg viewBox="0 0 24 24"><path d="M6.5 6.5h11l-1.5 14h-8z"/><path d="M9 6.5a3 3 0 016 0"/><path d="M12 9v6"/></svg></div><h3>Fitness &amp; studios</h3><p>Monthly memberships and class packs. Renewal reminders and recovery nudges go out before anyone has to make an awkward call.</p></div>
-   <div class="fcard"><div class="ficon"><svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg></div><h3>D2C subscriptions</h3><p>Boxes, refills and replenishment plans. Retries follow RBI windows so a bank hiccup doesn't cost you the customer.</p></div>
-   <div class="fcard"><div class="ficon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M8 14h8"/></svg></div><h3>Agencies &amp; services</h3><p>Retainers, maintenance plans and memberships. Overdue invoices get polite, persistent follow-ups while you stay the good guy.</p></div>
-  </div>
-  <div class="trust"><span>Razorpay subscriptions</span><span>UPI Autopay</span><span>Manual UPI</span><span>Google Pay</span></div>
-  <p class="trustnote">Money always moves account to account: from your customer straight to you. RecurSaathi never holds your funds.</p>
- </div>
 </section>
 
-<section id="start" class="ctaband">
- <div class="wrap">
-  <h2>Ready to stop <em>chasing payments?</em></h2>
-  <p>Your dashboard is one signup away, and every feature on this page is already inside it.</p>
-  <button class="btn btn-primary btn-lg" data-form="growth">Start free trial</button>
-  <p class="micro">14 days free &middot; no card needed to start</p>
- </div>
-</section>
-
-<section id="faq">
- <div class="wrap">
-  <div class="shead"><h2>Frequently asked <em>questions</em></h2></div>
-  <div class="faq">
-   <details><summary>Do you hold my customers' money?</summary><p>No. Customer invoices pay your own Razorpay account or your own UPI ID. RecurSaathi automates, tracks and reports. Money never flows through us.</p></details>
-   <details><summary>Do I need Razorpay to get started?</summary><p>No. Manual UPI mode works from day one: generate a payment page and QR for your UPI ID, and mark the invoice paid when the money lands. Connect Razorpay whenever you're ready for automatic retries and webhook detection.</p></details>
-   <details><summary>What happens before I connect email and WhatsApp?</summary><p>Automations are built and queued, and every message is honestly marked "no channel" instead of pretending to send. Connect your SMTP or WhatsApp Business API keys and the queue starts flowing. Nothing is simulated.</p></details>
-   <details><summary>Are retries RBI-compliant?</summary><p>Yes. UPI Autopay and card retry windows follow RBI rules, including the 24-hour, 72-hour and day-7 windows. We never blind-retry hard declines like invalid cards.</p></details>
-   <details><summary>Is my data safe?</summary><p>We store gateway tokens, never card numbers or PANs. Passwords are salted and hashed. Every webhook is signature-verified, and every automation action lands in an audit trail.</p></details>
-   <details><summary>Can customers opt out of reminders?</summary><p>Yes. Every message carries an opt-out link, and opted-out customers are excluded from all future reminders automatically.</p></details>
+<div class="ctaband" id="start">
+  <div class="wrap">
+    <div class="ctapanel glass reveal">
+      <h2>Your dashboard is one signup away.</h2>
+      <p>Every feature on this page is already inside it.</p>
+      <div class="ctas"><button class="btn btn-ghost btn-lg" data-form="growth" style="background:#fff">Start free trial</button></div>
+      <p class="micro">14 days free · no card needed to start</p>
+    </div>
   </div>
- </div>
+</div>
+
+<section id="faq" class="faq">
+  <div class="wrap">
+    <div class="shead reveal"><span class="kick">FAQ</span><h2>Frequently asked questions.</h2></div>
+    <div class="faqlist">
+      <details class="glass reveal"><summary>Do you hold my customers' money?<span class="plus">+</span></summary><p>No. Customer invoices pay your own Razorpay account or your own UPI ID. RecurSaathi automates, tracks and reports. Money never flows through us.</p></details>
+      <details class="glass reveal"><summary>Do I need Razorpay to get started?<span class="plus">+</span></summary><p>No. Manual UPI mode works from day one: generate a payment page and QR for your UPI ID, and mark the invoice paid when the money lands. Connect Razorpay whenever you outgrow it.</p></details>
+      <details class="glass reveal"><summary>What happens before I connect email and WhatsApp?<span class="plus">+</span></summary><p>Automations are built and queued, and every message is honestly marked "no channel" instead of pretending to send. Connect your SMTP or WhatsApp Business API key and they start going out for real.</p></details>
+      <details class="glass reveal"><summary>Are retries RBI-compliant?<span class="plus">+</span></summary><p>Yes. UPI Autopay and card retry windows follow RBI rules, including the 24-hour, 72-hour and day-7 windows. We never blind-retry hard declines like invalid cards.</p></details>
+      <details class="glass reveal"><summary>Is my data safe?<span class="plus">+</span></summary><p>We store gateway tokens, never card numbers or PANs. Passwords are salted and hashed. Every webhook is signature-verified, and every automation action lands in an audit trail.</p></details>
+      <details class="glass reveal"><summary>Can customers opt out of reminders?<span class="plus">+</span></summary><p>Yes. Every message carries an opt-out link, and opted-out customers are excluded from all future reminders automatically.</p></details>
+    </div>
+  </div>
 </section>
 
 <footer>
- <div class="wrap">
-  <div class="fgrid2">
-   <div class="fcol fbrand">
-    <a class="logo" href="#"><i></i><span>Recur<b>Saathi</b></span></a>
-    <p>Revenue recovery for Indian subscription businesses. Failed payments, overdue invoices and dormant customers, managed end to end.</p>
-   </div>
-   <div class="fcol"><h4>Product</h4><a href="#how">How it works</a><a href="#features">Features</a><a href="#radar">Recovery Radar</a><a href="#analytics">Analytics</a><a href="#pricing">Pricing</a></div>
-   <div class="fcol"><h4>Company</h4><a href="#faq">FAQ</a><a href="mailto:recursathi@gmail.com">recursathi@gmail.com</a></div>
-   <div class="fcol"><h4>Legal</h4><a href="/privacy">Privacy Policy</a><a href="/terms">Terms of Service</a></div>
+  <div class="wrap">
+    <div class="fgrid2">
+      <div>
+        <a class="logo" href="#top"><i></i><b>Recur</b>Saathi</a>
+        <p style="margin-top:14px">Revenue recovery for Indian subscription businesses. Failed payments, overdue invoices and dormant customers, managed end to end.</p>
+      </div>
+      <div><h4>Product</h4><ul><li><a href="#how">How it works</a></li><li><a href="#features">Features</a></li><li><a href="#radar">Recovery Radar</a></li><li><a href="#analytics">Analytics</a></li><li><a href="#pricing">Pricing</a></li></ul></div>
+      <div><h4>Company</h4><ul><li><a href="#faq">FAQ</a></li><li><a href="mailto:recursathi@gmail.com">recursathi@gmail.com</a></li></ul></div>
+      <div><h4>Legal</h4><ul><li><a href="/privacy">Privacy Policy</a></li><li><a href="/terms">Terms of Service</a></li></ul></div>
+    </div>
+    <div class="fbottom"><span>© RecurSaathi</span><span class="flag">🇮🇳 Made in India</span></div>
   </div>
-  <div class="fbottom">
-   <div>&copy; 2026 RecurSaathi. All rights reserved.</div>
-   <div>Made in India</div>
-  </div>
- </div>
 </footer>
 
-<div class="modal" id="signupModal" aria-hidden="true">
- <div class="modal-card">
-  <button class="mclose" id="mclose" aria-label="Close">&times;</button>
-  <h3 id="mplan">Start your free trial</h3>
-  <p class="msub">14 days free. No card needed to start.</p>
-  <form id="signupForm">
-   <input name="name" placeholder="Your name" required>
-   <input name="email" type="email" placeholder="Work email" required>
-   <input name="phone" type="tel" placeholder="WhatsApp number (e.g. 98xxxxxxxx)" required>
-   <button class="btn btn-primary" type="submit">Create account</button>
-   <p class="mnote" id="formMsg"></p>
-  </form>
- </div>
+<div class="modal" id="signupModal" aria-hidden="true" role="dialog" aria-label="Start your free trial">
+  <div class="veil"></div>
+  <div class="mcard glass">
+    <button class="mclose" id="mclose" aria-label="Close">✕</button>
+    <h3 id="mplan">Start your free trial</h3>
+    <p class="msub">14 days free. No card needed to start.</p>
+    <form id="signupForm" novalidate>
+      <input name="name" placeholder="Your name" autocomplete="name" required>
+      <input name="email" type="email" placeholder="Work email" autocomplete="email" required>
+      <input name="phone" type="tel" placeholder="Phone (optional)" autocomplete="tel">
+      <button class="btn btn-primary" type="submit">Create account</button>
+      <p class="fmsg" id="formMsg"></p>
+    </form>
+  </div>
 </div>
+
+<div class="popwrap" id="promoPop" aria-hidden="true">
+  <div class="veil"></div>
+  <div class="popcard glass">
+    <button class="pclose" id="pclose" aria-label="Close">✕</button>
+    <h3>Stop losing revenue to failed payments</h3>
+    <p>RecurSaathi recovers failed card and UPI payments, chases overdue invoices and reactivates dormant customers. Start your free trial in under a minute.</p>
+    <div class="ctas"><button class="btn btn-primary" id="pcta">Start your free trial</button><button class="pdismiss" id="pdismiss">Maybe later</button></div>
+  </div>
+</div>
+
+<div class="cbar glass" id="cbar"><span>This site uses a few cookies to keep things working. No trackers, nothing shared.</span><button class="btn btn-ghost btn-sm" id="cbar-ok">Got it</button></div>
+
+<script>document.documentElement.classList.add('js')</script>
 <script>
 var modal=document.getElementById('signupModal'), chosen='growth';
 document.querySelectorAll('[data-form]').forEach(function(b){
@@ -696,14 +508,14 @@ document.getElementById('signupForm').addEventListener('submit',async function(e
   e.preventDefault();
   var f=e.target, msg=document.getElementById('formMsg'), btn=f.querySelector('button');
   var g=function(n){return ((f.elements[n]||{}).value||'').trim();};
-  msg.textContent='';btn.textContent='Creating account…';btn.disabled=true;var slow=null;
+  msg.textContent='';msg.classList.remove('ok');btn.textContent='Creating account…';btn.disabled=true;var slow=null;
   try{
-    slow=setTimeout(function(){msg.textContent='Warming up the server \u2014 first load can take up to a minute. Staying on it\u2026';},4000);
+    slow=setTimeout(function(){msg.textContent='Warming up the server — first load can take up to a minute. Staying on it…';},4000);
     var body=JSON.stringify({name:g('name'),email:g('email'),phone:g('phone'),plan:chosen});
     var r=null,d=null,ct='';
     for(var attempt=1;attempt<=5;attempt++){
       try{
-        r=await fetch('/api/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:body});
+        r=await fetch(''/api/signup'', {method:'POST',headers:{'Content-Type':'application/json'},body:body});
         ct=(r.headers.get('content-type')||'');d=null;
         try{if(ct.indexOf('json')>-1)d=await r.json();}catch(_){}
         break;
@@ -714,22 +526,12 @@ document.getElementById('signupForm').addEventListener('submit',async function(e
     }
     if(!d){msg.textContent='This demo page has no signup server behind it. Signup works in the full app build, or email recursathi@gmail.com and we\u2019ll set you up.';return;}
     if(!r.ok)throw new Error(d.detail||'Signup failed');
-    msg.textContent='Account created. Taking you to checkout…';
+    msg.textContent='Account created. Taking you to checkout…';msg.classList.add('ok');
     setTimeout(function(){window.location.href=d.checkout_url;},600);
   }catch(err){msg.textContent=(err&&err.message&&!/fetch/i.test(err.message))?err.message:'Something went wrong. Tap Create account again, or email recursathi@gmail.com.';}
   finally{clearTimeout(slow);btn.disabled=false;btn.textContent='Create account';}
 });
 </script>
-<div class="modal" id="promoPop" aria-hidden="true">
- <div class="modal-card pop-card">
-  <button class="mclose" id="pclose" aria-label="Close">&times;</button>
-  <p class="eyebrow" style="margin-bottom:12px">14 days free, no card needed</p>
-  <h3>Stop losing revenue to failed payments</h3>
-  <p class="msub">RecurSaathi recovers failed card and UPI payments, chases overdue invoices and reactivates dormant customers. Start your free trial in under a minute.</p>
-  <button class="btn btn-primary" id="pcta" style="width:100%;justify-content:center">Start your free trial</button>
-  <p class="mnote" id="pdismiss" style="text-align:center;cursor:pointer">Maybe later</p>
- </div>
-</div>
 <script>
 var pop=document.getElementById('promoPop');
 function rsPopSeen(){ try{return sessionStorage.getItem('rs_pop');}catch(e){return '1';} }
@@ -751,7 +553,7 @@ document.addEventListener('mouseout',function(e){if(!e.relatedTarget&&e.clientY<
 </script>
 <script>
 (function(){
-  var list=[].slice.call(document.querySelectorAll('.shead,.fcard,.ritem,.adata,.pcard,.faq details,.chlog,.caps'));
+  var list=[].slice.call(document.querySelectorAll('.shead,.fcard,.ritem,.step,.wcard,.adata,.pcardwrap,.faq details,.radarpanel,.apanel,.ctapanel,.chips,.moneynote'));
   var charts=[].slice.call(document.querySelectorAll('.mkchart,.achart'));
   charts.forEach(function(c){[].slice.call(c.querySelectorAll('i')).forEach(function(b,i){b.style.transitionDelay=(i*90)+'ms'})});
   if(!('IntersectionObserver' in window)){list.forEach(function(t){t.classList.add('in')});charts.forEach(function(c){c.classList.add('in')});return}
@@ -760,748 +562,9 @@ document.addEventListener('mouseout',function(e){if(!e.relatedTarget&&e.clientY<
   charts.forEach(function(c){io.observe(c)});
 })();
 </script>
-<div class="mcta"><a class="btn btn-primary" href="#pricing">Start free trial</a></div>
-<script type="importmap">
-{"imports":{
-"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
-"three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
-}}
+<script>
+(function(){try{if(localStorage.getItem("rs_cookie_ok")!=="1"){document.getElementById("cbar").classList.add("on");}}catch(e){}
+document.getElementById("cbar-ok").addEventListener("click",function(){try{localStorage.setItem("rs_cookie_ok","1");}catch(e){}document.getElementById("cbar").classList.remove("on");});})();
 </script>
-<script type="module">
-import * as THREE from 'three';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-
-const canvas = document.getElementById('gl');
-const layerEl = document.getElementById('layer');
-const hudEl = document.getElementById('hud');
-const backEl = document.getElementById('backtext');
-const fallbackEl = document.getElementById('fallback');
-const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-let renderer = null;
-try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true }); }
-catch (e) { renderer = null; }
-if (reduced || !renderer) {
-  fallbackEl.style.display = 'block';
-  canvas.remove(); layerEl.remove(); hudEl.remove(); backEl.remove();
-  throw new Error('static fallback');
-}
-
-let W = innerWidth, H = innerHeight;
-renderer.setSize(W, H);
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.0;
-renderer.outputColorSpace = THREE.SRGBColorSpace;
-
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x050507);
-const camera = new THREE.PerspectiveCamera(30, W / H, 1, 12000);
-
-const pmrem = new THREE.PMREMGenerator(renderer);
-scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-scene.environmentIntensity = 0.42;
-
-const key = new THREE.DirectionalLight(0xdfe8ff, 2.6);
-key.position.set(-H, H * 0.85, H * 2.2);
-scene.add(key);
-const rim = new THREE.DirectionalLight(0x8090c0, 0.5);
-rim.position.set(H * 0.8, -H * 0.4, H);
-scene.add(rim);
-
-const group = new THREE.Group();   // the whole tilting block
-scene.add(group);
-const sliverGroup = new THREE.Group(); // the back shard, outside the block
-scene.add(sliverGroup);
-
-// ---------- layout ----------
-let S, blockW, blockH, navH, gap, panelW, panelH, blockX0, blockY1, panelTop;
-function layout() {
-  const side = W < 640 ? 16 : 0.055 * W;
-  const tb = W < 640 ? 16 : 0.085 * H;
-  blockW = W - 2 * side; blockH = H - 2 * tb;
-  S = blockW / 1730;
-  navH = 0.108 * blockH; gap = 14 * S;
-  panelW = blockW; panelH = blockH - navH - gap;
-  blockX0 = -blockW / 2; blockY1 = blockH / 2;
-  panelTop = blockY1 - navH - gap;
-}
-layout();
-
-// ---------- cut pattern ----------
-const edgeTop = [0.22, 0.515, 0.84], edgeBot = [0.34, 0.865];
-const J0 = [0.385, 0.72], J1 = [0.48, 0.62], J2 = [0.716, 0.49];
-function basePattern() {
-  const TL = [0, 0], TR = [1, 0], BL = [0, 1], BR = [1, 1];
-  const tAB = [edgeTop[0], 0], tBC = [edgeTop[1], 0], tCE = [edgeTop[2], 0];
-  const bAD = [edgeBot[0], 1], bDE = [edgeBot[1], 1];
-  const cells = [
-    { name: 'A', pts: [TL, tAB, J0, bAD, BL] },
-    { name: 'B', pts: [tAB, tBC, J1, J0] },
-    { name: 'C', pts: [tBC, tCE, J2, J1] },
-    { name: 'D', pts: [J0, J1, J2, bDE, bAD] },
-    { name: 'E', pts: [tCE, TR, BR, bDE, J2] }
-  ];
-  if (panelH > panelW) { // portrait: transpose so the hero sits on top
-    for (const c of cells) c.pts = c.pts.map(([x, y]) => [y, x]);
-  }
-  return cells;
-}
-// drift bookkeeping: one record per unique point (by cell+index)
-const drift = [];
-{ const cells = basePattern();
-  cells.forEach((c, ci) => c.pts.forEach((p, pi) => {
-    drift.push({ ci, pi, ph: Math.random() * Math.PI * 2,
-      px: 10 + Math.random() * 10, py: 10 + Math.random() * 10,
-      junction: ci > 0 && pi > 0 && pi < c.pts.length - 1 });
-  }));
-}
-function patternPoints(t, pointerN) {
-  const cells = basePattern();
-  for (const d of drift) {
-    const p = cells[d.ci].pts[d.pi];
-    p[0] += 0.03 * Math.sin(t * 2 * Math.PI / d.px + d.ph);
-    if (d.junction) p[1] += 0.05 * Math.sin(t * 2 * Math.PI / d.py + d.ph * 1.7);
-  }
-  if (pointerN) {
-    for (const c of cells) for (const p of c.pts) {
-      const dx = p[0] - pointerN.x, dy = p[1] - pointerN.y;
-      const dist = Math.hypot(dx, dy);
-      if (dist < 0.6 && dist > 1e-4) {
-        const f = (1 - dist / 0.6) * 0.05 / dist;
-        p[0] += dx * f; p[1] += dy * f;
-      }
-    }
-  }
-  return cells;
-}
-
-// ---------- geometry helpers ----------
-function insetPoly(pts, d) { // inward offset of a convex polygon (world coords, y up)
-  const n = pts.length, out = [];
-  for (let i = 0; i < n; i++) {
-    const p = pts[i], a = pts[(i - 1 + n) % n], b = pts[(i + 1) % n];
-    const e1 = [p[0] - a[0], p[1] - a[1]], e2 = [b[0] - p[0], b[1] - p[1]];
-    const l1 = Math.hypot(e1[0], e1[1]) || 1, l2 = Math.hypot(e2[0], e2[1]) || 1;
-    // inward normal for CCW winding (y up) is the left normal
-    const n1 = [-e1[1] / l1, e1[0] / l1], n2 = [-e2[1] / l2, e2[0] / l2];
-    const A = { x: p[0] + n1[0] * d, y: p[1] + n1[1] * d };
-    const B = { x: p[0] + n2[0] * d, y: p[1] + n2[1] * d };
-    // intersect the two offset edges
-    const dir1 = [e1[0] / l1, e1[1] / l1], dir2 = [e2[0] / l2, e2[1] / l2];
-    const den = dir1[0] * dir2[1] - dir1[1] * dir2[0];
-    if (Math.abs(den) < 1e-9) { out.push([A.x, A.y]); continue; }
-    const t = ((B.x - A.x) * dir2[1] - (B.y - A.y) * dir2[0]) / den;
-    out.push([A.x + dir1[0] * t, A.y + dir1[1] * t]);
-  }
-  return out;
-}
-function roundedShape(pts, r) {
-  const shape = new THREE.Shape();
-  const n = pts.length;
-  const tang = [];
-  for (let i = 0; i < n; i++) {
-    const p = pts[i], prev = pts[(i - 1 + n) % n], next = pts[(i + 1) % n];
-    const v1 = [p[0] - prev[0], p[1] - prev[1]], v2 = [next[0] - p[0], next[1] - p[1]];
-    const l1 = Math.hypot(v1[0], v1[1]) || 1, l2 = Math.hypot(v2[0], v2[1]) || 1;
-    const d = Math.min(r, l1 * 0.45, l2 * 0.45);
-    tang.push({
-      a: [p[0] - v1[0] / l1 * d, p[1] - v1[1] / l1 * d],
-      b: [p[0] + v2[0] / l2 * d, p[1] + v2[1] / l2 * d], p
-    });
-  }
-  shape.moveTo(tang[0].a[0], tang[0].a[1]);
-  for (let i = 0; i < n; i++) {
-    const t = tang[i], nx = tang[(i + 1) % n];
-    shape.quadraticCurveTo(t.p[0], t.p[1], t.b[0], t.b[1]);
-    shape.lineTo(nx.a[0], nx.a[1]);
-  }
-  shape.closePath();
-  return shape;
-}
-const DEPTH = () => 13 * S, BEV = () => 2.6 * S;
-function extrudeOf(shape) {
-  return new THREE.ExtrudeGeometry(shape, {
-    depth: DEPTH(), bevelEnabled: true, bevelThickness: BEV(),
-    bevelSize: BEV(), bevelSegments: 3, curveSegments: 6
-  });
-}
-function toWorld(cellPts) { // panel-normalized (x right, y down) -> world (y up)
-  const pw = panelW, ph = panelH;
-  return cellPts.map(([nx, ny]) => [blockX0 + nx * pw, panelTop - ny * ph]);
-}
-
-// ---------- glass material with cursor glow ----------
-const uni = {
-  uPointer: { value: new THREE.Vector3(0, 0, 0) },
-  uGlow: { value: 0 },
-  uS: { value: 1 }
-};
-function glassMat(withGlow) {
-  const m = new THREE.MeshPhysicalMaterial({
-    color: 0x17171b, roughness: 0.36, metalness: 0,
-    clearcoat: 0.7, clearcoatRoughness: 0.12, specularIntensity: 0.7,
-    iridescence: 0.55, iridescenceIOR: 1.3, iridescenceThicknessRange: [250, 650],
-    envMapIntensity: 1
-  });
-  if (withGlow) {
-    m.onBeforeCompile = (sh) => {
-      sh.uniforms.uPointer = uni.uPointer; sh.uniforms.uGlow = uni.uGlow; sh.uniforms.uS = uni.uS;
-      sh.vertexShader = 'varying vec3 vWPos;\n' + sh.vertexShader.replace(
-        '#include <begin_vertex>',
-        '#include <begin_vertex>\nvWPos = (modelMatrix * vec4(transformed,1.0)).xyz;');
-      sh.fragmentShader = 'varying vec3 vWPos;\nuniform vec3 uPointer;\nuniform float uGlow;\nuniform float uS;\n' +
-        sh.fragmentShader.replace('#include <emissivemap_fragment>',
-          `#include <emissivemap_fragment>
-           float gd = distance(vWPos, uPointer) / (300.0 * uS);
-           totalEmissiveRadiance += uGlow * vec3(.42,.37,.62) * .16 * exp(-1.6 * gd * gd);`);
-    };
-    m.customProgramCacheKey = () => 'glow';
-  }
-  return m;
-}
-
-// ---------- printed content canvases ----------
-const DPR_TEX = Math.max(1.5, Math.min(devicePixelRatio, 2));
-function makeTex() { return { tex: null, draw: null }; }
-function finishTex(cnv) {
-  const tex = new THREE.CanvasTexture(cnv);
-  tex.anisotropy = 8; tex.colorSpace = THREE.SRGBColorSpace;
-  tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
-  return tex;
-}
-const panelCnv = document.createElement('canvas');
-const navCnv = document.createElement('canvas');
-let hoverPill = false, hoverPaper = false, hoverNav = -1, hoverSignin = false;
-
-function panelLayout() {
-  const padX = 0.065 * panelW;
-  const hSize = Math.min(0.078 * panelW, 0.20 * panelH);
-  const subSize = Math.max(14, 0.0175 * panelW);
-  return { padX, hSize, subSize };
-}
-function drawPanel() {
-  const cnv = panelCnv;
-  cnv.width = Math.round(panelW * DPR_TEX); cnv.height = Math.round(panelH * DPR_TEX);
-  const c = cnv.getContext('2d');
-  c.setTransform(DPR_TEX, 0, 0, DPR_TEX, 0, 0);
-  c.clearRect(0, 0, panelW, panelH);
-  const { padX, hSize, subSize } = panelLayout();
-  try { c.letterSpacing = '0.2em'; } catch (e) {}
-  c.fillStyle = 'rgba(255,255,255,.38)';
-  c.font = `500 ${11 * S}px Inter`;
-  c.textBaseline = 'top';
-  c.fillText('PAYMENT RECOVERY FOR INDIAN SUBSCRIPTIONS', padX, 0.135 * panelH);
-  try { c.letterSpacing = '-0.045em'; } catch (e) {}
-  const y1 = 0.30 * panelH, y2 = y1 + 0.97 * hSize;
-  const grad = c.createLinearGradient(0, y1 - hSize * 0.75, 0, y2 + hSize * 0.1);
-  grad.addColorStop(0, '#dcdce0'); grad.addColorStop(1, '#bdbdc3');
-  c.fillStyle = grad;
-  c.font = `500 ${hSize}px Inter`;
-  c.textBaseline = 'alphabetic';
-  c.fillText('Failed', padX, y1);
-  c.fillText('payments.', padX, y2);
-  try { c.letterSpacing = '0em'; } catch (e) {}
-  c.fillStyle = 'rgba(255,255,255,.55)';
-  c.font = `400 ${subSize}px Inter`;
-  const sy = y2 + hSize * 0.5;
-  c.fillText('RecurSaathi chases failed card and UPI payments with RBI-timed', padX, sy);
-  c.fillText('retries and WhatsApp nudges. Set it up once, it runs every day.', padX, sy + subSize * 1.45);
-  // pill
-  const pw = 116 * S, ph = 40 * S, py = sy + subSize * 1.45 + 0.055 * panelH;
-  c.beginPath();
-  if (c.roundRect) c.roundRect(padX, py, pw, ph, 6 * S); else c.rect(padX, py, pw, ph);
-  c.fillStyle = hoverPill ? '#36d67e' : '#e9e9ec';
-  c.fill();
-  c.fillStyle = '#0f0f12';
-  c.font = `500 ${13 * S}px Inter`;
-  c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.fillText('Start free', padX + pw / 2, py + ph / 2 + 1);
-  c.textAlign = 'left';
-  // read paper link
-  const lx = padX + pw + 26 * S, ly = py + ph / 2;
-  c.fillStyle = 'rgba(255,255,255,.8)';
-  c.font = `400 ${14 * S}px Inter`;
-  c.textBaseline = 'middle';
-  c.fillText('See how it works \u2192', lx, ly);
-  if (hoverPaper) {
-    const w = c.measureText('See how it works \u2192').width;
-    c.fillRect(lx, ly + 9 * S, w, Math.max(1, 1.2 * S));
-  }
-  // footer
-  c.fillStyle = 'rgba(255,255,255,.34)';
-  c.font = `400 ${11 * S}px Inter`;
-  c.textBaseline = 'alphabetic';
-  c.fillText('\u00A9 RecurSaathi', padX, panelH - 0.045 * panelH);
-  c.textAlign = 'right';
-  c.fillText('RBI-timed retries', panelW - padX, panelH - 0.045 * panelH);
-  c.textAlign = 'left';
-  return { padX, hSize, subSize, pw, ph, py };
-}
-let panelGeo = null, panelTex = null, panelUVRepeat = null;
-function redrawPanelTexture() {
-  panelGeo = drawPanel();
-  if (!panelTex) { panelTex = finishTex(panelCnv); } else { panelTex.needsUpdate = true; }
-}
-function drawNav() {
-  const cnv = navCnv;
-  cnv.width = Math.round(blockW * DPR_TEX); cnv.height = Math.round(navH * DPR_TEX);
-  const c = cnv.getContext('2d');
-  c.setTransform(DPR_TEX, 0, 0, DPR_TEX, 0, 0);
-  c.clearRect(0, 0, blockW, navH);
-  const my = navH / 2;
-  const ms = 18 * S;
-  c.fillStyle = '#e8e8ec';
-  c.beginPath();
-  if (c.roundRect) c.roundRect(24 * S, my - ms / 2, ms, ms, 4 * S); else c.rect(24 * S, my - ms / 2, ms, ms);
-  c.fill();
-  c.fillStyle = '#fff';
-  c.font = `600 ${16 * S}px Inter`;
-  c.textBaseline = 'middle';
-  c.fillText('RecurSaathi', 24 * S + ms + 10 * S, my + 1);
-  c.font = `400 ${13 * S}px Inter`;
-  const linkText = 'How it works \u00B7 Features \u00B7 Pricing';
-  c.textAlign = 'center';
-  c.fillStyle = hoverNav === 0 ? 'rgba(255,255,255,.95)' : 'rgba(255,255,255,.6)';
-  c.fillText(linkText, blockW * 0.44, my + 1);
-  c.textAlign = 'right';
-  c.fillStyle = hoverSignin ? 'rgba(255,255,255,.95)' : 'rgba(255,255,255,.6)';
-  c.fillText('Start free', blockW - 24 * S, my + 1);
-  c.textAlign = 'left';
-  if (!navTex) { navTex = finishTex(cnv); } else { navTex.needsUpdate = true; }
-}
-let navTex = null;
-
-// ---------- pieces ----------
-const halfGap = () => 7 * S;
-const pieces = []; // {mesh, text, mat, isNav, center, size, spring, flight}
-function buildPieces() {
-  const springs = pieces.map(pc => pc.spring);
-  for (const pc of pieces) {
-    group.remove(pc.mesh); group.remove(pc.text);
-    pc.mesh.geometry.dispose(); pc.text.geometry.dispose();
-    pc.mat.dispose(); pc.text.material.dispose();
-  }
-  pieces.length = 0; hovered = null;
-  const cells = patternPoints(perfNow(), pointerN);
-  const navShape = roundedShape(insetPoly([
-    [blockX0, blockY1 - navH], [blockX0 + blockW, blockY1 - navH],
-    [blockX0 + blockW, blockY1], [blockX0, blockY1]
-  ], halfGap()), 20 * S);
-  addPiece(navShape, { x: 0, y: blockY1 - navH / 2 }, { w: blockW, h: navH }, true, navTex, navUV(), springs);
-  for (const cell of cells) {
-    const wp = toWorld(cell.pts);
-    const shape = roundedShape(insetPoly(wp, halfGap()), 20 * S);
-    let cx = 0, cy = 0, minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
-    for (const [x, y] of wp) { cx += x / wp.length; cy += y / wp.length;
-      minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y); }
-    addPiece(shape, { x: cx, y: cy }, { w: maxX - minX, h: maxY - minY }, false, panelTex, panelUV(), springs);
-  }
-}
-function panelUV() {
-  return { rx: 1 / panelW, ry: 1 / panelH, ox: -blockX0 / panelW, oy: -(panelTop - panelH) / panelH };
-}
-function navUV() {
-  return { rx: 1 / blockW, ry: 1 / navH, ox: -blockX0 / blockW, oy: -(blockY1 - navH) / navH };
-}
-function addPiece(shape, center, size, isNav, tex, uv, springs) {
-  const mat = glassMat(true);
-  const geo = extrudeOf(shape);
-  const mesh = new THREE.Mesh(geo, mat);
-  group.add(mesh);
-  const tGeo = new THREE.ShapeGeometry(shape, 8);
-  const tMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, toneMapped: false });
-  tMat.map = tex;
-  const text = new THREE.Mesh(tGeo, tMat);
-  text.position.z = DEPTH() + BEV() + 0.5;
-  text.renderOrder = 2;
-  group.add(text);
-  pieces.push({ mesh, text, mat, isNav, center, size,
-    spring: springs[pieces.length] ||
-      { z: 0, vz: 0, rx: 0, vrx: 0, ry: 0, vry: 0 }, flight: null, name: isNav ? 'nav' : '' });
-}
-function setupTexTransforms() {
-  if (panelTex) { const u = panelUV();
-    panelTex.repeat.set(u.rx, u.ry); panelTex.offset.set(u.ox, u.oy); }
-  if (navTex) { const u = navUV();
-    navTex.repeat.set(u.rx, u.ry); navTex.offset.set(u.ox, u.oy); }
-}
-// ---------- pointer / tilt / hover ----------
-const pointer = { x: 0, y: 0, nx: 0, ny: 0, inside: false };
-let pointerN = null;
-const raycaster = new THREE.Raycaster();
-let hovered = null;
-function onMove(e) {
-  pointer.x = e.clientX; pointer.y = e.clientY;
-  pointer.nx = (e.clientX / W) * 2 - 1; pointer.ny = -(e.clientY / H) * 2 + 1;
-  pointer.inside = true;
-  const wx = e.clientX - W / 2, wy = H / 2 - e.clientY;
-  const px = (wx - blockX0) / panelW, py = (panelTop - wy) / panelH;
-  pointerN = panelH > panelW ? { x: py, y: px } : { x: px, y: py };
-  // glow target on the front plane
-  raycaster.setFromCamera(new THREE.Vector2(pointer.nx, pointer.ny), camera);
-  const d = raycaster.ray.direction, o = raycaster.ray.origin;
-  const fz = DEPTH() + BEV();
-  const tHit = (fz - o.z) / (d.z || -1);
-  uni.uPointer.value.copy(o).addScaledVector(d, tHit);
-}
-function onLeave() { pointer.inside = false; hovered = null; }
-addEventListener('pointermove', onMove);
-document.addEventListener('pointerleave', onLeave);
-window.addEventListener('blur', onLeave);
-
-const tilt = { rx: 0.8 * Math.PI / 180, ry: -1.2 * Math.PI / 180 };
-function updateTilt(dt) {
-  const tRy = pointer.inside ? pointer.nx * 7 * Math.PI / 180 - 1.2 * Math.PI / 180 : -1.2 * Math.PI / 180;
-  const tRx = pointer.inside ? -pointer.ny * 5.5 * Math.PI / 180 + 0.8 * Math.PI / 180 : 0.8 * Math.PI / 180;
-  const a = 1 - Math.exp(-dt / 0.3);
-  tilt.ry += (tRy - tilt.ry) * a; tilt.rx += (tRx - tilt.rx) * a;
-  group.rotation.set(tilt.rx, tilt.ry, 0);
-}
-function updateHover(dt) {
-  let target = null;
-  if (state === 'idle' && pointer.inside) {
-    raycaster.setFromCamera(new THREE.Vector2(pointer.nx, pointer.ny), camera);
-    const hits = raycaster.intersectObjects(pieces.map(p => p.mesh), false);
-    if (hits.length) target = pieces.find(p => p.mesh === hits[0].object) || null;
-  }
-  hovered = target;
-  const k = 170, c = 19;
-  for (const pc of pieces) {
-    const sp = pc.spring;
-    let tz = 0, trx = 0, try_ = 0;
-    if (pc === hovered) {
-      const lift = (pc.isNav ? 32 : 50) * S;
-      tz = lift;
-      const nx = THREE.MathUtils.clamp((uni.uPointer.value.x - pc.center.x) / (pc.size.w * 0.6), -1, 1);
-      const ny = THREE.MathUtils.clamp((uni.uPointer.value.y - pc.center.y) / (pc.size.h * 0.6), -1, 1);
-      trx = -ny * 0.24; try_ = nx * 0.24;
-      pc.mat.iridescence = 1.0; pc.mat.envMapIntensity = 1.9;
-    } else { pc.mat.iridescence = 0.55; pc.mat.envMapIntensity = 1.0; }
-    sp.vz += (-k * (sp.z - tz) - c * sp.vz) * dt; sp.z += sp.vz * dt;
-    sp.vrx += (-k * (sp.rx - trx) - c * sp.vrx) * dt; sp.rx += sp.vrx * dt;
-    sp.vry += (-k * (sp.ry - try_) - c * sp.vry) * dt; sp.ry += sp.vry * dt;
-    pc.mesh.position.z = sp.z;
-    pc.mesh.rotation.set(sp.rx, sp.ry, 0);
-  }
-}
-
-// ---------- shatter / back / intro ----------
-let state = 'intro';
-const easeOutBack = (p) => { const s = 1.70158; const q = p - 1; return q * q * ((s + 1) * q + s) + 1; };
-function startShatter() {
-  if (state !== 'idle') return;
-  state = 'flying';
-  const t0 = performance.now();
-  pieces.forEach((pc, i) => {
-    const dir = new THREE.Vector2(pc.center.x, pc.center.y);
-    if (dir.length() < 1) dir.set(0, -1);
-    dir.normalize();
-    const sp = (80 + 150 * Math.random()) * S;
-    const vx = dir.x * sp, vy = dir.y * sp - (40 + 90 * Math.random()) * S;
-    const vz = (420 + 380 * Math.random()) * S, g = 1500 * S, T = 0.72;
-    pc.flight = { t0: t0 + i * 30, dur: 720, dir: 1, vx, vy, vz, g,
-      end: { x: vx * T, y: vy * T + 0.5 * g * T * T, z: vz * T },
-      axis: new THREE.Vector3(Math.random() - .5, Math.random() - .5, Math.random() - .5).normalize(),
-      ang: 2.0 + 1.6 * Math.random() };
-  });
-  layerEl.style.transition = 'opacity .2s ease'; layerEl.style.opacity = '0';
-  setTimeout(() => hudEl.classList.add('on'), 280);
-  setTimeout(() => { sliverAnim = { t0: performance.now(), mode: 'in' }; backEl.classList.add('on'); }, 300);
-}
-function startBack() {
-  if (state !== 'defs') return;
-  state = 'returning';
-  hudEl.style.transition = 'opacity .25s ease';
-  hudEl.classList.remove('on');
-  backEl.classList.remove('on');
-  sliverAnim = { t0: performance.now(), mode: 'out' };
-  const t0 = performance.now();
-  pieces.forEach((pc, i) => {
-    if (pc.flight) { pc.flight.t0 = t0 + i * 30; pc.flight.dir = -1; }
-  });
-  layerEl.style.transition = 'opacity .15s ease';
-}
-function applyFlight(pc, now) {
-  const f = pc.flight; if (!f) return;
-  const p = THREE.MathUtils.clamp((now - f.t0) / f.dur, 0, 1);
-  if (p <= 0) {
-    if (f.dir === -1 && f.end) {
-      pc.mesh.position.set(f.end.x, f.end.y, f.end.z);
-      pc.mesh.quaternion.setFromAxisAngle(f.axis, f.ang);
-      pc.text.position.copy(pc.mesh.position);
-      pc.text.quaternion.copy(pc.mesh.quaternion);
-      pc.text.position.z = pc.mesh.position.z + DEPTH() + BEV() + 0.5;
-    }
-    return;
-  }
-  const e = f.dir === 1 ? p * p * p : easeOutBack(p);
-  const T = f.dur / 1000, te = e * T;
-  const dx = f.vx * te, dy = f.vy * te + 0.5 * f.g * te * te, dz = f.vz * te;
-  if (f.dir === 1) {
-    pc.mesh.position.set(dx, dy, dz + pc.spring.z);
-    pc.mesh.quaternion.setFromAxisAngle(f.axis, f.ang * e);
-    pc.mesh.quaternion.multiply(new THREE.Quaternion().setFromEuler(
-      new THREE.Euler(pc.spring.rx, pc.spring.ry, 0)));
-    if (p >= 1 && state === 'flying' && allFlown(now)) { state = 'defs'; }
-  } else {
-    pc.mesh.position.set(f.end.x - dx, f.end.y - dy, f.end.z - dz);
-    pc.mesh.quaternion.setFromAxisAngle(f.axis, Math.max(0, f.ang * (1 - e)));
-    if (p >= 1) { snapBase(pc); pc.flight = null; if (allFlown(now)) finishReturn(); }
-  }
-  pc.text.position.copy(pc.mesh.position); pc.text.quaternion.copy(pc.mesh.quaternion);
-  pc.text.position.z = pc.mesh.position.z + DEPTH() + BEV() + 0.5;
-  pc.text.visible = true;
-}
-function snapBase(pc) {
-  pc.mesh.position.set(0, 0, pc.spring.z);
-  pc.mesh.rotation.set(pc.spring.rx, pc.spring.ry, 0);
-  pc.text.position.set(0, 0, pc.spring.z + DEPTH() + BEV() + 0.5);
-  pc.text.quaternion.identity();
-}
-function allFlown(now) {
-  return pieces.every(pc => !pc.flight || now >= pc.flight.t0 + pc.flight.dur);
-}
-function finishReturn() {
-  state = 'idle';
-  layerEl.style.transition = 'opacity .3s ease'; layerEl.style.opacity = '1';
-}
-function startIntro() {
-  state = 'intro';
-  const t0 = performance.now();
-  pieces.forEach((pc, i) => {
-    const dir = new THREE.Vector2(pc.center.x, pc.center.y);
-    if (dir.length() < 1) dir.set(0, -1);
-    dir.normalize();
-    const sp = (80 + 150 * Math.random()) * S;
-    const vx = dir.x * sp, vy = dir.y * sp - (40 + 90 * Math.random()) * S;
-    const vz = (420 + 380 * Math.random()) * S;
-    const T = 0.72, g = 1500 * S;
-    const ex = vx * T + 0.5 * 0, ey = vy * T + 0.5 * g * T * T, ez = vz * T;
-    pc.flight = { t0: t0 + i * 30, dur: 720, dir: -1, vx, vy, vz, g,
-      axis: new THREE.Vector3(Math.random() - .5, Math.random() - .5, Math.random() - .5).normalize(),
-      ang: 2.0 + 1.6 * Math.random(),
-      end: { x: ex, y: ey, z: ez } };
-  });
-  layerEl.style.opacity = '0';
-  setTimeout(() => { finishReturn(); }, 720 + pieces.length * 30 + 60);
-}
-
-// ---------- back sliver on its own transparent canvas ----------
-const perfNow = () => performance.now() / 1000;
-const gl2 = document.createElement('canvas');
-gl2.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:9;pointer-events:none;display:none';
-document.body.appendChild(gl2);
-backEl.style.zIndex = '10';
-const renderer2 = new THREE.WebGLRenderer({ canvas: gl2, alpha: true, antialias: true });
-renderer2.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer2.toneMapping = THREE.ACESFilmicToneMapping;
-renderer2.outputColorSpace = THREE.SRGBColorSpace;
-const scene2 = new THREE.Scene();
-const camera2 = new THREE.PerspectiveCamera(30, 1, 1, 12000);
-const pmrem2 = new THREE.PMREMGenerator(renderer2);
-scene2.environment = pmrem2.fromScene(new RoomEnvironment(), 0.04).texture;
-scene2.environmentIntensity = 0.42;
-const key2 = new THREE.DirectionalLight(0xdfe8ff, 2.6);
-key2.position.set(-300, 260, 700);
-scene2.add(key2);
-let sliverMesh = null, sliverHover = false, sliverAnim = null;
-function buildSliver() {
-  if (sliverMesh) { sliverMesh.geometry.dispose(); scene2.remove(sliverMesh); }
-  const k = W / 1918;
-  const pts = [[.147, .243], [.252, .169], [.287, .277], [.151, .258]]
-    .map(([fx, fy]) => [(fx - .5) * W, (.5 - fy) * H]);
-  const shape = roundedShape(insetPoly(pts, 0), 10 * k);
-  const geo = new THREE.ExtrudeGeometry(shape, {
-    depth: 11 * k, bevelEnabled: true, bevelThickness: 2.2 * k,
-    bevelSize: 2.2 * k, bevelSegments: 3, curveSegments: 6
-  });
-  const mat = glassMat(false);
-  mat.iridescence = 0.35; mat.envMapIntensity = 1.6;
-  sliverMesh = new THREE.Mesh(geo, mat);
-  sliverMesh.rotation.set(0.08, -0.16, 0);
-  scene2.add(sliverMesh);
-}
-function updateSliver(now, dt) {
-  if (!sliverMesh) return;
-  let scale = 0;
-  if (sliverAnim) {
-    if (sliverAnim.mode === 'in') {
-      if (gl2.style.display === 'none') gl2.style.display = 'block';
-      const p = Math.min(1, (now - sliverAnim.t0) / 400);
-      scale = easeOutBack(p);
-      if (p >= 1) sliverAnim = null;
-    } else {
-      const p = Math.min(1, (now - sliverAnim.t0) / 250);
-      scale = 1 - p * p;
-      if (p >= 1) { sliverAnim = null; gl2.style.display = 'none'; }
-    }
-  }
-  sliverMesh.scale.setScalar(Math.max(0.0001, scale));
-  sliverMesh.rotation.y = -0.16 + 0.03 * Math.sin(now / 1000 * Math.PI * 2);
-  sliverMesh.rotation.x = 0.08 + 0.035 * Math.sin(now / 1000 * Math.PI * 1.8 + 1);
-  sliverHover = false;
-  if (state === 'defs' && pointer.inside && scale > 0.5) {
-    raycaster.setFromCamera(new THREE.Vector2(pointer.nx, pointer.ny), camera2);
-    if (raycaster.intersectObject(sliverMesh, false).length) {
-      sliverHover = true;
-      sliverMesh.rotation.y += pointer.nx * 0.14;
-      sliverMesh.rotation.x += -pointer.ny * 0.14;
-    }
-  }
-}
-
-// ---------- render loop ----------
-let lastT = performance.now(), lastRebuild = 0;
-function animate(now) {
-  requestAnimationFrame(animate);
-  const dt = Math.min((now - lastT) / 1000, 1 / 30); lastT = now;
-  updateTilt(dt);
-  updateHover(dt);
-  const gTarget = (pointer.inside && state !== 'defs') ? 1 : 0;
-  uni.uGlow.value += (gTarget - uni.uGlow.value) * Math.min(1, dt * 8);
-  if (state === 'idle' && now - lastRebuild > 22) { buildPieces(); lastRebuild = now; }
-  for (const pc of pieces) applyFlight(pc, now);
-  updateSliver(now, dt);
-  renderer.render(scene, camera);
-  renderer2.render(scene2, camera2);
-  updateHomography();
-}
-function resize() {
-  W = innerWidth; H = innerHeight;
-  renderer.setSize(W, H);
-  renderer2.setSize(W, H);
-  const d = (H / 2) / Math.tan(Math.PI / 12);
-  camera.aspect = W / H; camera.position.set(0, 0, d); camera.updateProjectionMatrix();
-  camera2.aspect = W / H; camera2.position.set(0, 0, d); camera2.updateProjectionMatrix();
-  uni.uS.value = S;
-  redrawPanelTexture(); drawNav(); setupTexTransforms();
-  buildPieces(); buildSliver(); buildDOM();
-  updateTilt(1);
-}
-addEventListener('resize', resize);
-
-// ---------- homography DOM layer ----------
-const V = new THREE.Vector3();
-function projectCorner(x, y, z, out) {
-  V.set(x, y, z).applyMatrix4(group.matrixWorld).project(camera);
-  out.x = (V.x + 1) / 2 * W; out.y = (1 - V.y) / 2 * H;
-}
-const corners = [{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0}];
-function computeH(src, dst) { // 4-point homography, returns 3x3 row-major
-  const A = [], b = [];
-  for (let i = 0; i < 4; i++) {
-    const [x, y] = src[i], { x: X, y: Y } = dst[i];
-    A.push([x, y, 1, 0, 0, 0, -X * x, -X * y]); b.push(X);
-    A.push([0, 0, 0, x, y, 1, -Y * x, -Y * y]); b.push(Y);
-  }
-  for (let col = 0; col < 8; col++) {
-    let piv = col;
-    for (let r = col + 1; r < 8; r++) if (Math.abs(A[r][col]) > Math.abs(A[piv][col])) piv = r;
-    [A[col], A[piv]] = [A[piv], A[col]]; [b[col], b[piv]] = [b[piv], b[col]];
-    const d = A[col][col] || 1e-12;
-    for (let r = 0; r < 8; r++) {
-      if (r === col) continue;
-      const f = A[r][col] / d;
-      for (let c2 = col; c2 < 8; c2++) A[r][c2] -= f * A[col][c2];
-      b[r] -= f * b[col];
-    }
-  }
-  return [b[0] / A[0][0], b[1] / A[1][1], b[2] / A[2][2], b[3] / A[3][3],
-          b[4] / A[4][4], b[5] / A[5][5], b[6] / A[6][6], b[7] / A[7][7], 1];
-}
-function updateHomography() {
-  if (state === 'defs') return;
-  const fz = DEPTH() + BEV();
-  const bw = blockW, bh = blockH;
-  projectCorner(blockX0, blockY1, fz, corners[0]);
-  projectCorner(blockX0 + bw, blockY1, fz, corners[1]);
-  projectCorner(blockX0 + bw, blockY1 - bh, fz, corners[2]);
-  projectCorner(blockX0, blockY1 - bh, fz, corners[3]);
-  const h = computeH([[0, 0], [bw, 0], [bw, bh], [0, bh]],
-    [corners[0], corners[1], corners[2], corners[3]]);
-  layerEl.style.transform =
-    `matrix3d(${h[0]},${h[3]},0,${h[6]},${h[1]},${h[4]},0,${h[7]},0,0,1,0,${h[2]},${h[5]},0,1)`;
-}
-
-// ---------- DOM copy (selectable text + hit areas) ----------
-function buildDOM() {
-  layerEl.innerHTML = '';
-  layerEl.style.width = blockW + 'px'; layerEl.style.height = blockH + 'px';
-  const nav = document.createElement('div');
-  nav.style.cssText = `position:absolute;left:0;top:0;width:${blockW}px;height:${navH}px`;
-  const brand = document.createElement('span');
-  brand.textContent = 'RecurSaathi';
-  brand.style.cssText = `position:absolute;left:${24 * S}px;top:${navH / 2}px;transform:translateY(-50%);font:600 ${16 * S}px Inter`;
-  nav.appendChild(brand);
-  const links = document.createElement('a'); links.className = 'hit';
-  links.textContent = 'How it works \u00B7 Features \u00B7 Pricing';
-  links.href = '#how';
-  links.style.cssText = `position:absolute;left:${blockW * 0.44}px;top:${navH / 2}px;transform:translate(-50%,-50%);font:400 ${13 * S}px Inter;white-space:nowrap`;
-  nav.appendChild(links);
-  const signin = document.createElement('a'); signin.className = 'hit';
-  signin.textContent = 'Start free'; signin.href = '#start';
-  signin.style.cssText = `position:absolute;right:${24 * S}px;top:${navH / 2}px;transform:translateY(-50%);font:400 ${13 * S}px Inter`;
-  nav.appendChild(layerNav(signin));
-  nav.appendChild(layerNav(links));
-  nav.insertBefore(brand, nav.firstChild);
-  const pan = document.createElement('div');
-  pan.style.cssText = `position:absolute;left:0;top:${navH + gap}px;width:${panelW}px;height:${panelH}px`;
-  const { padX, hSize, subSize } = panelLayout();
-  const y1 = 0.30 * panelH, y2 = y1 + 0.97 * hSize, sy = y2 + hSize * 0.5;
-  const pw = 116 * S, ph = 40 * S, py = sy + subSize * 1.45 + 0.055 * panelH;
-  const eye = document.createElement('span');
-  eye.textContent = 'PAYMENT RECOVERY FOR INDIAN SUBSCRIPTIONS';
-  eye.style.cssText = `position:absolute;left:${padX}px;top:${0.135 * panelH}px;font:500 ${11 * S}px Inter;letter-spacing:.2em;white-space:nowrap`;
-  pan.appendChild(eye);
-  const head = document.createElement('div');
-  head.innerHTML = 'Failed<br>payments.';
-  head.style.cssText = `position:absolute;left:${padX}px;top:${y1 - hSize * 0.77}px;font:500 ${hSize}px Inter;letter-spacing:-.045em;line-height:.97;white-space:nowrap`;
-  pan.appendChild(head);
-  const sub = document.createElement('div');
-  sub.innerHTML = 'RecurSaathi chases failed card and UPI payments with RBI-timed<br>retries and WhatsApp nudges. Set it up once, it runs every day.';
-  sub.style.cssText = `position:absolute;left:${padX}px;top:${sy - subSize * 0.8}px;font:400 ${subSize}px Inter;line-height:1.45;white-space:nowrap`;
-  pan.appendChild(sub);
-  const pill = document.createElement('a'); pill.className = 'hit';
-  pill.textContent = 'Start free'; pill.href = '#start';
-  pill.style.cssText = `position:absolute;left:${padX}px;top:${py}px;width:${pw}px;height:${ph}px;display:flex;align-items:center;justify-content:center;font:500 ${13 * S}px Inter`;
-  const paper = document.createElement('a'); paper.className = 'hit'; paper.id = 'paper-link';
-  paper.textContent = 'See how it works \u2192'; paper.href = 'javascript:void(0)';
-  paper.style.cssText = `position:absolute;left:${padX + pw + 26 * S}px;top:${py}px;height:${ph}px;display:flex;align-items:center;font:400 ${14 * S}px Inter`;
-  pan.appendChild(pill); pan.appendChild(paper);
-  const f1 = document.createElement('span'); f1.textContent = '\u00A9 RecurSaathi';
-  f1.style.cssText = `position:absolute;left:${padX}px;top:${panelH - 0.045 * panelH - 11 * S}px;font:400 ${11 * S}px Inter`;
-  const f2 = document.createElement('span'); f2.textContent = 'RBI-timed retries';
-  f2.style.cssText = `position:absolute;right:${padX}px;top:${panelH - 0.045 * panelH - 11 * S}px;font:400 ${11 * S}px Inter`;
-  pan.appendChild(f1); pan.appendChild(f2);
-  layerEl.appendChild(nav); layerEl.appendChild(pan);
-  // hover states drive the printed canvas
-  pill.addEventListener('pointerenter', () => { hoverPill = true; redrawPanelTexture(); });
-  pill.addEventListener('pointerleave', () => { hoverPill = false; redrawPanelTexture(); });
-  paper.addEventListener('pointerenter', () => { hoverPaper = true; redrawPanelTexture(); });
-  paper.addEventListener('pointerleave', () => { hoverPaper = false; redrawPanelTexture(); });
-  paper.addEventListener('click', startShatter);
-  links.addEventListener('pointerenter', () => { hoverNav = 0; drawNav(); });
-  links.addEventListener('pointerleave', () => { hoverNav = -1; drawNav(); });
-  signin.addEventListener('pointerenter', () => { hoverSignin = true; drawNav(); });
-  signin.addEventListener('pointerleave', () => { hoverSignin = false; drawNav(); });
-}
-function layerNav(el) { return el; }
-backEl.addEventListener('click', startBack);
-backEl.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') startBack(); });
-
-// ---------- boot ----------
-async function boot() {
-  try { await Promise.all(['400 16px Inter', '500 16px Inter', '600 16px Inter', '650 16px Inter']
-    .map(f => document.fonts.load(f))); } catch (e) {}
-  resize();
-  startIntro();
-  requestAnimationFrame(animate);
-}
-boot();
-</script>
-<div id="cbar"><p>This site uses a few cookies to keep things working. No trackers, nothing shared.</p><button id="cbar-ok">Got it</button></div>
-<script>(function(){try{if(localStorage.getItem("rs_cookie_ok")!=="1"){document.getElementById("cbar").classList.add("on");}}catch(e){}
-document.getElementById("cbar-ok").addEventListener("click",function(){try{localStorage.setItem("rs_cookie_ok","1");}catch(e){}document.getElementById("cbar").classList.remove("on");});})();</script>
 </body>
 </html>
