@@ -71,8 +71,11 @@ async def api_signup(request: Request):
     from . import models, auth
     if models.get_user_by_email(email):
         raise HTTPException(status_code=400, detail="That email already has an account. Sign in at /login with your password to continue.")
-    models.create_user(email, auth.hash_pw(pw), data.get("name") or "",
-                       data.get("name") or "", (data.get("phone") or "").lstrip("+"))
+    u = models.create_user(email, auth.hash_pw(pw), data.get("name") or "",
+                           data.get("name") or "", (data.get("phone") or "").lstrip("+"))
+    import time as _time
+    models.update_user(u["id"], trial_started_at=_time.time(),
+                       trial_ends=_time.time() + 14 * 86400)  # trial starts at signup, regardless of plan
     mid = "m_" + _uuid.uuid4().hex[:10]
     m = billing.onboard(mid, email, plan)
     m.name = data.get("name") or ""

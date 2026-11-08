@@ -99,6 +99,9 @@ async def signup(request: Request, name: str = Form(""), business: str = Form(""
         return render("signup.html", request, error="That email is already registered. Try logging in.")
     u = models.create_user(email, auth.hash_pw(password), name, business, phone,
                            upi_vpa=upi_vpa, payee_name=name)
+    _t = time.time()
+    models.update_user(u["id"], trial_started_at=_t,
+                       trial_ends=_t + 14 * 86400)  # trial starts at signup, regardless of plan
     for k in models.AUTO_KEYS:
         models.set_automation(u["id"], k, True)
         d = auto.DEFAULTS[k]
