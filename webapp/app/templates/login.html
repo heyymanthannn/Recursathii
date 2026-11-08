@@ -3,7 +3,7 @@
 <h1>Welcome back</h1>
 <p class="sub">Good to see you. Your recovery dashboard is right where you left it.</p>
 {% if request.query_params.get("created") %}<div class="badge-note" style="margin-bottom:10px">Account created. Log in to open your dashboard.</div>{% endif %}
-{% if error %}<div class="err">{{ error }}</div>{% endif %}
+{% if error %}<div class="err">{{ error }}</div>{% endif %}{% if ok %}<div class="ok">{{ ok }}</div>{% endif %}
 <form method="post" action="/login" class="stack">
 <div><label>Email</label><input type="email" name="email" required></div>
 <div><label>Password</label><input type="password" name="password" required></div>

@@ -87,6 +87,10 @@ def init():
             c.execute("ALTER TABLE users ADD COLUMN trial_started_at REAL")
         if "billing_cycle" not in cols:
             c.execute("ALTER TABLE users ADD COLUMN billing_cycle TEXT DEFAULT 'monthly'")
+        if "verify_token" not in cols:
+            c.execute("ALTER TABLE users ADD COLUMN verify_token TEXT")
+        if "verified_at" not in cols:
+            c.execute("ALTER TABLE users ADD COLUMN verified_at REAL")
         c.executescript("""
         CREATE TABLE IF NOT EXISTS connect(
           owner_id TEXT PRIMARY KEY, business_name TEXT, logo TEXT,
@@ -246,6 +250,13 @@ def refund_payment(payment_id, note="", gateway="manual"):
        "VALUES(?,?,?,?,?,?,?,?,?)",
        (uid(), pay["owner_id"], "refund", gateway, pay["customer_id"], pay["amount"], "", pay["invoice_id"], now()))
     return dict(pay)
+
+
+def set_verify_token(user_id, token):
+    ex("UPDATE users SET verify_token=? WHERE id=?", (token, user_id))
+
+def mark_verified(user_id):
+    ex("UPDATE users SET verified_at=?, verify_token=NULL WHERE id=?", (now(), user_id))
 
 
 def record_payment_attempt(inv, method, status="pending", reference="", note=""):

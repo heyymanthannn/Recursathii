@@ -1,4 +1,5 @@
 {% extends "base.html" %}{% block title %}Dashboard · RecurSaathi{% endblock %}{% block content %}
+{% if verify_banner and not verify_token_ok %}<div class="banner verify" style="background:#fff7e0;border:1px solid #f0e0b0;color:#9a6b00;border-radius:14px;padding:12px 16px;margin:0 0 14px;font-size:14px">{{ verify_banner }} <form method="post" action="/resend-verification" style="display:inline"><button style="background:none;border:none;color:#5b4bd6;font-weight:600;cursor:pointer;font-size:14px;text-decoration:underline">Resend link</button></form></div>{% endif %}
 <div class="dhead">
   <div>
     <h1>{{ user.business }}</h1>

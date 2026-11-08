@@ -8,7 +8,8 @@ Recovery dashboard           -> /dashboard/{merchant_id} (JSON + /dashboard.html
 import hmac, hashlib, os
 from fastapi import FastAPI, Request, HTTPException, Header, Form
 from fastapi.responses import FileResponse, JSONResponse
-from . import engine, billing, playbooks, youpi, config, manual_upi
+from . import engine, billing, playbooks, youpi, config, manual_upi, auth
+from .ratelimit import allow as rl_allow
 from .config import WEBHOOK_SECRET, BILLING_WEBHOOK_SECRET, PLANS
 from fastapi.responses import HTMLResponse, Response
 
@@ -53,6 +54,9 @@ async def billing_webhook(request: Request,
 
 @app.post("/api/signup")
 async def api_signup(request: Request):
+    _ip = (request.headers.get("x-forwarded-for") or request.client.host or "?").split(",")[0].strip()
+    if not rl_allow("api_signup:" + _ip, 5, 3600):
+        raise HTTPException(status_code=429, detail="Too many signups from this connection. Try again in an hour.")
     """Landing-page signup: creates a trial merchant and returns a checkout link.
 
     Provider is chosen by what is configured: Razorpay (real keys), YouPI-PG
@@ -68,7 +72,7 @@ async def api_signup(request: Request):
     pw = (data.get("password") or "")
     if len(pw) < 8:
         raise HTTPException(status_code=400, detail="Password needs at least 8 characters.")
-    from . import models, auth
+    from . import models
     if models.get_user_by_email(email):
         raise HTTPException(status_code=400, detail="That email already has an account. Sign in at /login with your password to continue.")
     u = models.create_user(email, auth.hash_pw(pw), data.get("name") or "",
@@ -77,6 +81,19 @@ async def api_signup(request: Request):
     import time as _time
     models.update_user(u["id"], trial_started_at=_time.time(),
                        trial_ends=_time.time() + 14 * 86400)  # trial starts at signup, regardless of plan
+    # email verification (soft): login is never blocked, a banner reminds until verified
+    import uuid as _uuid3
+    _vtok = _uuid3.uuid4().hex
+    models.set_verify_token(u["id"], _vtok)
+    try:
+        from . import notify as _notify
+        if _notify.smtp_ready():
+            _notify.send_email(email, "Verify your email - RecurSaathi",
+                f"Welcome to RecurSaathi, {data.get('name') or ''}!\n\nConfirm your email address (takes one click):\n"
+                f"{config.BASE_URL}/verify/{_vtok}\n\n"
+                "If you didn't create this account you can ignore this email.")
+    except Exception:
+        pass
     mid = "m_" + _uuid.uuid4().hex[:10]
     m = billing.onboard(mid, email, plan)
     m.name = data.get("name") or ""

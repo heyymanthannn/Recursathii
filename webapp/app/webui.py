@@ -4,7 +4,9 @@ import time
 import csv, io, os, secrets, time
 from fastapi import APIRouter, Depends, HTTPException, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
-from . import models, auth, vault, payments, notify, automations as auto, config, retention as ret
+from . import models
+from . import auth, vault, payments, notify, automations as auto, config, retention as ret
+from .ratelimit import allow as rl_allow, wait_s as rl_wait
 
 def _role_gate(request: Request):
     u = auth.current_user(request)
@@ -84,7 +86,12 @@ async def login_page(request: Request):
     return render("login.html", request, error="")
 
 @router.post("/login")
+
 async def login(request: Request, email: str = Form(""), password: str = Form("")):
+    _ip = (request.headers.get("x-forwarded-for") or request.client.host or "?").split(",")[0].strip()
+    _rl_key = "login:" + _ip + ":" + (email or "").lower()
+    if not rl_allow(_rl_key, 10, 600):
+        return render("login.html", request, error=f"Too many attempts. Try again in {rl_wait(_rl_key, 10, 600)}s.")
     u = models.get_user_by_email(email)
     if not u or not auth.check_pw(password, u["pw_hash"]):
         return render("login.html", request, error="Wrong email or password.")
@@ -101,6 +108,10 @@ async def signup_page(request: Request):
 async def signup(request: Request, name: str = Form(""), business: str = Form(""),
                  email: str = Form(""), phone: str = Form(""),
                  upi_vpa: str = Form(""), password: str = Form("")):
+    _ip = (request.headers.get("x-forwarded-for") or request.client.host or "?").split(",")[0].strip()
+    _rl_key = "signup:" + _ip
+    if not rl_allow(_rl_key, 5, 3600):
+        return render("signup.html", request, error=f"Too many signups from this connection. Try again in {rl_wait(_rl_key, 5, 3600)}s.")
     if not all([name, business, email, password]):
         return render("signup.html", request, error="Name, business, email and password are required.")
     if not phone.strip():
@@ -120,6 +131,23 @@ async def signup(request: Request, name: str = Form(""), business: str = Form(""
         if "email_subject" in d:  # due_call is calls-only: no email template
             models.set_template(u["id"], k, d["email_subject"], d["email_body"])
     models.log_audit(u["id"], "signup", email)
+    # email verification (soft): login is never blocked, a banner reminds until verified
+    import uuid as _uuid2
+    _vtok = _uuid2.uuid4().hex
+    models.set_verify_token(u["id"], _vtok)
+    try:
+        from . import notify as _notify
+        from .config import BASE_URL as _BU
+        if _notify.smtp_ready():
+            _notify.send_email(email, "Verify your email - RecurSaathi",
+                f"Welcome to RecurSaathi, {name or business}!\n\nConfirm your email address (takes one click):\n"
+                f"{_BU}/verify/{_vtok}\n\n"
+                "Until then you can use the dashboard - we just remind you on sign-in.\n\n- Team RecurSaathi")
+            models.log_audit(u["id"], "verify.sent", email)
+    except Exception as _e:
+        models.log_audit(u["id"], "verify.send_failed", str(_e)[:120])
+    # mark rl key comment to keep replace idempotent
+    # rl_signup marker
     import uuid as _uuid
     from . import billing as _billing
     mid = "m_" + _uuid.uuid4().hex[:10]
@@ -130,7 +158,39 @@ async def signup(request: Request, name: str = Form(""), business: str = Form(""
     resp = RedirectResponse("/login?created=1", status_code=303)  # signup lands on the login page; dashboard comes after sign-in
     return resp
 
+@router.get("/verify/{token}")
+async def verify_email(request: Request, token: str):
+    u = models.q("SELECT id FROM users WHERE verify_token=?", (token,))
+    if not u:
+        return render("login.html", request, error="That verification link is invalid or already used.")
+    models.mark_verified(u[0]["id"])
+    models.log_audit(u[0]["id"], "verify.ok", "")
+    return render("login.html", request, ok="Email verified. You are all set.")
+
+@router.post("/resend-verification")
+async def resend_verification(request: Request):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    if user.get("verified_at"):
+        return RedirectResponse("/dashboard", status_code=303)
+    import uuid as _uuid3
+    from . import notify as _notify
+    from .config import BASE_URL as _BU
+    _tok = _uuid3.uuid4().hex
+    models.set_verify_token(user["id"], _tok)
+    sent = False
+    if _notify.smtp_ready():
+        try:
+            _notify.send_email(user["email"], "Verify your email - RecurSaathi",
+                f"Confirm your email address (one click):\n{_BU}/verify/{_tok}\n\n- Team RecurSaathi")
+            sent = True
+        except Exception:
+            sent = False
+    return RedirectResponse(f"/dashboard?verify={'sent' if sent else 'failed'}", status_code=303)
+
 @router.get("/logout")
+
 async def logout():
     resp = RedirectResponse("/login", status_code=303)
     auth.end_session(resp)
@@ -142,6 +202,12 @@ async def dashboard(request: Request):
     user = guard(request)
     if not user:
         return RedirectResponse("/login", status_code=303)
+    _vmsg = None
+    if not user.get("verified_at"):
+        _vs = request.query_params.get("verify", "")
+        _vmsg = ("A fresh verification link is on its way to your inbox." if _vs == "sent"
+                 else ("Could not send the verification email just now - try again shortly." if _vs == "failed"
+                       else "One quick step: verify your email so we can reach you about your account."))
     m = models.owner_metrics(user["id"])
     period = request.query_params.get("period", "monthly")
     if period not in ("monthly", "weekly"):

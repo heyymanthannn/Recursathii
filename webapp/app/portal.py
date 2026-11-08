@@ -4,6 +4,7 @@ import time
 from fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from . import models, payments, notify, automations as auto, config
+from .ratelimit import allow as rl_allow
 
 router = APIRouter()
 
@@ -158,6 +159,10 @@ async def portal_login_page(request: Request):
 
 @router.post("/portal/login")
 async def portal_login(request: Request, email: str = Form(""), password: str = Form("")):
+    _ip = (request.headers.get("x-forwarded-for") or request.client.host or "?").split(",")[0].strip()
+    _rk = "portal_login:" + _ip + ":" + (email or "").lower()
+    if not rl_allow(_rk, 10, 600):
+        return render("portal_login.html", request, err="Too many attempts. Try again in a few minutes.", created=False)
     email = (email or "").strip().lower()
     row = models.one("SELECT * FROM portal_users WHERE email=?", (email,))
     if not row or not _portal_check(password or "", row["pw_hash"]):
@@ -169,6 +174,10 @@ async def portal_login(request: Request, email: str = Form(""), password: str = 
 
 @router.post("/portal/register")
 async def portal_register(request: Request, email: str = Form(""), password: str = Form("")):
+    _ip = (request.headers.get("x-forwarded-for") or request.client.host or "?").split(",")[0].strip()
+    _rk = "portal_register:" + _ip + ":" + (email or "").lower()
+    if not rl_allow(_rk, 10, 600):
+        return render("portal_login.html", request, err="Too many attempts. Try again in a few minutes.", created=False)
     """Set a portal password for this email. Only allowed when at least one
     invoice already exists for that email (they got a link from a business)."""
     email = (email or "").strip().lower()
