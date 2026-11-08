@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>How to Recover Failed Subscription Payments in India — RecurSaathi Guide</title>
+<meta name="description" content="A practical guide to recovering failed subscription payments in India: RBI retry windows, dunning cadences, WhatsApp nudges and manual UPI backups. From RecurSaathi.">
+<meta name="keywords" content="failed payment recovery India, subscription dunning, Razorpay failed payments, UPI recovery, overdue invoice software">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%237c6cf8'/%3E%3Cstop offset='1' stop-color='%235ac8fa'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Ctext x='32' y='44' font-size='34' font-family='Arial' font-weight='700' fill='white' text-anchor='middle'%3ER%3C/text%3E%3C/svg%3E">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#f5f5f7">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="RecurSaathi">
+<meta property="og:title" content="How to Recover Failed Subscription Payments in India — RecurSaathi Guide">
+<meta property="og:description" content="RecurSaathi monitors failed card and UPI payments, chases overdue invoices and dormant customers, and recovers revenue for Indian subscription businesses. 14-day free trial.">
+<meta property="og:url" content="https://recursathii.onrender.com/guide">
+<meta property="og:locale" content="en_IN">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="RecurSaathi — Recover failed subscription payments">
+<meta name="twitter:description" content="RBI-timed retries, WhatsApp and email nudges, manual UPI mode. Recover revenue from failed subscription payments. 14-day free trial.">
+<link rel="canonical" href="https://recursathii.onrender.com/guide">
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "Article",
+ "headline": "How to recover failed subscription payments in India",
+ "description": "RBI retry windows, dunning cadences, WhatsApp nudges and manual UPI backups for Indian subscription businesses.",
+ "author": {
+  "@type": "Organization",
+  "name": "RecurSaathi"
+ },
+ "url": "https://recursathii.onrender.com/guide",
+ "mainEntityOfPage": "https://recursathii.onrender.com/guide"
+}
+</script>
+<style>
+/* ============ RecurSaathi — Apple-style liquid glass ============ */
+:root{
+  --ink:#1d1d1f; --mut:#515154; --faint:#86868b;
+  --blue:#0071e3; --blue-d:#0066cc;
+  --vio:#7c6cf8; --cyan:#5ac8fa; --pink:#ff9ac4; --amber:#ffb84d;
+  --bg:#f5f5f7; --line:rgba(0,0,0,.08);
+  --glass:rgba(255,255,255,.55);
+  --glass-strong:rgba(255,255,255,.72);
+  --r-lg:28px; --r-md:22px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:76px}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI",Inter,Roboto,sans-serif;
+  color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.55;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+img{max-width:100%}
+.wrap{max-width:1120px;margin:0 auto;padding:0 22px}
+.wrap-wide{max-width:1240px;margin:0 auto;padding:0 22px}
+
+/* aurora backdrop */
+.aurora{position:fixed;inset:0;z-index:-2;overflow:hidden;pointer-events:none}
+.aurora i{position:absolute;border-radius:50%;filter:blur(90px);opacity:.5;will-change:transform}
+.aurora .b1{width:52vw;height:52vw;background:radial-gradient(circle at 30% 30%,rgba(124,108,248,.55),transparent 65%);top:-18vw;left:-12vw;animation:drift1 26s ease-in-out infinite alternate}
+.aurora .b2{width:46vw;height:46vw;background:radial-gradient(circle at 60% 40%,rgba(90,200,250,.5),transparent 65%);top:16vh;right:-16vw;animation:drift2 32s ease-in-out infinite alternate}
+.aurora .b3{width:40vw;height:40vw;background:radial-gradient(circle at 50% 50%,rgba(255,154,196,.42),transparent 65%);bottom:-14vw;left:18vw;animation:drift3 38s ease-in-out infinite alternate}
+.aurora .b4{width:34vw;height:34vw;background:radial-gradient(circle at 50% 50%,rgba(255,184,77,.35),transparent 65%);bottom:8vh;right:6vw;animation:drift1 30s ease-in-out infinite alternate-reverse}
+@keyframes drift1{from{transform:translate(0,0) scale(1)}to{transform:translate(6vw,4vh) scale(1.12)}}
+@keyframes drift2{from{transform:translate(0,0) scale(1)}to{transform:translate(-7vw,6vh) scale(1.08)}}
+@keyframes drift3{from{transform:translate(0,0) scale(1.05)}to{transform:translate(5vw,-5vh) scale(.95)}}
+
+/* glass primitives */
+.glass{position:relative;background:var(--glass);backdrop-filter:blur(28px) saturate(170%);-webkit-backdrop-filter:blur(28px) saturate(170%);border-radius:var(--r-lg);border:1px solid rgba(255,255,255,.65);box-shadow:0 12px 40px rgba(31,38,135,.09),inset 0 1px 0 rgba(255,255,255,.85)}
+.glass::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(115deg,rgba(255,255,255,.5) 0%,rgba(255,255,255,0) 24%,rgba(255,255,255,0) 72%,rgba(255,255,255,.28) 100%);opacity:.7}
+.gsoft{background:rgba(255,255,255,.4);box-shadow:0 8px 28px rgba(31,38,135,.07),inset 0 1px 0 rgba(255,255,255,.8)}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;padding:13px 26px;font-size:15.5px;font-weight:600;border:1px solid transparent;cursor:pointer;transition:transform .22s cubic-bezier(.2,.7,.3,1.2),box-shadow .22s,background .22s;white-space:nowrap}
+.btn:hover{transform:translateY(-2px)}
+.btn:active{transform:translateY(0) scale(.98)}
+.btn-primary{background:linear-gradient(135deg,#6d5ef5,#8a7bff 55%,#5ac8fa);color:#fff;box-shadow:0 8px 24px rgba(109,94,245,.35),inset 0 1px 0 rgba(255,255,255,.4)}
+.btn-primary:hover{box-shadow:0 12px 32px rgba(109,94,245,.45)}
+.btn-ghost{background:rgba(255,255,255,.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:var(--ink);border-color:rgba(255,255,255,.7);box-shadow:0 4px 16px rgba(31,38,135,.08)}
+.btn-ghost:hover{background:rgba(255,255,255,.8)}
+.btn-lg{padding:16px 32px;font-size:17px}
+.btn-sm{padding:9px 18px;font-size:14px}
+
+/* nav */
+.nav{position:sticky;top:12px;z-index:60;margin:12px auto 0;max-width:1140px;width:calc(100% - 24px);border-radius:999px;background:rgba(255,255,255,.55);backdrop-filter:blur(26px) saturate(180%);-webkit-backdrop-filter:blur(26px) saturate(180%);border:1px solid rgba(255,255,255,.7);box-shadow:0 10px 34px rgba(31,38,135,.12),inset 0 1px 0 rgba(255,255,255,.9)}
+.nav .in{display:flex;align-items:center;gap:26px;height:58px;padding:0 10px 0 24px}
+.logo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:17px;letter-spacing:-.02em}
+.logo i{width:26px;height:26px;border-radius:8px;background:conic-gradient(from 210deg,var(--vio),var(--cyan),var(--pink),var(--vio));display:inline-block;box-shadow:0 3px 10px rgba(124,108,248,.4),inset 0 1px 0 rgba(255,255,255,.5)}
+.nlinks{display:flex;gap:24px;font-size:14px;color:var(--mut);font-weight:500}
+.nlinks a{position:relative;padding:4px 0;transition:color .2s}
+.nlinks a:hover{color:var(--ink)}
+.nbtn{margin-left:auto}
+@media(max-width:860px){.nlinks{display:none}}
+
+/* hero */
+.hero{padding:86px 0 40px;text-align:center;position:relative}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#4b3fd4;background:rgba(124,108,248,.14);border:1px solid rgba(124,108,248,.28);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-radius:999px;padding:7px 16px;margin-bottom:26px}
+h1{font-size:clamp(42px,6.6vw,78px);line-height:1.04;letter-spacing:-.045em;font-weight:700}
+h1 .grad{background:linear-gradient(100deg,#6d5ef5 10%,#9a6bff 40%,#5ac8fa 90%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{font-size:clamp(17px,2.1vw,21px);color:var(--mut);max-width:660px;margin:22px auto 0}
+.ctas{display:flex;gap:14px;justify-content:center;margin-top:34px;flex-wrap:wrap}
+.micro{margin-top:18px;font-size:13px;color:var(--faint)}
+
+/* dashboard mock */
+.mockwrap{margin:60px auto 0;max-width:1020px;position:relative}
+.mock{overflow:hidden;padding:0}
+.mockbar{display:flex;align-items:center;gap:7px;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.5)}
+.mockbar i{width:10px;height:10px;border-radius:50%;background:rgba(0,0,0,.14)}
+.mockbar b{margin-left:12px;font-size:12.5px;font-weight:600;color:var(--faint);letter-spacing:.02em}
+.mockin{padding:26px 28px 30px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.stat{border-radius:var(--r-md);padding:16px 18px;background:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.65);box-shadow:inset 0 1px 0 rgba(255,255,255,.85)}
+.stat small{display:block;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
+.stat b{display:block;font-size:clamp(19px,2.4vw,26px);letter-spacing:-.02em;margin-top:5px}
+.stat.g b{background:linear-gradient(90deg,#34c759,#2bd47d);-webkit-background-clip:text;background-clip:text;color:transparent}
+.stat.o b{background:linear-gradient(90deg,#ff9f0a,#ffb84d);-webkit-background-clip:text;background-clip:text;color:transparent}
+.stat.r b{background:linear-gradient(90deg,#ff5f57,#ff7b72);-webkit-background-clip:text;background-clip:text;color:transparent}
+.mockgrid{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;margin-top:16px}
+@media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}.mockgrid{grid-template-columns:1fr}}
+.chartbox,.movesbox{border-radius:var(--r-md);padding:18px 20px;background:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.65);box-shadow:inset 0 1px 0 rgba(255,255,255,.85)}
+.chartbox h4,.movesbox h4{font-size:12.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);margin-bottom:12px}
+.mkchart{display:flex;align-items:flex-end;gap:7px;height:120px}
+.mkchart i{flex:1;border-radius:8px 8px 3px 3px;background:linear-gradient(180deg,#8a7bff,#5ac8fa);opacity:.92;transform-origin:bottom}
+.moves{list-style:none;display:flex;flex-direction:column;gap:10px;font-size:14px}
+.moves li{display:flex;gap:10px;align-items:flex-start}
+.moves .dot{flex:none;width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#6d5ef5,#5ac8fa);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px;box-shadow:0 3px 8px rgba(109,94,245,.35)}
+.moves b{font-weight:600}
+.mocknote{margin-top:14px;font-size:12.5px;color:var(--faint);text-align:center}
+
+/* what's new */
+.whatsnew{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:34px auto 0}
+.wnchip{display:inline-flex;align-items:center;gap:9px;border-radius:999px;padding:9px 16px;font-size:13.5px;background:rgba(255,255,255,.5);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.7);box-shadow:0 6px 18px rgba(31,38,135,.07)}
+.wnchip .tag{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#fff;border-radius:999px;padding:3px 9px}
+.wnchip .tag.new{background:linear-gradient(135deg,#34c759,#2bd47d)}
+.wnchip .tag.imp{background:linear-gradient(135deg,#6d5ef5,#8a7bff)}
+.wnchip .d{color:var(--faint);font-weight:600}
+
+/* sections */
+section{padding:96px 0}
+.shead{text-align:center;max-width:760px;margin:0 auto 52px}
+.shead .kick{display:block;font-size:13.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#6d5ef5;margin-bottom:14px}
+h2{font-size:clamp(30px,4.4vw,52px);line-height:1.08;letter-spacing:-.035em;font-weight:700}
+.shead p{margin-top:16px;font-size:17px;color:var(--mut)}
+.alt{background:transparent}
+
+/* how it works */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+@media(max-width:860px){.steps{grid-template-columns:1fr}}
+.step{padding:30px 28px}
+.stepnum{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;color:#fff;background:linear-gradient(135deg,#6d5ef5,#5ac8fa);box-shadow:0 8px 20px rgba(109,94,245,.35),inset 0 1px 0 rgba(255,255,255,.4);margin-bottom:18px}
+.step h3{font-size:21px;letter-spacing:-.02em;margin-bottom:9px}
+.step p{font-size:15px;color:var(--mut)}
+
+/* features grid */
+.fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+@media(max-width:980px){.fgrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){.fgrid{grid-template-columns:1fr}}
+.fcard{padding:26px 26px 24px;border-radius:var(--r-md)}
+.fcard .ric{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:21px;margin-bottom:15px;background:rgba(124,108,248,.14);border:1px solid rgba(124,108,248,.2)}
+.fcard h3{font-size:19px;letter-spacing:-.02em;margin-bottom:8px}
+.fcard p{font-size:14.5px;color:var(--mut)}
+.badge{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#1d7a37;background:rgba(52,199,89,.16);border:1px solid rgba(52,199,89,.3);border-radius:999px;padding:3px 10px;margin-bottom:12px}
+
+/* radar */
+.rgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:stretch}
+@media(max-width:860px){.rgrid{grid-template-columns:1fr}}
+.rlist{display:flex;flex-direction:column;gap:14px}
+.ritem{padding:22px 24px;border-radius:var(--r-md);display:flex;gap:16px;align-items:flex-start}
+.ritem .ic{flex:none;width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:19px;background:rgba(90,200,250,.16);border:1px solid rgba(90,200,250,.25)}
+.ritem h3{font-size:17.5px;margin-bottom:5px;letter-spacing:-.01em}
+.ritem p{font-size:14px;color:var(--mut)}
+.radarpanel{padding:26px}
+.radarpanel h4{font-size:12.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);margin-bottom:14px}
+.rrow{display:flex;justify-content:space-between;align-items:center;padding:13px 4px;border-bottom:1px solid rgba(0,0,0,.06);font-size:14.5px}
+.rrow:last-of-type{border-bottom:none}
+.rrow .who b{display:block;font-weight:600}
+.rrow .who span{font-size:12.5px;color:var(--faint)}
+.rrow .amt{font-weight:700;letter-spacing:-.01em}
+.pill{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:999px;padding:4px 10px}
+.pill.red{color:#c0201a;background:rgba(255,95,87,.16);border:1px solid rgba(255,95,87,.3)}
+.pill.amber{color:#a05a00;background:rgba(255,159,10,.16);border:1px solid rgba(255,159,10,.3)}
+.pill.blue{color:#0058b0;background:rgba(0,113,227,.12);border:1px solid rgba(0,113,227,.25)}
+.panelnote{margin-top:12px;font-size:12px;color:var(--faint);text-align:center}
+
+/* analytics */
+.acenter{max-width:880px;margin:0 auto}
+.achart{display:flex;align-items:flex-end;gap:10px;height:190px;margin-top:8px}
+.achart i{flex:1;border-radius:10px 10px 4px 4px;background:linear-gradient(180deg,#8a7bff,#5ac8fa);opacity:.92;transform-origin:bottom}
+.alabels{display:flex;gap:10px;margin-top:8px}
+.alabels span{flex:1;text-align:center;font-size:11.5px;color:var(--faint);font-weight:600}
+
+/* pricing */
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:stretch}
+@media(max-width:880px){.pgrid{grid-template-columns:1fr;max-width:440px;margin:0 auto}}
+.pcard{padding:32px 30px;display:flex;flex-direction:column;border-radius:var(--r-lg)}
+.pcard .plan{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.pcard h3{font-size:26px;letter-spacing:-.02em;margin-top:6px}
+.pcard .cap{font-size:14px;color:var(--mut);margin-top:6px}
+.price{font-size:clamp(30px,3.6vw,40px);font-weight:700;letter-spacing:-.03em;margin:20px 0 4px}
+.price small{font-size:15px;font-weight:600;color:var(--faint)}
+.pcard ul{list-style:none;margin:18px 0 24px;display:flex;flex-direction:column;gap:9px;font-size:14px;color:var(--mut)}
+.pcard ul li::before{content:"✓";color:#34c759;font-weight:700;margin-right:9px}
+.pcard .btn{margin-top:auto}
+.pcard.hot{background:linear-gradient(160deg,rgba(124,108,248,.16),rgba(90,200,250,.14)),rgba(255,255,255,.6);box-shadow:0 18px 48px rgba(109,94,245,.2),inset 0 1px 0 rgba(255,255,255,.9)}
+.pop{position:absolute;top:-13px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#fff;background:linear-gradient(135deg,#6d5ef5,#8a7bff);border-radius:999px;padding:5px 14px;box-shadow:0 6px 16px rgba(109,94,245,.4)}
+.pcardwrap{position:relative}
+.pnote{text-align:center;margin-top:26px;font-size:13.5px;color:var(--faint)}
+
+/* who for */
+.chips{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:26px}
+.chip{border-radius:999px;padding:8px 16px;font-size:13px;font-weight:600;background:rgba(255,255,255,.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.7);box-shadow:0 4px 14px rgba(31,38,135,.06)}
+.wgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+@media(max-width:980px){.wgrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.wgrid{grid-template-columns:1fr}}
+.wcard{padding:24px 22px;border-radius:var(--r-md)}
+.wcard h3{font-size:17px;margin-bottom:7px}
+.wcard p{font-size:13.5px;color:var(--mut)}
+.moneynote{text-align:center;margin-top:30px;font-size:15px;color:var(--mut)}
+.moneynote b{color:var(--ink)}
+
+/* cta band */
+.ctaband{padding:30px 0 90px}
+.ctapanel{padding:64px 30px;text-align:center;background:linear-gradient(140deg,rgba(109,94,245,.9),rgba(122,110,250,.75) 45%,rgba(90,200,250,.75));box-shadow:0 30px 70px rgba(109,94,245,.35),inset 0 1px 0 rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.5)}
+.ctapanel h2{color:#fff}
+.ctapanel p{color:rgba(255,255,255,.85);font-size:17px;margin-top:12px}
+.ctapanel .ctas{margin-top:30px}
+.ctapanel .micro{color:rgba(255,255,255,.7)}
+
+/* faq */
+.faqlist{max-width:780px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.faq details{border-radius:var(--r-md);padding:0;overflow:hidden}
+.faq summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:20px 24px;font-size:16.5px;font-weight:600;letter-spacing:-.01em}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary .plus{flex:none;width:26px;height:26px;border-radius:50%;background:rgba(124,108,248,.14);border:1px solid rgba(124,108,248,.25);display:flex;align-items:center;justify-content:center;font-size:16px;color:#6d5ef5;transition:transform .25s}
+.faq details[open] .plus{transform:rotate(45deg)}
+.faq details p{padding:0 24px 20px;font-size:14.5px;color:var(--mut)}
+
+/* footer */
+footer{padding:60px 0 40px;border-top:1px solid var(--line)}
+.fgrid2{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:30px}
+@media(max-width:860px){.fgrid2{grid-template-columns:1fr 1fr}}
+footer p{font-size:13.5px;color:var(--mut);max-width:300px}
+footer h4{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-bottom:14px}
+footer ul{list-style:none;display:flex;flex-direction:column;gap:9px;font-size:14px;color:var(--mut)}
+footer a:hover{color:var(--ink)}
+.fbottom{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-top:44px;padding-top:22px;border-top:1px solid var(--line);font-size:12.5px;color:var(--faint)}
+.flag{display:inline-flex;align-items:center;gap:6px}
+
+/* signup modal */
+.modal{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .28s}
+.modal.open{opacity:1;pointer-events:auto}
+.modal .veil{position:absolute;inset:0;background:rgba(20,20,30,.35);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%)}
+.mcard{position:relative;width:100%;max-width:460px;padding:36px 34px 30px;border-radius:32px;transform:translateY(14px) scale(.97);transition:transform .32s cubic-bezier(.2,.8,.3,1.15)}
+.modal.open .mcard{transform:none}
+.mclose{position:absolute;top:16px;right:18px;width:32px;height:32px;border-radius:50%;border:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.6);color:var(--mut);font-size:16px;cursor:pointer}
+.mcard h3{font-size:24px;letter-spacing:-.02em}
+.mcard .msub{font-size:14px;color:var(--mut);margin-top:6px}
+.mcard form{margin-top:22px;display:flex;flex-direction:column;gap:12px}
+.mcard input{width:100%;border-radius:14px;border:1px solid rgba(0,0,0,.1);background:rgba(255,255,255,.75);padding:13px 15px;font-size:15px;font-family:inherit;outline:none;transition:border .2s,box-shadow .2s}
+.mcard input:focus{border-color:#6d5ef5;box-shadow:0 0 0 4px rgba(109,94,245,.18)}
+.mcard .btn{width:100%}
+.fmsg{font-size:13.5px;color:#c0201a;min-height:18px}
+.fmsg.ok{color:#1d7a37}
+
+/* promo popup */
+.popwrap{position:fixed;inset:0;z-index:90;display:flex;align-items:flex-end;justify-content:center;padding:26px;opacity:0;pointer-events:none;transition:opacity .3s}
+.popwrap.open{opacity:1;pointer-events:auto}
+.popwrap .veil{position:absolute;inset:0;background:rgba(20,20,30,.28);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.popcard{position:relative;width:100%;max-width:440px;padding:30px 30px 26px;border-radius:28px;transform:translateY(18px);transition:transform .3s cubic-bezier(.2,.8,.3,1.15)}
+.popwrap.open .popcard{transform:none}
+.popcard h3{font-size:21px;letter-spacing:-.02em}
+.popcard p{font-size:14.5px;color:var(--mut);margin-top:8px}
+.popcard .ctas{justify-content:flex-start;margin-top:20px}
+.pclose{position:absolute;top:14px;right:16px;width:30px;height:30px;border-radius:50%;border:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.6);color:var(--mut);font-size:15px;cursor:pointer}
+.pdismiss{background:none;border:none;color:var(--faint);font-size:13px;cursor:pointer;margin-top:12px}
+
+/* cookie bar */
+.cbar{position:fixed;left:50%;bottom:18px;transform:translate(-50%,90px);z-index:80;display:flex;align-items:center;gap:14px;max-width:620px;width:calc(100% - 32px);padding:14px 16px 14px 22px;border-radius:999px;font-size:13.5px;color:var(--mut);opacity:0;transition:transform .4s cubic-bezier(.2,.8,.3,1.1),opacity .4s}
+.cbar.on{transform:translate(-50%,0);opacity:1}
+
+/* reveal */
+.js .reveal{opacity:0;transform:translateY(26px);transition:opacity .7s cubic-bezier(.2,.65,.25,1),transform .7s cubic-bezier(.2,.65,.25,1)}
+.js .reveal.in{opacity:1;transform:none}
+.js .mkchart.in i,.js .achart.in i{animation:growbar .9s cubic-bezier(.2,.65,.25,1)}
+@keyframes growbar{from{transform:scaleY(.06)}to{transform:scaleY(1)}}
+@media(prefers-reduced-motion:reduce){
+  .aurora i{animation:none}
+  .js .reveal{opacity:1;transform:none;transition:none}
+  .js .mkchart.in i,.js .achart.in i{animation:none}
+  html{scroll-behavior:auto}
+}
+@media(max-width:640px){
+  section{padding:66px 0}
+  .hero{padding:56px 0 20px}
+  .ctapanel{padding:48px 22px}
+}
+</style>
+</head>
+<body><style>.article{max-width:760px;margin:0 auto;padding:96px 0 60px}.article h1{font-size:clamp(30px,4.5vw,44px);line-height:1.12;letter-spacing:-.02em;margin:0 0 18px}.article .lede{font-size:18px;color:var(--mut);margin:0 0 34px}.article h2{font-size:23px;letter-spacing:-.01em;margin:34px 0 12px}.article p,.article li{font-size:16.5px;line-height:1.65;color:var(--mut)}.article strong{color:var(--ink)}.article a{color:var(--ink);text-decoration:underline;text-decoration-color:rgba(109,94,245,.5)}.article-cta{display:flex;gap:12px;margin-top:40px;flex-wrap:wrap}.crumb{font-size:14px;margin-bottom:26px}.crumb a{color:var(--mut);text-decoration:none}.crumb a:hover{color:var(--ink)}@media(max-width:640px){.article{padding:70px 0 40px}}</style>
+<div class="aurora" aria-hidden="true"><i class="b1"></i><i class="b2"></i><i class="b3"></i><i class="b4"></i></div>
+
+<nav class="nav">
+  <div class="in">
+    <a class="logo" href="/#top"><i></i><b>Recur</b>Saathi</a>
+    <div class="nlinks">
+      <a href="/#features">Features</a>
+      <a href="/#radar">Recovery Radar</a>
+      <a href="/#analytics">Analytics</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/#faq">FAQ</a>
+    </div>
+    <button class="btn btn-primary btn-sm nbtn" data-form="growth">Start free trial</button>
+  </div>
+</nav>
+
+
+<section id="guide" class="article-sec">
+  <div class="wrap">
+   <article class="article">
+    <p class="crumb"><a href="/">← Back to RecurSaathi</a></p>
+    <h1>How to recover failed subscription payments in India</h1>
+    <p class="lede">Why card and UPI payments fail, how the RBI's retry windows work, and a practical dunning playbook you can run this week — with or without a payment gateway integration.</p>
+
+    <h2>Why subscription payments fail</h2>
+    <p>Most failed renewals are not fraud or non-payment. They are <strong>involuntary churn</strong>: a card expired, the UPI mandate hit its daily limit, the account was temporarily low on balance, or the bank flagged an unusual charge. The money was never refused; the payment just never went through. Every one of those failures is recoverable if you ask again, politely, at the right time.</p>
+
+    <h2>The RBI retry windows are your friend</h2>
+    <p>For recurring card mandates and UPI Autopay, the RBI defines when you may re-attempt a failed debit: roughly <strong>24 hours, 72 hours and on day 7</strong> after the first failure, with debit amounts above thresholds needing an additional approval step. Retrying before the window opens is not just ineffective, it can get your mandate degraded by the issuing bank.</p>
+    <p>So the biggest recovery lever in India is not "retry harder", it is <strong>retry on schedule</strong>: one attempt in each RBI window, and never blind-retrying hard declines.</p>
+
+    <h2>What a good dunning sequence looks like</h2>
+    <ul>
+      <li><strong>Day 0, payment fails:</strong> a short, human message the same day. "Your renewal didn't go through — tap here to fix it." No blame, no fine print.</li>
+      <li><strong>Retry in the RBI windows:</strong> 24 hours, 72 hours, day 7, exactly on time.</li>
+      <li><strong>Between retries:</strong> WhatsApp or email nudges with a one-tap payment link. Two reminders per failed attempt is plenty; more trains customers to ignore you.</li>
+      <li><strong>Give an escape hatch:</strong> an easy way to pay manually (a UPI link or QR) and an easy way to opt out of reminders. Customers who feel trapped stop answering entirely.</li>
+      <li><strong>Escalate gently:</strong> if day 7 fails, move the account to a slower cadence or pause it — and tell the customer what happens next.</li>
+    </ul>
+
+    <h2>Manual UPI is a legitimate backup</h2>
+    <p>Many small Indian businesses start without an integrated gateway. That is fine: a generated <strong>payment page with a UPI QR</strong>, sent with the invoice, recovers money while you wait for gateway paperwork. The discipline that matters is marking invoices paid the moment the money lands and keeping the reminder cadence honest.</p>
+
+    <h2>How RecurSaathi automates this</h2>
+    <p><a href="/#features">RecurSaathi</a> runs the whole loop for you: it monitors failed card and UPI payments, retries at the RBI-timed 24-hour, 72-hour and day-7 windows, sends WhatsApp and email nudges with one-tap payment links, offers a manual UPI QR mode that works from day one without Razorpay, and shows you exactly how much was recovered in its <a href="/#analytics">analytics</a> and <a href="/#radar">Recovery Radar</a> views.</p>
+    <p>It works for coaching academies, gyms and studios, subscription ecommerce and any business billing customers on a cycle. <a href="/#pricing">Start a 14-day free trial</a> — no card needed.</p>
+
+    <div class="article-cta">
+      <a class="btn btn-primary" href="/#pricing">See pricing and start free</a>
+      <a class="btn btn-ghost" href="/#faq">Read the FAQ</a>
+    </div>
+   </article>
+  </div>
+</section>
+<footer>
+  <div class="wrap">
+    <div class="fgrid2">
+      <div>
+        <a class="logo" href="/#top"><i></i><b>Recur</b>Saathi</a>
+        <p style="margin-top:14px">Revenue recovery for Indian subscription businesses. Failed payments, overdue invoices and dormant customers, managed end to end.</p>
+      </div>
+      <div><h4>Product</h4><ul><li><a href="/#how">How it works</a></li><li><a href="/#features">Features</a></li><li><a href="/#radar">Recovery Radar</a></li><li><a href="/#analytics">Analytics</a></li><li><a href="/#pricing">Pricing</a></li></ul></div>
+      <div><h4>Company</h4><ul><li><a href="/#faq">FAQ</a></li><li><a href="mailto:recursathi@gmail.com">recursathi@gmail.com</a></li></ul></div>
+      <div><h4>Legal</h4><ul><li><a href="/privacy">Privacy Policy</a></li><li><a href="/terms">Terms of Service</a></li></ul></div>
+    </div>
+    <div class="fbottom"><span>© RecurSaathi</span><span class="flag">🇮🇳 Made in India</span></div>
+  </div>
+</footer>
+
+<div class="modal" id="signupModal" aria-hidden="true" role="dialog" aria-label="Start your free trial">
+  <div class="veil"></div>
+  <div class="mcard glass">
+    <button class="mclose" id="mclose" aria-label="Close">✕</button>
+    <h3 id="mplan">Start your free trial</h3>
+    <p class="msub">14 days free. No card needed to start.</p>
+    <form id="signupForm" novalidate>
+      <input name="name" placeholder="Your name" autocomplete="name" required>
+      <input name="email" type="email" placeholder="Work email" autocomplete="email" required>
+      <input name="phone" type="tel" placeholder="Phone (optional)" autocomplete="tel">
+      <button class="btn btn-primary" type="submit">Create account</button>
+      <p class="fmsg" id="formMsg"></p>
+    </form>
+  </div>
+</div>
+
+<div class="popwrap" id="promoPop" aria-hidden="true">
+  <div class="veil"></div>
+  <div class="popcard glass">
+    <button class="pclose" id="pclose" aria-label="Close">✕</button>
+    <h3>Stop losing revenue to failed payments</h3>
+    <p>RecurSaathi recovers failed card and UPI payments, chases overdue invoices and reactivates dormant customers. Start your free trial in under a minute.</p>
+    <div class="ctas"><button class="btn btn-primary" id="pcta">Start your free trial</button><button class="pdismiss" id="pdismiss">Maybe later</button></div>
+  </div>
+</div>
+
+<div class="cbar glass" id="cbar"><span>This site uses a few cookies to keep things working. No trackers, nothing shared.</span><button class="btn btn-ghost btn-sm" id="cbar-ok">Got it</button></div>
+
+<script>document.documentElement.classList.add('js')</script>
+<script>
+var modal=document.getElementById('signupModal'), chosen='growth';
+document.querySelectorAll('[data-form]').forEach(function(b){
+  b.addEventListener('click',function(e){e.preventDefault();chosen=b.getAttribute('data-form');openModal();});
+});
+function openModal(){
+  document.getElementById('mplan').textContent='Start your '+chosen.charAt(0).toUpperCase()+chosen.slice(1)+' free trial';
+  modal.classList.add('open');modal.setAttribute('aria-hidden','false');
+}
+document.getElementById('mclose').onclick=function(){modal.classList.remove('open');};
+modal.addEventListener('click',function(e){if(e.target===modal)modal.classList.remove('open');});
+document.getElementById('signupForm').addEventListener('submit',async function(e){
+  e.preventDefault();
+  var f=e.target, msg=document.getElementById('formMsg'), btn=f.querySelector('button');
+  var g=function(n){return ((f.elements[n]||{}).value||'').trim();};
+  msg.textContent='';msg.classList.remove('ok');btn.textContent='Creating account…';btn.disabled=true;var slow=null;
+  try{
+    slow=setTimeout(function(){msg.textContent='Warming up the server — first load can take up to a minute. Staying on it…';},4000);
+    var body=JSON.stringify({name:g('name'),email:g('email'),phone:g('phone'),plan:chosen});
+    var r=null,d=null,ct='';
+    for(var attempt=1;attempt<=5;attempt++){
+      try{
+        r=await fetch('/api/signup', {method:'POST',headers:{'Content-Type':'application/json'},body:body});
+        ct=(r.headers.get('content-type')||'');d=null;
+        try{if(ct.indexOf('json')>-1)d=await r.json();}catch(_){}
+        break;
+      }catch(netErr){
+        if(attempt<5){msg.textContent='Couldn\u2019t reach the server, it may be waking up. Retrying\u2026';await new Promise(function(res){setTimeout(res,3000);});}
+        else{msg.textContent='The signup server isn\u2019t reachable right now. Give it a minute and tap Create account again, or email recursathi@gmail.com.';return;}
+      }
+    }
+    if(!d){msg.textContent='This demo page has no signup server behind it. Signup works in the full app build, or email recursathi@gmail.com and we\u2019ll set you up.';return;}
+    if(!r.ok)throw new Error(d.detail||'Signup failed');
+    msg.textContent='Account created. Taking you to checkout…';msg.classList.add('ok');
+    setTimeout(function(){window.location.href=d.checkout_url;},600);
+  }catch(err){msg.textContent=(err&&err.message&&!/fetch/i.test(err.message))?err.message:'Something went wrong. Tap Create account again, or email recursathi@gmail.com.';}
+  finally{clearTimeout(slow);btn.disabled=false;btn.textContent='Create account';}
+});
+</script>
+<script>
+var pop=document.getElementById('promoPop');
+function rsPopSeen(){ try{return sessionStorage.getItem('rs_pop');}catch(e){return '1';} }
+function rsShowPop(){
+  if(rsPopSeen())return;
+  if(document.getElementById('signupModal').classList.contains('open'))return;
+  pop.classList.add('open');pop.setAttribute('aria-hidden','false');
+}
+function rsClosePop(){
+  pop.classList.remove('open');pop.setAttribute('aria-hidden','true');
+  try{sessionStorage.setItem('rs_pop','1');}catch(e){}
+}
+document.getElementById('pcta').onclick=function(){rsClosePop();chosen='growth';openModal();};
+document.getElementById('pclose').onclick=rsClosePop;
+document.getElementById('pdismiss').onclick=rsClosePop;
+pop.addEventListener('click',function(e){if(e.target===pop)rsClosePop();});
+setTimeout(rsShowPop,18000);
+document.addEventListener('mouseout',function(e){if(!e.relatedTarget&&e.clientY<=0)rsShowPop();});
+</script>
+<script>
+(function(){
+  var list=[].slice.call(document.querySelectorAll('.shead,.fcard,.ritem,.step,.wcard,.adata,.pcardwrap,.faq details,.radarpanel,.apanel,.ctapanel,.chips,.moneynote'));
+  var charts=[].slice.call(document.querySelectorAll('.mkchart,.achart'));
+  charts.forEach(function(c){[].slice.call(c.querySelectorAll('i')).forEach(function(b,i){b.style.transitionDelay=(i*90)+'ms'})});
+  if(!('IntersectionObserver' in window)){list.forEach(function(t){t.classList.add('in')});charts.forEach(function(c){c.classList.add('in')});return}
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.12,rootMargin:'0px 0px -40px 0px'});
+  list.forEach(function(t){t.classList.add('reveal');io.observe(t)});
+  charts.forEach(function(c){io.observe(c)});
+})();
+</script>
+<script>
+(function(){try{if(localStorage.getItem("rs_cookie_ok")!=="1"){document.getElementById("cbar").classList.add("on");}}catch(e){}
+document.getElementById("cbar-ok").addEventListener("click",function(){try{localStorage.setItem("rs_cookie_ok","1");}catch(e){}document.getElementById("cbar").classList.remove("on");});})();
+</script>
+</body>
+</html>

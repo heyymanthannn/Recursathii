@@ -185,6 +185,10 @@ async def privacy_page():
 async def terms_page():
     return FileResponse("landing/terms.html")
 
+@app.get("/guide", include_in_schema=False)
+async def guide_page():
+    return FileResponse("landing/guide.html")
+
 @app.get("/robots.txt", include_in_schema=False)
 async def robots_txt():
     return FileResponse("landing/robots.txt", media_type="text/plain")
