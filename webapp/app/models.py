@@ -387,7 +387,12 @@ def recent_payments(owner_id, limit=10):
 
 # ---- radar ----
 def radar(owner_id):
+    """Recovery Radar data: overdue invoices, dormant repeat customers and
+    failed payments, each row annotated with the computed fields the radar
+    page needs (days overdue, priority, inactivity, segmentation, retry
+    eligibility). All values come from real records only."""
     today = time.strftime("%Y-%m-%d")
+    today_t = time.mktime(time.strptime(today, "%Y-%m-%d"))
     overdue = q("""SELECT i.*, cu.name AS customer_name, cu.email, cu.phone FROM invoices i
         JOIN customers cu ON cu.id=i.customer_id
         WHERE i.owner_id=? AND i.status IN ('pending','overdue') AND i.due_date < ?
@@ -395,15 +400,47 @@ def radar(owner_id):
     for i in overdue:
         if i["status"] == "pending":
             ex("UPDATE invoices SET status='overdue' WHERE id=?", (i["id"],))
+    overdue = [dict(i) for i in overdue]
+    for i in overdue:
+        try:
+            y, m, d = (int(x) for x in i["due_date"][:10].split("-"))
+            days = max(0, round((today_t - time.mktime((y, m, d, 0, 0, 0, 0, 0, -1))) / 86400))
+        except Exception:
+            days = 0
+        i["days_overdue"] = days
+        # priority from real data: how late it is and how much is at stake
+        score = days * 2 + min(i["amount"] / 100000.0, 10)
+        i["priority"] = "high" if score >= 20 else ("medium" if score >= 8 else "low")
     dormant = q("""SELECT cu.id, cu.name, cu.email, cu.phone,
-        COALESCE(SUM(p.amount),0) AS lifetime, MAX(p.confirmed_at) AS last_paid_at
+        COALESCE(SUM(p.amount),0) AS lifetime, MAX(p.confirmed_at) AS last_paid_at,
+        COUNT(*) AS paid_count
         FROM customers cu JOIN payments p ON p.customer_id=cu.id AND p.status='confirmed'
         WHERE cu.owner_id=? GROUP BY cu.id
         HAVING last_paid_at IS NOT NULL AND last_paid_at < ?
         ORDER BY last_paid_at ASC LIMIT 20""", (owner_id, now() - 45 * 86400))
+    dormant = [dict(c) for c in dormant]
+    for c in dormant:
+        c["days_inactive"] = max(0, round((now() - c["last_paid_at"]) / 86400))
+        # segmentation from real spend and repeat behaviour
+        c["segment"] = ("VIP" if c["lifetime"] >= 500000 else
+                        "Loyal repeat" if c["lifetime"] >= 100000 or c["paid_count"] >= 3 else
+                        "Occasional")
+    transient = {"insufficient_funds", "insufficient_funds ", "network", "timeout",
+                 "temporarily declined", "bank timeout", "issuer unavailable"}
     failed = q("""SELECT e.*, cu.name AS customer_name FROM pay_events e
         LEFT JOIN customers cu ON cu.id=e.customer_id
         WHERE e.owner_id=? AND e.kind='failed' ORDER BY e.created DESC LIMIT 20""", (owner_id,))
+    failed = [dict(e) for e in failed]
+    for e in failed:
+        code = (e["decline_code"] or "").strip().lower()
+        age_h = (now() - e["created"]) / 3600
+        if code in transient:
+            e["retry_eligible"] = "Yes, within the 72h retry window" if age_h < 72                 else "Window closed, needs a fresh attempt"
+        elif not code or code == "declined" or "not reported" in code:
+            e["retry_eligible"] = "Unknown reason: confirm with the customer first"
+        else:
+            e["retry_eligible"] = "Needs customer action"
+        e["retry_status"] = "Not attempted"
     return {"overdue": overdue, "dormant": dormant, "failed": failed}
 
 

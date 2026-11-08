@@ -1,3 +1,5 @@
+import time
+
 """Owner web app: dashboard, customers, invoices, radar, automations, billing."""
 import csv, io, os, secrets, time
 from fastapi import APIRouter, Depends, HTTPException, Request, Form
@@ -25,8 +27,14 @@ def render(name, request, user=None, **ctx):
     env.filters["datetime"] = lambda ts: (time.strftime("%d %b %Y, %H:%M", time.localtime(ts)) if ts else "-")
     env.globals["inr"] = env.filters["inr"]
     env.globals["datetime"] = env.filters["datetime"]
+    # days left on the 14-day trial, for the daily subscription popup
+    # (a route that passes its own trial_left keeps its value)
+    trial_left = ctx.pop("trial_left", None)
+    if trial_left is None and user and user.get("plan_status") == "trialing" and user.get("trial_ends"):
+        trial_left = max(0, int((user["trial_ends"] - time.time()) / 86400) + 1)
     t = env.get_template(name)
-    return HTMLResponse(t.render(request=request, user=user, active_tab=ctx.pop("tab", ""), **ctx))
+    return HTMLResponse(t.render(request=request, user=user, active_tab=ctx.pop("tab", ""),
+                                 trial_left=trial_left, **ctx))
 
 def inr(p): return f"\u20b9{p/100:,.0f}"
 
@@ -109,7 +117,8 @@ async def signup(request: Request, name: str = Form(""), business: str = Form(""
     for k in models.AUTO_KEYS:
         models.set_automation(u["id"], k, True)
         d = auto.DEFAULTS[k]
-        models.set_template(u["id"], k, d["email_subject"], d["email_body"])
+        if "email_subject" in d:  # due_call is calls-only: no email template
+            models.set_template(u["id"], k, d["email_subject"], d["email_body"])
     models.log_audit(u["id"], "signup", email)
     import uuid as _uuid
     from . import billing as _billing
@@ -118,8 +127,7 @@ async def signup(request: Request, name: str = Form(""), business: str = Form(""
     _m.name = name
     _m.phone = phone.strip()
     _billing._persist(_m)
-    resp = RedirectResponse(f"/checkout/{mid}", status_code=303)  # signup lands on checkout, not dashboard
-    auth.start_session(resp, u["id"])
+    resp = RedirectResponse("/login?created=1", status_code=303)  # signup lands on the login page; dashboard comes after sign-in
     return resp
 
 @router.get("/logout")
@@ -274,6 +282,39 @@ async def invoices_add(request: Request, customer_id: str = Form(""), number: st
         models.log_activity(user["id"], "invoice", f"Created invoice {inv['number']} for {inr(amt)}")
         models.log_audit(user["id"], "invoice.create", inv["number"])
     return RedirectResponse("/invoices", status_code=303)
+
+@router.post("/invoices/{iid}/remind")
+async def invoice_remind(iid: str, request: Request):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    inv = models.one("SELECT * FROM invoices WHERE id=? AND owner_id=?", (iid, user["id"]))
+    if not inv or inv["status"] == "paid":
+        return RedirectResponse("/radar", status_code=303)
+    cu = models.get_customer(inv["customer_id"])
+    if not cu:
+        return RedirectResponse("/radar", status_code=303)
+    today = time.strftime("%Y-%m-%d")
+    stage = auto._stage(inv, today) or "reminder_due"
+    tpl = models.get_template(user["id"], stage)
+    ctx = auto._ctx(user, inv, cu, base_url(request))
+    sub = auto._render(tpl["subject"] if tpl else auto.DEFAULTS[stage]["email_subject"], **ctx)
+    ebody = auto._render(tpl["body"] if tpl else auto.DEFAULTS[stage]["email_body"], **ctx)
+    wbody = auto._render(auto.DEFAULTS[stage]["wa_body"], **ctx)
+    dedupe = f"manual_remind:{iid}:{stage}"
+    if not models.one("SELECT id FROM outbox WHERE dedupe=?", (dedupe,)):
+        if cu.get("email"):
+            o = models.queue(user["id"], "email", cu["email"], stage, sub, ebody, dedupe=dedupe + ":email")
+            if o:
+                notify.deliver(o)
+        if cu.get("phone") and not cu.get("wa_opt_out"):
+            o = models.queue(user["id"], "whatsapp", cu["phone"], stage, sub, wbody, dedupe=dedupe + ":wa")
+            if o:
+                notify.deliver(o)
+        models.log_activity(user["id"], "manual",
+                            f"Reminder queued for {cu['name']} on {inv['number']} ({stage})")
+        models.log_audit(user["id"], "invoice.remind", f"{inv['number']}:{stage}")
+    return RedirectResponse("/radar", status_code=303)
 
 @router.post("/invoices/{iid}/mark-paid")
 async def invoice_mark_paid(request: Request, iid: str, reference: str = Form(""), note: str = Form("")):

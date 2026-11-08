@@ -1,19 +1,37 @@
 {% extends "base.html" %}{% block title %}Recovery Radar · RecurSaathi{% endblock %}{% block content %}
 <h1>Recovery Radar</h1>
-<p class="sub">Three revenue leaks, ranked by how much money they are holding back.</p>
-<h2><span class="pill overdue">1</span> Overdue unpaid invoices</h2>
+<p class="sub">Three revenue leaks, ranked by how much money they are holding back. Every figure below comes from your own records.</p>
+{% if r.overdue or r.dormant or r.failed %}
+<div class="card" style="margin-bottom:24px">
+  <h3 style="margin-top:0">Recovery priorities right now</h3>
+  {% set tops = r.overdue[:3] %}
+  <table>
+  <tr><th>Priority</th><th>Leak</th><th>Money involved</th><th>Suggested next action</th></tr>
+  {% for i in tops %}<tr><td><span class="pill {{ 'failed' if i.priority=='high' else ('trialing' if i.priority=='medium' else '') }}">{{ i.priority | capitalize }}</span></td><td>{{ i.customer_name }} · {{ i.number }} ({{ i.days_overdue }}d overdue)</td><td>{{ inr(i.amount) }}</td><td>{% if i.priority == 'high' %}Send reminder and call the customer{% elif i.priority == 'medium' %}Send reminder today{% else %}Queue a reminder{% endif %}</td></tr>{% endfor %}
+  {% for c in r.dormant[:2] %}<tr><td><span class="pill trialing">{{ 'Medium' if c.segment in ('VIP','Loyal repeat') else 'Low' }}</span></td><td>Dormant: {{ c.name }} ({{ c.days_inactive }}d inactive)</td><td>{{ inr(c.lifetime) }} lifetime</td><td>Run a reactivation campaign</td></tr>{% endfor %}
+  {% for e in r.failed[:2] %}<tr><td><span class="pill {{ 'failed' if e.retry_eligible.startswith('Yes') else '' }}">{{ 'High' if e.retry_eligible.startswith('Yes') else 'Low' }}</span></td><td>Failed payment: {{ e.customer_name or '-' }} ({{ e.decline_code or 'reason not reported' }})</td><td>{{ inr(e.amount) }}</td><td>{{ 'Retry via gateway' if e.retry_eligible.startswith('Yes') else e.retry_eligible }}</td></tr>{% endfor %}
+  </table>
+  <div class="badge-note">Priorities are computed from your actual invoices, payment records and failure events: how late an invoice is, how much is at stake, and whether the failure is retryable.</div>
+</div>
+{% endif %}
+
+<h2><span class="pill overdue">1</span> Overdue invoices</h2>
 <div class="card">{% if r.overdue %}<table>
-<tr><th>Invoice</th><th>Customer</th><th>Amount</th><th>Due</th><th>Contact</th></tr>
-{% for i in r.overdue %}<tr><td>{{ i.number }}</td><td>{{ i.customer_name }}</td><td>{{ inr(i.amount) }}</td><td>{{ i.due_date }}</td><td>{{ i.email or "" }} {{ i.phone or "" }}</td></tr>{% endfor %}
-</table>{% else %}<div class="empty">Nothing overdue. Good.</div>{% endif %}</div>
-<h2><span class="pill trialing">2</span> Dormant repeat customers</h2>
+<tr><th>Customer</th><th>Invoice</th><th>Outstanding</th><th>Due date</th><th>Days overdue</th><th>Status</th><th>Reminder</th></tr>
+{% for i in r.overdue %}<tr><td><a href="/customers/{{ i.customer_id }}">{{ i.customer_name }}</a></td><td>{{ i.number }}</td><td>{{ inr(i.amount) }}</td><td>{{ i.due_date }}</td><td>{{ i.days_overdue }}</td><td><span class="pill overdue">{{ i.status }}</span></td><td><form method="post" action="/invoices/{{ i.id }}/remind" style="margin:0"><button type="submit" class="btn">Send reminder</button></form></td></tr>{% endfor %}
+</table><div class="badge-note">The reminder button queues your own reminder email and WhatsApp template for this invoice, with the stage chosen by how long it is overdue. Nothing is marked paid by this.</div>
+{% else %}<div class="empty">Nothing overdue. Good.</div>{% endif %}</div>
+
+<h2><span class="pill trialing">2</span> Dormant customers</h2>
 <div class="card">{% if r.dormant %}<div class="badge-note" style="margin-bottom:8px">Paid before, but no confirmed payment in the last 45 days.</div>
-<table><tr><th>Customer</th><th>Lifetime paid</th><th>Last paid</th><th>Contact</th></tr>
-{% for c in r.dormant %}<tr><td><a href="/customers/{{ c.id }}">{{ c.name }}</a></td><td>{{ inr(c.lifetime) }}</td><td>{{ c.last_paid_at | datetime }}</td><td>{{ c.email or "" }} {{ c.phone or "" }}</td></tr>{% endfor %}
+<table><tr><th>Customer</th><th>Last payment</th><th>Lifetime value</th><th>Payments made</th><th>Days inactive</th><th>Segment</th><th>Reactivation</th></tr>
+{% for c in r.dormant %}<tr><td><a href="/customers/{{ c.id }}">{{ c.name }}</a></td><td>{{ c.last_paid_at | datetime }}</td><td>{{ inr(c.lifetime) }}</td><td>{{ c.paid_count }}</td><td>{{ c.days_inactive }}</td><td><span class="pill {{ 'trialing' if c.segment=='VIP' else '' }}">{{ c.segment }}</span></td><td>Campaign queued on the Campaigns page</td></tr>{% endfor %}
 </table>{% else %}<div class="empty">No dormant customers detected.</div>{% endif %}</div>
-<h2><span class="pill failed">3</span> Failed card and UPI payments</h2>
+
+<h2><span class="pill failed">3</span> Failed payments</h2>
 <div class="card">{% if r.failed %}<table>
-<tr><th>When</th><th>Customer</th><th>Amount</th><th>Reason</th></tr>
-{% for e in r.failed %}<tr><td>{{ e.created | datetime }}</td><td>{{ e.customer_name or "-" }}</td><td>{{ inr(e.amount) }}</td><td>{{ e.decline_code or "declined" }}</td></tr>{% endfor %}
-</table>{% else %}<div class="empty">No failed payments. Connect your gateway webhook to see them live.</div>{% endif %}</div>
+<tr><th>Failed amount</th><th>Customer</th><th>Failure date</th><th>Reason</th><th>Provider</th><th>Retry eligibility</th><th>Retry status</th></tr>
+{% for e in r.failed %}<tr><td>{{ inr(e.amount) }}</td><td>{{ e.customer_name or "-" }}</td><td>{{ e.created | datetime }}</td><td>{{ e.decline_code or "reason not reported" }}</td><td>{{ e.gateway or "UPI / manual" }}</td><td>{{ e.retry_eligible }}</td><td>{{ e.retry_status }}</td></tr>{% endfor %}
+</table><div class="badge-note">A failed payment is never retried or marked paid automatically. Retry eligibility is read from the decline reason; permanent declines need the customer to act.</div>
+{% else %}<div class="empty">No failed payments. Connect your gateway webhook to see them live.</div>{% endif %}</div>
 {% endblock %}

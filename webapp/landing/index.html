@@ -635,8 +635,8 @@ document.getElementById('signupForm').addEventListener('submit',async function(e
     }
     if(!d){msg.textContent='This demo page has no signup server behind it. Signup works in the full app build, or email recursathi@gmail.com and we\u2019ll set you up.';return;}
     if(!r.ok)throw new Error(d.detail||'Signup failed');
-    msg.textContent='Account created. Taking you to checkout…';msg.classList.add('ok');
-    setTimeout(function(){window.location.href=d.checkout_url;},600);
+    msg.textContent='Account created. Taking you to login…';msg.classList.add('ok');
+    setTimeout(function(){window.location.href='/login?created=1';},600);
   }catch(err){msg.textContent=(err&&err.message&&!/fetch/i.test(err.message))?err.message:'Something went wrong. Tap Create account again, or email recursathi@gmail.com.';}
   finally{clearTimeout(slow);btn.disabled=false;btn.textContent='Create account';}
 });

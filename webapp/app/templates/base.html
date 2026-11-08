@@ -82,5 +82,31 @@
 (function(){try{if(localStorage.getItem("rs_cookie_ok")!=="1"){document.getElementById("cbar").classList.add("on");}}catch(e){}
 document.getElementById("cbar-ok").addEventListener("click",function(){try{localStorage.setItem("rs_cookie_ok","1");}catch(e){}document.getElementById("cbar").classList.remove("on");});})();
 </script>
+
+{% if user and user.plan_status == 'trialing' and trial_left is not none %}
+<div id="subpop" style="display:none;position:fixed;left:0;right:0;bottom:0;z-index:90;justify-content:center;padding:16px">
+  <div style="max-width:520px;width:100%;background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 12px 40px rgba(15,23,42,.18);padding:16px 18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+    <div style="flex:1;min-width:220px">
+      <b>14-day free trial</b>
+      <div style="font-size:14px;color:#475569;margin-top:2px">{{ trial_left }} day{{ '' if trial_left == 1 else 's' }} left. Everything stays unlocked through the trial. Upgrade any time.</div>
+    </div>
+    <a href="/billing" class="btn sm">View plans</a>
+    <button type="button" class="btn ghost sm" id="subpop-skip">Skip</button>
+  </div>
+</div>
+<script>
+(function(){
+  var bar=document.getElementById('subpop');if(!bar)return;
+  var key='rs_sub_pop';
+  var today=new Date().toISOString().slice(0,10);
+  var seen=null;try{seen=localStorage.getItem(key);}catch(e){}
+  if(seen===today)return;
+  bar.style.display='flex';
+  function skip(){bar.style.display='none';try{localStorage.setItem(key,today);}catch(e){}}
+  document.getElementById('subpop-skip').addEventListener('click',skip);
+})();
+</script>
+{% endif %}
+
 </body>
 </html>
