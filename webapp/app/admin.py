@@ -52,6 +52,9 @@ async def owner_plan(request: Request, oid: str, plan_status: str = Form("")):
     if not user:
         return RedirectResponse("/login", status_code=303)
     if plan_status in ("active", "trialing", "canceled"):
-        models.update_user(oid, plan_status=plan_status)
+        kw = {"plan_status": plan_status}
+        if plan_status == "active":
+            kw["trial_ends"] = None  # paid plan: unlimited, no trial clock
+        models.update_user(oid, **kw)
         models.log_audit(user["id"], "admin.plan_status", f"{oid}->{plan_status}")
     return RedirectResponse("/admin", status_code=303)

@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS users(
   id TEXT PRIMARY KEY, email TEXT UNIQUE NOT NULL, pw_hash TEXT NOT NULL,
   name TEXT, business TEXT, phone TEXT, role TEXT DEFAULT 'owner', parent_id TEXT,
   upi_vpa TEXT, payee_name TEXT, plan TEXT DEFAULT 'starter',
-  plan_status TEXT DEFAULT 'trialing', trial_ends REAL,
+  plan_status TEXT DEFAULT 'trialing', trial_ends REAL, trial_started_at REAL,
   rzp_key_enc TEXT, rzp_secret_enc TEXT, reset_token TEXT, reset_expires REAL, created REAL
 );
 CREATE TABLE IF NOT EXISTS customers(
@@ -80,6 +80,8 @@ def init():
             c.execute("ALTER TABLE users ADD COLUMN reset_token TEXT")
         if "reset_expires" not in cols:
             c.execute("ALTER TABLE users ADD COLUMN reset_expires REAL")
+        if "trial_started_at" not in cols:
+            c.execute("ALTER TABLE users ADD COLUMN trial_started_at REAL")
 
 def q(sql, args=()):
     with conn() as c:
@@ -99,9 +101,9 @@ def create_user(email, pw_hash, name, business, phone, role="owner",
     u = {"id": uid(), "email": email.strip().lower(), "pw_hash": pw_hash,
          "name": name, "business": business, "phone": phone or "", "role": role,
          "upi_vpa": upi_vpa, "payee_name": payee_name or name, "plan": plan,
-         "plan_status": "trialing", "trial_ends": now() + 14 * 86400, "created": now()}
-    ex("INSERT INTO users(id,email,pw_hash,name,business,phone,role,upi_vpa,payee_name,plan,plan_status,trial_ends,created,parent_id) "
-       "VALUES(:id,:email,:pw_hash,:name,:business,:phone,:role,:upi_vpa,:payee_name,:plan,:plan_status,:trial_ends,:created,:parent_id)",
+         "plan_status": "trialing", "trial_ends": None, "trial_started_at": None, "created": now()}
+    ex("INSERT INTO users(id,email,pw_hash,name,business,phone,role,upi_vpa,payee_name,plan,plan_status,trial_ends,trial_started_at,created,parent_id) "
+       "VALUES(:id,:email,:pw_hash,:name,:business,:phone,:role,:upi_vpa,:payee_name,:plan,:plan_status,:trial_ends,:trial_started_at,:created,:parent_id)",
        {**u, "parent_id": parent_id})
     return get_user(u["id"])
 

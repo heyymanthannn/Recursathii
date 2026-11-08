@@ -58,6 +58,12 @@ def guard(request):
         return None
     row = dict(owner)
     row["role"] = u["role"]
+    if row["plan_status"] == "trialing" and not row.get("trial_ends"):
+        started = time.time()
+        models.update_user(owner["id"], trial_started_at=started,
+                           trial_ends=started + 14 * 86400)
+        row["trial_started_at"] = started
+        row["trial_ends"] = started + 14 * 86400
     return row
 
 # ---------- auth pages ----------
@@ -393,7 +399,8 @@ async def change_plan(request: Request, plan: str = Form("")):
         status = "active"
         if user["plan_status"] == "trialing" and user["plan"] == "starter" and plan == "starter":
             status = "trialing"
-        models.update_user(user["id"], plan=plan, plan_status=status)
+        extra = {"trial_ends": None} if status == "active" else {}
+        models.update_user(user["id"], plan=plan, plan_status=status, **extra)
         models.record_plat_pay(user["id"], plan, new["amount"], "pending_upgrade",
                                reference=f"plan-change-{int(time.time())}")
         models.log_audit(user["id"], "billing.plan_change", plan)
