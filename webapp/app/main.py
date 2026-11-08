@@ -233,6 +233,78 @@ async def admin_mark_paid(request: Request, x_admin_token: str = Header(default=
     data = await request.json()
     return manual_upi.mark_paid(data.get("merchant_id", ""))
 
+
+@app.get("/admin")
+async def admin_panel(request: Request):
+    """Owner admin panel: token login, pending payments, one-click confirm."""
+    from fastapi.responses import HTMLResponse, RedirectResponse
+    tok = request.cookies.get("admin_token", "")
+    if tok != config.ADMIN_TOKEN:
+        html = """<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin - RecurSaathi</title>
+<meta name="robots" content="noindex,nofollow">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<style>body{background:#0a0e1a;color:#e8ecf6;font-family:Inter,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:24px;margin:0}
+.c{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:38px 32px;max-width:420px;width:100%;text-align:center}
+h1{font-family:'Space Grotesk';font-size:24px;letter-spacing:-.02em;margin:0 0 8px}p{color:#9aa3b8;font-size:14px;line-height:1.6}
+input{width:100%;box-sizing:border-box;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:12px 14px;color:#e8ecf6;font-size:15px;margin:16px 0 4px}
+button{width:100%;background:linear-gradient(135deg,#7c6cf8,#5ac8fa);border:0;border-radius:10px;padding:12px 0;color:#fff;font-size:15px;font-weight:600;margin-top:10px;cursor:pointer}
+.err{color:#ff6b6b;font-size:13px;margin-top:10px}</style></head><body><div class="c">
+<h1>RecurSaathi Admin</h1><p>Enter your admin token to see pending payments and confirm them with one tap.</p>
+<form method="post" action="/admin/login"><input type="password" name="token" placeholder="Admin token" autocomplete="off" required autofocus>
+<button type="submit">Open admin panel</button></form>{err}</div></body></html>"""
+        err = '<div class="err">Wrong token, try again.</div>' if request.query_params.get("e") == "1" else ""
+        return HTMLResponse(html.replace("{err}", err))
+
+    rows = [m for m in manual_upi.pending()]
+    cards = []
+    for m in rows:
+        amt = _pay_amount(m.get("plan", ""), m)
+        utr = (m.get("claimed_utr") or "").strip()
+        utr_html = f'<div class="utr">UTR claimed: <b>{utr}</b></div>' if utr else '<div class="utr dim">No UTR claimed yet</div>'
+        cards.append(f"""<div class="card"><div class="row1"><b>{(m.get('name') or m.get('email') or 'Merchant')}</b><span class="plan">{m.get('plan','')}</span></div>
+<div class="meta">{m.get('email','')} · {m.get('phone') or 'no phone'}</div>
+<div class="amt">&#8377;{amt:,.0f}<span> / {m.get('plan','')} · monthly</span></div>{utr_html}
+<form method="post" action="/admin/confirm"><input type="hidden" name="merchant_id" value="{m.get('id','')}"><button type="submit">Confirm paid &amp; activate</button></form></div>""")
+    if not cards:
+        cards = ['<div class="empty">No pending payments right now. New trial signups land here the moment they say "I\'ve paid".</div>']
+    html = """<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin - RecurSaathi</title>
+<meta name="robots" content="noindex,nofollow">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<style>body{background:#0a0e1a;color:#e8ecf6;font-family:Inter,sans-serif;margin:0;padding:32px 16px}
+.wrap{max-width:640px;margin:0 auto}h1{font-family:'Space Grotesk';font-size:26px;letter-spacing:-.02em;margin:0 0 4px}
+.sub{color:#9aa3b8;font-size:14px;margin:0 0 24px}
+.card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:20px 22px;margin-bottom:14px}
+.row1{display:flex;justify-content:space-between;align-items:center;font-size:16px}
+.plan{background:rgba(124,108,248,.16);border:1px solid rgba(124,108,248,.3);color:#b9b1ff;border-radius:20px;padding:3px 12px;font-size:12px;font-weight:600}
+.meta{color:#9aa3b8;font-size:13px;margin:6px 0 10px}
+.amt{font-size:26px;font-family:'Space Grotesk';font-weight:700;color:#00d4a0}.amt span{font-size:13px;color:#9aa3b8;font-weight:400;font-family:Inter}
+.utr{font-size:13px;color:#ffd166;margin:8px 0 14px}.utr.dim{color:#9aa3b8}
+button{width:100%;background:linear-gradient(135deg,#00d4a0,#00b389);border:0;border-radius:10px;padding:12px 0;color:#04121e;font-size:15px;font-weight:700;cursor:pointer}
+.empty{background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.16);border-radius:16px;padding:28px 22px;color:#9aa3b8;font-size:14px;text-align:center}</style></head><body>
+<div class="wrap"><h1>RecurSaathi Admin</h1><p class="sub">Pending payments waiting for your confirmation</p>{CARDS}</div></body></html>"""
+    return HTMLResponse(html.replace("{CARDS}", "".join(cards)))
+
+@app.post("/admin/login")
+async def admin_login(request: Request):
+    from fastapi.responses import RedirectResponse
+    form = await request.form()
+    if (form.get("token") or "") != config.ADMIN_TOKEN:
+        return RedirectResponse("/admin?e=1", status_code=303)
+    resp = RedirectResponse("/admin", status_code=303)
+    resp.set_cookie("admin_token", config.ADMIN_TOKEN, max_age=60 * 60 * 24 * 30, httponly=True, samesite="lax")
+    return resp
+
+@app.post("/admin/confirm")
+async def admin_confirm(request: Request):
+    from fastapi.responses import RedirectResponse
+    if request.cookies.get("admin_token", "") != config.ADMIN_TOKEN:
+        return RedirectResponse("/admin", status_code=303)
+    form = await request.form()
+    manual_upi.mark_paid(form.get("merchant_id", ""))
+    return RedirectResponse("/admin", status_code=303)
+
 @app.get("/admin/pending")
 async def admin_pending(x_admin_token: str = Header(default="")):
     if x_admin_token != config.ADMIN_TOKEN:
