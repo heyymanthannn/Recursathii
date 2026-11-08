@@ -26,7 +26,7 @@ def render(name, request, user=None, **ctx):
     env.globals["inr"] = env.filters["inr"]
     env.globals["datetime"] = env.filters["datetime"]
     t = env.get_template(name)
-    return t.render(request=request, user=user, active_tab=ctx.pop("tab", ""), **ctx)
+    return HTMLResponse(t.render(request=request, user=user, active_tab=ctx.pop("tab", ""), **ctx))
 
 def inr(p): return f"\u20b9{p/100:,.0f}"
 
