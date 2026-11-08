@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /checkout
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /pay
+
+Sitemap: https://recursathii.onrender.com/sitemap.xml

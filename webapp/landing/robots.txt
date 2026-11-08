@@ -1,3 +1,8 @@
 User-agent: *
 Allow: /
-Sitemap: https://recursaathi.in/sitemap.xml
+Disallow: /checkout
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /pay
+
+Sitemap: https://recursathii.onrender.com/sitemap.xml

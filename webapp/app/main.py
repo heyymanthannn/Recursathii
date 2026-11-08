@@ -185,6 +185,15 @@ async def privacy_page():
 async def terms_page():
     return FileResponse("landing/terms.html")
 
+@app.get("/robots.txt", include_in_schema=False)
+async def robots_txt():
+    return FileResponse("landing/robots.txt", media_type="text/plain")
+
+
+@app.get("/sitemap.xml", include_in_schema=False)
+async def sitemap_xml():
+    return FileResponse("landing/sitemap.xml", media_type="application/xml")
+
 
 @app.post("/webhooks/youpi")
 async def youpi_webhook(request: Request):
