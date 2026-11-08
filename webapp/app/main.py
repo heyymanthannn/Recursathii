@@ -106,7 +106,7 @@ def _pay_amount(plan: str, row: dict | None) -> float:
 
 
 @app.get("/checkout/{merchant_id}")
-async def checkout_page(merchant_id: str):
+async def checkout_page(merchant_id: str, claimed: int = 0):
     """Checkout: plan summary, coupon entry, live-updating UPI QR."""
     from . import manual_upi, db
     from fastapi.responses import HTMLResponse
@@ -122,6 +122,8 @@ async def checkout_page(merchant_id: str):
         coupon_msg = f'<div class="ok" style="color:#00d4a0;font-weight:600">Coupon applied: {pct}% off. You pay &#8377;{amt:,.0f} instead of &#8377;{full:,.0f}.</div>'
     if m.status == "active":
         coupon_msg = '<div class="ok" style="color:#00d4a0;font-weight:600">Your account is already active - no payment needed.</div>'
+    if claimed and m.status == "trial":
+        coupon_msg = '<div class="ok" style="color:#00d4a0;font-weight:600">Payment submitted. Verifying now - your account goes live the moment it clears.</div>'
     html = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -149,10 +151,29 @@ button{{background:#00d4a0;border:0;border-radius:10px;padding:10px 16px;font-we
 <input name="code" placeholder="Coupon code" maxlength="20" {'value=' + chr(34) + (row.get('coupon_code') or '') + chr(34) if row and row.get('coupon_code') else ''} {'disabled' if pct else ''}>
 <button {'disabled' if pct else ''}>Apply</button></form>
 <p style="margin-top:14px">Scan the QR with Google Pay or any UPI app. The amount is locked to the exact total shown.</p>
-<p style="margin-top:6px">Your account activates as soon as we confirm the payment (usually within a few hours).</p>
+<form method="post" action="/checkout/{merchant_id}/paid-claim" style="margin-top:12px;display:flex;flex-direction:column;align-items:center">
+<input name="utr" placeholder="UTR / reference no. from your UPI app" maxlength="30" style="width:100%;max-width:280px" required>
+<button style="margin-top:8px;width:100%;max-width:280px">I&#39;ve paid - verify now</button>
+</form>
+<p style="margin-top:6px">After paying, tap the button with your UTR: we check it right away and your account goes live the moment it clears.</p>
 <div class="st">You'll hear from us on {m.email} once it's live.</div></div></body></html>"""
     return HTMLResponse(html)
 
+
+@app.post("/checkout/{merchant_id}/paid-claim")
+async def checkout_paid_claim(merchant_id: str, utr: str = Form("")):
+    """Customer self-reports payment with UTR; instant verify pipeline input."""
+    from fastapi.responses import RedirectResponse
+    from . import db
+    import time as _time
+    m = billing.MERCHANTS.get(merchant_id)
+    if not m or not config.MANUAL_UPI_ID:
+        raise HTTPException(status_code=404, detail="checkout page not found")
+    row = _merchant_row(merchant_id) or {}
+    row["claimed_utr"] = (utr or "").strip().upper()
+    row["claimed_at"] = _time.time()
+    db.save_merchant(row)
+    return RedirectResponse(f"/checkout/{merchant_id}?claimed=1", status_code=303)
 
 @app.post("/checkout/{merchant_id}/coupon")
 async def checkout_coupon(merchant_id: str, code: str = Form("")):

@@ -47,6 +47,8 @@ def init():
             "ALTER TABLE merchants ADD COLUMN retention_state TEXT DEFAULT ''",
             "ALTER TABLE merchants ADD COLUMN retention_outcome TEXT DEFAULT ''",
             "ALTER TABLE merchants ADD COLUMN retention_at REAL DEFAULT 0",
+            "ALTER TABLE merchants ADD COLUMN claimed_utr TEXT DEFAULT ''",
+            "ALTER TABLE merchants ADD COLUMN claimed_at REAL DEFAULT 0",
         ):
             try:
                 c.execute(stmt)
@@ -61,14 +63,16 @@ def save_merchant(m):
         c.execute(
             "INSERT OR REPLACE INTO merchants(id,email,name,phone,plan,status,"
             "subscription_id,next_month_discount,welcome_sent,created,discount_pct,"
-            "coupon_code,retention_state,retention_outcome,retention_at) "
-            "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            "coupon_code,retention_state,retention_outcome,retention_at,"
+            "claimed_utr,claimed_at) "
+            "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (m["id"], m.get("email"), m.get("name"), m.get("phone"),
              m.get("plan"), m.get("status"), m.get("subscription_id"),
              m.get("next_month_discount", 0), m.get("welcome_sent", 0),
              created, m.get("discount_pct", 0), m.get("coupon_code", ""),
              m.get("retention_state", ""), m.get("retention_outcome", ""),
-             m.get("retention_at", 0)))
+             m.get("retention_at", 0), m.get("claimed_utr", ""),
+             m.get("claimed_at", 0)))
 
 # ---- coupons ----
 def issue_coupon(merchant_id: str, pct: int) -> str:
