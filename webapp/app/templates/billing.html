@@ -1,19 +1,44 @@
 {% extends "base.html" %}{% block title %}Billing · RecurSaathi{% endblock %}{% block content %}
-<h1>Billing</h1>
+<h1>Billing &amp; Subscription</h1>
 <p class="sub">Your RecurSaathi subscription. Upgrade, downgrade or cancel any time.</p>
+{% if blocked %}
+<div class="card" style="border-color:var(--purple)"><strong>Plan limit reached.</strong> <span class="muted">{% if blocked == 'customers' %}You've hit the customer limit on your plan. Upgrade to add more.{% elif blocked == 'invoices' %}You've hit this month's invoice limit on your plan. Upgrade for a higher monthly quota.{% elif blocked == 'team' %}Your plan's team seats are full. Upgrade to add team members.{% else %}This action is in read-only mode. Subscribe to a plan to unlock it again.{% endif %}</span></div>
+{% endif %}
+{% if user.plan_status == 'expired' %}
+<div class="card" style="border-color:var(--purple)"><strong>Trial ended.</strong> <span class="muted">Your data is safe. Subscribe below to unlock full access again.</span></div>
+{% endif %}
+{% if user.plan_status == 'pending_payment' %}
+<div class="card"><strong>Payment pending.</strong> <span class="muted">Your plan change is recorded and activates as soon as the payment is confirmed.</span></div>
+{% endif %}
+<div class="card" style="margin:14px 0">
+<div class="label">Current plan</div>
+<div class="kpi blue">{{ plans[user.plan].name }}<span class="muted" style="font-size:13px"> &middot; {{ user.plan_status }}</span></div>
+<div class="muted" style="margin:8px 0">
+{% if user.trial_started_at %}Trial started {{ user.trial_started_at|datetime }}<br>{% endif %}
+{% if user.trial_ends %}Trial ends {{ user.trial_ends|datetime }} &middot; {{ ((user.trial_ends - now_ts) / 86400) | round(0, 'floor') | int }} days left<br>{% endif %}
+Billing cycle: {{ user.billing_cycle or 'monthly' }} &middot; We never charge automatically after the trial. Prices exclude 18% GST; payment provider charges may apply.
+</div>
+{% if user.plan_status in ('active', 'trialing') %}
+<form method="post" action="/billing/cancel" style="margin-top:10px" onsubmit="return confirm('Cancel your subscription? Your data stays safe; paid features pause after this period.')"><button class="btn danger sm">Cancel subscription</button></form>
+{% endif %}
+</div>
 <div class="cards">
 {% for key, p in plans.items() %}
 <div class="card" style="{{ 'border-color:var(--purple)' if user.plan==key }}">
 <div class="label">{{ p.name }}</div>
-<div class="kpi {{ 'blue' if key=='starter' else ('purple' if key=='growth' else 'lav') }}">{{ inr(p.amount) if p.amount else "10% of recovered" }}<span class="muted" style="font-size:13px">{{ "/month" if p.amount else "" }}</span></div>
-<div style="margin:10px 0">{% for f in p.features %}<div class="muted">· {{ f }}</div>{% endfor %}</div>
-{% if user.plan==key %}<span class="pill {{ user.plan_status }}">{{ user.plan_status }}</span>
-{% if user.plan_status=='active' or user.plan_status=='trialing' %}<form method="post" action="/billing/cancel" style="margin-top:10px"><button class="btn danger sm">Cancel subscription</button></form>{% endif %}
-{% else %}<form method="post" action="/billing/change-plan" style="margin-top:10px"><input type="hidden" name="plan" value="{{ key }}"><button class="btn sm">Switch to {{ p.name }}</button></form>{% endif %}
+<div class="kpi {{ 'blue' if key=='starter' else ('purple' if key=='growth' else 'lav') }}">{{ inr(p.amount) }}<span class="muted" style="font-size:13px">/month &middot; {{ inr(p.annual_amount) }}/yr</span></div>
+<div style="margin:10px 0">{% for f in p.features %}<div class="muted">&middot; {{ f }}</div>{% endfor %}</div>
+{% if user.plan==key %}
+<span class="pill {{ user.plan_status }}">{{ user.plan_status }}</span>
+{% if user.plan_status=='active' %}<form method="post" action="/billing/cancel" style="margin-top:10px" onsubmit="return confirm('Cancel your subscription? Your data stays safe; paid features pause after this period.')"><button class="btn danger sm">Cancel subscription</button></form>{% endif %}
+{% else %}
+<form method="post" action="/billing/change-plan" style="margin-top:10px"><input type="hidden" name="plan" value="{{ key }}"><select name="cycle" style="margin-right:6px;padding:8px"><option value="monthly">Monthly</option><option value="annual">Annual (2 months free)</option></select><button class="btn sm">Switch to {{ p.name }}</button></form>
+{% endif %}
 </div>
 {% endfor %}
 </div>
-<div class="muted" style="margin:12px 0">Payment for your subscription goes to RecurSaathi's own account. Your customers' invoice payments never touch this account: they go straight to your bank via your own UPI ID or your own Razorpay keys.</div>
+<div class="muted" style="margin:12px 0">Subscription payments go to RecurSaathi. Your customers' invoice payments never touch this account: they go straight to your bank via your own UPI ID or your own Razorpay keys.</div>
+<div class="muted">Usage this month: {{ usage.customers }} / {{ plans[user.plan].max_customers }} customers &middot; {{ usage.invoices_month }} / {{ plans[user.plan].max_invoices_month }} invoices &middot; {{ usage.team }} / {{ plans[user.plan].max_team }} team seats</div>
 <h2>Subscription payment history</h2>
 <div class="card">{% if pays %}<table><tr><th>When</th><th>Plan</th><th>Amount</th><th>Status</th><th>Reference</th></tr>
 {% for p in pays %}<tr><td>{{ p.created | datetime }}</td><td>{{ p.plan }}</td><td>{{ inr(p.amount) if p.amount else "-" }}</td><td>{{ p.status }}</td><td>{{ p.reference or "-" }}</td></tr>{% endfor %}</table>

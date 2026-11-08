@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body class="{% if user %}app{% else %}auth{% endif %}">
+{% if user and user.plan_status == 'expired' %}<div style="background:#fde68a;color:#78350f;padding:10px 16px;text-align:center;font-size:14px">Your free trial has ended. Your data is safe. <a href="/billing" style="font-weight:600">Subscribe to reactivate</a>.</div>{% endif %}
 {% if user %}
 <aside class="sidebar">
   <a class="brand" href="/dashboard"><i></i><span>Recur<b>Saathi</b></span></a>

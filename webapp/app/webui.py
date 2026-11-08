@@ -64,6 +64,10 @@ def guard(request):
                            trial_ends=started + 14 * 86400)
         row["trial_started_at"] = started
         row["trial_ends"] = started + 14 * 86400
+    if row["plan_status"] == "trialing" and row.get("trial_ends") and row["trial_ends"] < time.time():
+        models.update_user(owner["id"], plan_status="expired")
+        row["plan_status"] = "expired"
+    row["read_only"] = row["plan_status"] == "expired"
     return row
 
 # ---------- auth pages ----------
@@ -162,6 +166,8 @@ async def customers_add(request: Request, name: str = Form(""), email: str = For
     user = guard(request)
     if not user:
         return RedirectResponse("/login", status_code=303)
+    if user.get("read_only") or models.plan_limit_msg(user["id"], "customers"):
+        return RedirectResponse("/billing?blocked=customers", status_code=303)
     if name:
         c = models.create_customer(user["id"], name, email, phone, notes)
         models.log_activity(user["id"], "customer", f"Added customer {name}")
@@ -204,6 +210,8 @@ async def customer_edit(request: Request, cid: str, name: str = Form(""), email:
     user = guard(request)
     if not user:
         return RedirectResponse("/login", status_code=303)
+    if user.get("read_only") or models.plan_limit_msg(user["id"], "customers"):
+        return RedirectResponse("/billing?blocked=customers", status_code=303)
     cu = models.one("SELECT id FROM customers WHERE id=? AND owner_id=?", (cid, user["id"]))
     if cu:
         models.update_customer(cid, name=name, email=email, phone=phone, notes=notes,
@@ -247,6 +255,8 @@ async def invoices_add(request: Request, customer_id: str = Form(""), number: st
     user = guard(request)
     if not user:
         return RedirectResponse("/login", status_code=303)
+    if user.get("read_only") or models.plan_limit_msg(user["id"], "invoices"):
+        return RedirectResponse("/billing?blocked=invoices", status_code=303)
     try:
         amt = int(round(float(amount) * 100))
         assert amt > 0
@@ -360,6 +370,8 @@ async def team_add(request: Request, name: str = Form(""), email: str = Form("")
     user = guard(request)
     if not user or user["role"] != "owner":
         return RedirectResponse("/login", status_code=303)
+    if user.get("read_only") or models.plan_limit_msg(user["id"], "team"):
+        return RedirectResponse("/billing?blocked=team", status_code=303)
     team = models.list_team(user["id"])
     if not name or not email or "@" not in email or role not in ("staff", "viewer"):
         return render("team.html", request, user=user, tab="team", team=team,
@@ -389,24 +401,32 @@ async def billing_page(request: Request):
     if not user:
         return RedirectResponse("/login", status_code=303)
     pays = models.list_plat_pays(user["id"])
+    usage = models.plan_usage(user["id"])
+    blocked = request.query_params.get("blocked", "")
     return render("billing.html", request, user=user, tab="subscription", pays=pays,
-                  plans=config.PLANS, inr=inr)
+                  plans=config.PLANS, inr=inr, usage=usage, now_ts=time.time(), blocked=blocked)
 
 @router.post("/billing/change-plan")
-async def change_plan(request: Request, plan: str = Form("")):
+async def change_plan(request: Request, plan: str = Form(""), cycle: str = Form("monthly")):
     user = guard(request)
     if not user:
         return RedirectResponse("/login", status_code=303)
-    if plan in config.PLANS:
-        new = dict(config.PLANS[plan])
-        status = "active"
-        if user["plan_status"] == "trialing" and user["plan"] == "starter" and plan == "starter":
-            status = "trialing"
-        extra = {"trial_ends": None} if status == "active" else {}
-        models.update_user(user["id"], plan=plan, plan_status=status, **extra)
-        models.record_plat_pay(user["id"], plan, new["amount"], "pending_upgrade",
-                               reference=f"plan-change-{int(time.time())}")
-        models.log_audit(user["id"], "billing.plan_change", plan)
+    if plan in config.PLANS and plan != user["plan"]:
+        p = config.PLANS[plan]
+        if user["plan_status"] == "trialing":
+            # Plan changes during a free trial are free; the trial keeps running.
+            models.update_user(user["id"], plan=plan, plan_status="trialing")
+            models.log_audit(user["id"], "billing.plan_change", f"{plan} during trial (no charge)")
+        else:
+            # No verified payment -> no activation. The plan sits in pending_payment
+            # until the payment is confirmed (admin panel or billing webhook).
+            cyc = "annual" if cycle == "annual" else "monthly"
+            amount = p["annual_amount"] if cyc == "annual" else p["amount"]
+            models.update_user(user["id"], plan=plan, plan_status="pending_payment",
+                               billing_cycle=cyc)
+            models.record_plat_pay(user["id"], plan, amount, "pending",
+                                   reference=f"plan-change-{int(time.time())}")
+            models.log_audit(user["id"], "billing.plan_change", f"{plan}/{cyc} pending payment")
     return RedirectResponse("/billing", status_code=303)
 
 @router.post("/billing/cancel")

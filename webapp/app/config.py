@@ -6,38 +6,57 @@ BILLING_WEBHOOK_SECRET = os.environ.get("BILLING_WEBHOOK_SECRET", "billing-secre
 RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID", "")
 RAZORPAY_KEY_SECRET = os.environ.get("RAZORPAY_KEY_SECRET", "")
 PAY_LINK_BASE = os.environ.get("PAY_LINK_BASE", "https://recover.example/pay")
+# Public base URL of this app, used in links inside automated messages.
+BASE_URL = os.environ.get("BASE_URL", "https://recursathii.onrender.com")
 
 # Our own SaaS subscription model, billed through Razorpay Subscriptions.
 # plan_id values are created once in the Razorpay dashboard and set in env.
 PLANS = {
     "starter": {
         "plan_id_env": "RZP_PLAN_STARTER",
-        "amount": 299900,            # paise: Rs 2,999/mo
+        "amount": 99900,             # paise: Rs 999/mo
+        "annual_amount": 999000,     # Rs 9,990/yr (2 months free)
         "name": "Starter",
         "trial_days": 14,
-        "max_mrr_tracked": 100000,   # Rs 1L MRR
+        "max_mrr_tracked": None,
+        "max_team": 1,
+        "max_customers": 500,
+        "max_invoices_month": 100,
         "gateways": 1,
-        "features": ["WhatsApp dunning", "RBI-window retries", "recovery dashboard"],
+        "features": ["Customer management", "Invoice management", "Basic Recovery Radar",
+                      "Manual UPI payment collection", "Basic analytics", "Email notifications",
+                      "1 team member", "500 customers", "100 invoices/month"],
     },
     "growth": {
         "plan_id_env": "RZP_PLAN_GROWTH",
-        "amount": 799900,            # Rs 7,999/mo
+        "amount": 249900,            # Rs 2,499/mo
+        "annual_amount": 2499000,    # Rs 24,990/yr
         "name": "Growth",
         "trial_days": 14,
-        "max_mrr_tracked": 1000000,  # Rs 10L
+        "max_mrr_tracked": None,
+        "max_team": 5,
+        "max_customers": 2500,
+        "max_invoices_month": 1000,
         "gateways": 2,
-        "features": ["everything in Starter", "2 gateways", "vernacular templates",
-                      "mandate-repair flow", "pre-expiry outreach"],
+        "features": ["Everything in Starter", "Advanced Recovery Radar", "Automated email reminders",
+                      "WhatsApp integration (needs your WhatsApp Business account)", "Dormant customer recovery",
+                      "Failed payment tracking", "Advanced analytics", "5 team members",
+                      "2,500 customers", "1,000 invoices/month"],
     },
     "scale": {
         "plan_id_env": "RZP_PLAN_SCALE",
-        "amount": 0,                 # custom: 10% of recovered revenue
+        "amount": 599900,            # Rs 5,999/mo
+        "annual_amount": 5999000,    # Rs 59,990/yr
         "name": "Scale",
-        "trial_days": 0,
+        "trial_days": 14,
         "max_mrr_tracked": None,
+        "max_team": 15,
+        "max_customers": 10000,
+        "max_invoices_month": 5000,
         "gateways": 99,
-        "features": ["everything in Growth", "unlimited gateways",
-                      "10% of recovered revenue pricing"],
+        "features": ["Everything in Growth", "AI Recovery Assistant", "Advanced reports",
+                      "Custom integrations", "Team management", "Priority support",
+                      "15 team members", "10,000 customers", "5,000 invoices/month"],
     },
 }
 

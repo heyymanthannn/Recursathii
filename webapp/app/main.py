@@ -72,7 +72,8 @@ async def api_signup(request: Request):
     if models.get_user_by_email(email):
         raise HTTPException(status_code=400, detail="That email already has an account. Sign in at /login with your password to continue.")
     u = models.create_user(email, auth.hash_pw(pw), data.get("name") or "",
-                           data.get("name") or "", (data.get("phone") or "").lstrip("+"))
+                           data.get("name") or "", (data.get("phone") or "").lstrip("+"),
+                           plan=plan)
     import time as _time
     models.update_user(u["id"], trial_started_at=_time.time(),
                        trial_ends=_time.time() + 14 * 86400)  # trial starts at signup, regardless of plan
@@ -132,25 +133,6 @@ async def checkout_page(merchant_id: str, claimed: int = 0):
         m.status = row.get("status") or m.status
         m.name = row.get("name") or m.name
         m.phone = row.get("phone") or m.phone
-    if m.plan == "scale":
-        html = f"""<!doctype html>
-<html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Checkout - RecurSaathi</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
-<style>body{{background:#0a0e1a;color:#e8ecf6;font-family:Inter,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:24px;margin:0}}
-.c{{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:38px 32px;max-width:440px;width:100%;text-align:center}}
-h1{{font-family:'Space Grotesk';font-size:24px;letter-spacing:-.02em;margin:0 0 6px}}
-.amt{{font-size:30px;font-family:'Space Grotesk';font-weight:700;color:#00d4a0;margin:14px 0 4px}}
-p{{color:#9aa3b8;font-size:14px;line-height:1.6}}
-a{{color:#00d4a0}}</style></head><body>
-<div class="c"><h1>Scale plan</h1>
-<div class="amt">10% of recovered revenue</div>
-<p>No fixed monthly fee. You pay a share of what we actually recover for you, billed monthly after we set the plan up together.</p>
-<p>Your 14-day free trial starts now. We&apos;ll reach out on {m.email} to set up Scale billing, or write to <a href="mailto:recursathi@gmail.com">recursathi@gmail.com</a> anytime.</p>
-<p>Your account is ready &mdash; sign in anytime with your email and password at <a href="/login">/login</a>.</p>
-</div></body></html>"""
-        return HTMLResponse(html)
     full = PLANS[m.plan]["amount"] / 100
     amt = _pay_amount(m.plan, row)
     pct = (row or {}).get("discount_pct") or 0
@@ -264,8 +246,6 @@ async def pay_qr(merchant_id: str):
     m = billing.MERCHANTS.get(merchant_id)
     if not m or not config.MANUAL_UPI_ID:
         raise HTTPException(status_code=404, detail="qr not found")
-    if m.plan == "scale":
-        raise HTTPException(status_code=404, detail="qr not found")
     row = _merchant_row(merchant_id)
     return Response(content=manual_upi.qr_png(m.plan, merchant_id, _pay_amount(m.plan, row)), media_type="image/png")
 
@@ -276,6 +256,20 @@ async def admin_mark_paid(request: Request, x_admin_token: str = Header(default=
         raise HTTPException(status_code=401, detail="invalid admin token")
     data = await request.json()
     return manual_upi.mark_paid(data.get("merchant_id", ""))
+
+@app.post("/admin/plat-confirm")
+async def admin_plat_confirm(request: Request, x_admin_token: str = Header(default="")):
+    """Confirm a pending subscription payment -> activates that business's plan."""
+    if x_admin_token != config.ADMIN_TOKEN:
+        raise HTTPException(status_code=401, detail="invalid admin token")
+    from . import models
+    data = await request.json()
+    pay = models.one("SELECT * FROM plat_pays WHERE id=?", (data.get("payment_id", ""),))
+    if not pay or pay["status"] not in ("pending", "pending_upgrade"):
+        return {"ok": False, "error": "payment not pending"}
+    models.ex("UPDATE plat_pays SET status='paid' WHERE id=?", (pay["id"],))
+    models.update_user(pay["owner_id"], plan=pay["plan"], plan_status="active", trial_ends=None)
+    return {"ok": True, "owner": pay["owner_id"], "plan": pay["plan"]}
 
 
 @app.get("/admin")
@@ -377,7 +371,33 @@ async def dashboard(merchant_id: str):
 
 @app.post("/scheduler/tick")
 async def scheduler_tick():
-    return {"retries_fired": engine.run_scheduler()}
+    import time
+    from . import models
+    now = time.time()
+    expired = queued = 0
+    base = config.BASE_URL.rstrip("/")
+    for u in models.q("SELECT * FROM users WHERE plan_status='trialing' AND trial_ends IS NOT NULL", ()):
+        if u["trial_ends"] < now:
+            models.update_user(u["id"], plan_status="expired")
+            expired += 1
+            continue
+        started = u["trial_started_at"] or (u["trial_ends"] - 14 * 86400)
+        days_in = (now - started) / 86400.0
+        notes = (
+            (7, "Your RecurSaathi trial: 7 days left",
+             "Hi there,\n\nYou are 7 days into your RecurSaathi free trial. Recovery Radar, automations and analytics are live on your dashboard.\n\nSubscribe any time at " + base + "/billing - we never charge you automatically.\n\n- Team RecurSaathi"),
+            (12, "2 days left in your RecurSaathi trial",
+             "Hi there,\n\nYour free trial ends in 2 days. Pick a plan at " + base + "/billing to keep recovering revenue without interruption.\n\n- Team RecurSaathi"),
+            (14, "Your RecurSaathi trial ends today",
+             "Hi there,\n\nYour free trial ends today. Your data is safe, but recovery features pause until you subscribe. Choose a plan at " + base + "/billing.\n\n- Team RecurSaathi"),
+        )
+        for d, subj, body in notes:
+            dk = f"trial-d{d}-{u['id']}"
+            if days_in >= d and not models.one("SELECT 1 FROM outbox WHERE dedupe=?", (dk,)):
+                models.queue(u["id"], "email", u["email"], "trial_reminder", subj, body, dedupe=dk)
+                queued += 1
+    return {"retries_fired": engine.run_scheduler(),
+            "trial_notifications_queued": queued, "trials_expired": expired}
 
 @app.get("/plans")
 async def plans():

@@ -82,6 +82,8 @@ def init():
             c.execute("ALTER TABLE users ADD COLUMN reset_expires REAL")
         if "trial_started_at" not in cols:
             c.execute("ALTER TABLE users ADD COLUMN trial_started_at REAL")
+        if "billing_cycle" not in cols:
+            c.execute("ALTER TABLE users ADD COLUMN billing_cycle TEXT DEFAULT 'monthly'")
 
 def q(sql, args=()):
     with conn() as c:
@@ -323,6 +325,31 @@ def list_plat_pays(owner_id=""):
     return q("SELECT * FROM plat_pays ORDER BY created DESC")
 
 # ---- owner dashboard metrics ----
+
+def plan_usage(owner_id):
+    """Live usage counts for plan limits: customers, invoices this month, team seats."""
+    t = time.localtime()
+    ms = time.mktime((t.tm_year, t.tm_mon, 1, 0, 0, 0, 0, 0, -1))
+    cust = q("SELECT COUNT(*) AS c FROM customers WHERE owner_id=?", (owner_id,))[0]["c"]
+    inv = q("SELECT COUNT(*) AS c FROM invoices WHERE owner_id=? AND created>=?", (owner_id, ms))[0]["c"]
+    return {"customers": cust, "invoices_month": inv, "team": len(list_team(owner_id))}
+
+
+def plan_limit_msg(owner_id, kind):
+    """Backend plan-limit check. Returns an upgrade message or '' when allowed."""
+    from . import config
+    u = dict(get_user(owner_id) or {})
+    p = config.PLANS.get(u.get("plan") or "starter") or config.PLANS["starter"]
+    usage = plan_usage(owner_id)
+    if kind == "customers" and usage["customers"] >= p["max_customers"]:
+        return f"Your {p['name']} plan covers {p['max_customers']:,} customers."
+    if kind == "invoices" and usage["invoices_month"] >= p["max_invoices_month"]:
+        return f"Your {p['name']} plan covers {p['max_invoices_month']:,} invoices a month."
+    if kind == "team" and usage["team"] >= p["max_team"]:
+        return f"Your {p['name']} plan includes {p['max_team']} team member(s)."
+    return ""
+
+
 def owner_metrics(owner_id):
     today = time.strftime("%Y-%m-%d")
     inv = one("""SELECT
