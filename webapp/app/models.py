@@ -244,7 +244,7 @@ def record_event(owner_id, kind, gateway, customer_id, amount, decline_code="", 
     return e
 
 # ---- automations ----
-AUTO_KEYS = ["reminder_due", "overdue_1", "overdue_7", "failed_payment", "payment_confirm", "dormant_reactivate"]
+AUTO_KEYS = ["reminder_due", "overdue_1", "overdue_7", "failed_payment", "payment_confirm", "dormant_reactivate", "due_call"]
 
 def get_automations(owner_id):
     rows = {r["key"]: bool(r["enabled"]) for r in q("SELECT * FROM automations WHERE owner_id=?", (owner_id,))}

@@ -2,6 +2,7 @@
 confirmations. Each workflow can be switched on/off per owner. Dedupe keys
 keep every stage from firing twice for the same invoice on the same day."""
 import time
+import httpx
 from . import models, notify, config
 
 DEFAULTS = {
@@ -41,6 +42,11 @@ DEFAULTS = {
                        "Whenever you are ready, we are here.\n\n{business}"),
         "wa_body": ("Hi {customer_name}! It has been a while - your last order was on {last_paid}. "
                     "We would love to see you again. - {business}"),
+    },
+    "due_call": {
+        "call_script": ("Call {customer_name} at {phone} about invoice {number} from {business}: "
+                        "Rs {amount}, due {due_date}, now overdue. Remind them politely, offer the "
+                        "payment link {pay_link}, and note if they promise a date."),
     },
     "payment_confirm": {
         "email_subject": "Payment received: invoice {number}",
@@ -115,11 +121,66 @@ def run_dormant_reactivation(owner):
             counts["queued"] += len(outs)
     return counts
 
+def run_due_calls(owner, base_url):
+    """AI repayment calls for overdue customers. Needs a voice provider; until
+    one is connected the call and its script queue in the outbox, visibly
+    waiting, instead of pretending a call was made."""
+    from . import retention as _ret
+    counts = {"calls_placed": 0, "calls_waiting_provider": 0, "skipped": 0, "failed": 0}
+    if not models.get_automations(owner["id"]).get("due_call", True):
+        return counts
+    today = time.strftime("%Y-%m-%d")
+    for inv in models.list_invoices(owner["id"]):
+        stage = _stage(inv, today)
+        if stage not in ("overdue_1", "overdue_7"):
+            continue
+        cu = models.get_customer(inv["customer_id"])
+        if not cu or not cu.get("phone") or cu.get("wa_opt_out"):
+            continue
+        dedupe = f"due_call:{inv['id']}:{stage}"
+        if models.one("SELECT id FROM outbox WHERE dedupe=?", (dedupe,)):
+            continue
+        ctx = _ctx(owner, inv, cu, base_url)
+        ctx["phone"] = cu["phone"]
+        tpl = models.get_template(owner["id"], "due_call")
+        script = _render(tpl["body"] if tpl else DEFAULTS["due_call"]["call_script"], **ctx)
+        o = models.queue(owner["id"], "call", _ret._norm_phone(cu["phone"]), "due_call", "", script,
+                         dedupe=dedupe)
+        if not o:
+            continue
+        if not _ret.voice_ready():
+            models.set_outbox_status(o["id"], "no_channel", "voice provider not connected yet")
+            counts["calls_waiting_provider"] += 1
+            continue
+        try:
+            with httpx.Client(timeout=20) as cl:
+                r = cl.post(_ret.CALL_URL, headers={"Authorization": f"Bearer {_ret.CALL_TOKEN}"},
+                            json={"to": _ret._norm_phone(cu["phone"]), "task": script,
+                                  "metadata": {"owner_id": owner["id"], "invoice_id": inv["id"]}})
+            if r.status_code < 400:
+                models.set_outbox_status(o["id"], "sent", "AI repayment call placed")
+                models.ex("UPDATE outbox SET sent=? WHERE id=?", (models.now(), o["id"]))
+                models.log_activity(owner["id"], "automation",
+                                    f"Repayment call placed to {cu['name']} for invoice {inv['number']}")
+                counts["calls_placed"] += 1
+            else:
+                models.set_outbox_status(o["id"], "failed", f"voice provider returned {r.status_code}")
+                counts["failed"] += 1
+        except Exception as e:
+            models.set_outbox_status(o["id"], "failed", str(e)[:200])
+            counts["failed"] += 1
+    return counts
+
+
 def run_for_owner(owner, base_url):
     """Queue + attempt delivery for everything due. Returns counts."""
     keys = models.get_automations(owner["id"])
     counts = {"queued": 0, "sent": 0, "no_channel": 0, "skipped": 0, "failed": 0}
     today = time.strftime("%Y-%m-%d")
+    if keys.get("due_call", True):
+        d = run_due_calls(owner, base_url)
+        for k, v in d.items():
+            counts[k] = counts.get(k, 0) + v
     if keys.get("dormant_reactivate", True):
         d = run_dormant_reactivation(owner)
         for k, v in d.items():

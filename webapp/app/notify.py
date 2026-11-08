@@ -54,6 +54,10 @@ def send_whatsapp(phone_e164, body):
 
 def deliver(outbox_row):
     """Deliver one queued outbox message. Opt-out is honored for WhatsApp."""
+    if outbox_row["channel"] not in ("email", "whatsapp"):
+        models.set_outbox_status(outbox_row["id"], "no_channel",
+                                 f"{outbox_row['channel']} channel not configured yet")
+        return "no_channel"
     if outbox_row["channel"] == "whatsapp":
         cu = models.one("SELECT * FROM customers WHERE phone=? ", (outbox_row["dest"],)) \
             if outbox_row["dest"] else None

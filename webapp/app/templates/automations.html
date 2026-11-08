@@ -6,7 +6,7 @@
 {% for k in keys %}
 <div class="card">
 <div class="inline" style="justify-content:space-between">
-<div><b>{{ {'reminder_due':'Payment reminder (due today)','overdue_1':'Overdue notice (1-7 days)','overdue_7':'Final reminder (7+ days)','failed_payment':'Failed payment nudge','payment_confirm':'Payment confirmation','dormant_reactivate':'Dormant customer reactivation'}[k] }}</b>
+<div><b>{{ {'reminder_due':'Payment reminder (due today)','overdue_1':'Overdue notice (1-7 days)','overdue_7':'Final reminder (7+ days)','failed_payment':'Failed payment nudge','payment_confirm':'Payment confirmation','dormant_reactivate':'Dormant customer reactivation','due_call':'Repayment calls to overdue customers (needs voice provider)'}[k] }}</b>
 <div class="badge-note">{{ 'email + whatsapp' }}</div></div>
 <form method="post" action="/automations/toggle"><input type="hidden" name="key" value="{{ k }}"><input type="hidden" name="enabled" value="{{ '0' if keys[k] else '1' }}"><button class="btn sm {{ 'ghost' if keys[k] else '' }}">{{ 'Disable' if keys[k] else 'Enable' }}</button></form>
 </div>
