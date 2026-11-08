@@ -65,6 +65,14 @@ async def api_signup(request: Request):
         raise HTTPException(status_code=400, detail="plan and email required")
     if not (data.get("phone") or "").strip():
         raise HTTPException(status_code=400, detail="phone number required to start your trial")
+    pw = (data.get("password") or "")
+    if len(pw) < 8:
+        raise HTTPException(status_code=400, detail="Password needs at least 8 characters.")
+    from . import models, auth
+    if models.get_user_by_email(email):
+        raise HTTPException(status_code=400, detail="That email already has an account. Sign in at /login with your password to continue.")
+    models.create_user(email, auth.hash_pw(pw), data.get("name") or "",
+                       data.get("name") or "", (data.get("phone") or "").lstrip("+"))
     mid = "m_" + _uuid.uuid4().hex[:10]
     m = billing.onboard(mid, email, plan)
     m.name = data.get("name") or ""
@@ -91,7 +99,7 @@ async def api_signup(request: Request):
     if provider in ("stub", "error"):
         url = f"/checkout/{plan}?merchant_id={mid}"
     return {"merchant_id": mid, "status": m.status, "plan": plan,
-            "provider": provider, "checkout_url": url}
+            "provider": provider, "checkout_url": url, "account_created": True}
 
 def _merchant_row(merchant_id: str) -> dict | None:
     from . import db
@@ -137,6 +145,7 @@ a{{color:#00d4a0}}</style></head><body>
 <div class="amt">10% of recovered revenue</div>
 <p>No fixed monthly fee. You pay a share of what we actually recover for you, billed monthly after we set the plan up together.</p>
 <p>Your 14-day free trial starts now. We&apos;ll reach out on {m.email} to set up Scale billing, or write to <a href="mailto:recursathi@gmail.com">recursathi@gmail.com</a> anytime.</p>
+<p>Your account is ready &mdash; sign in anytime with your email and password at <a href="/login">/login</a>.</p>
 </div></body></html>"""
         return HTMLResponse(html)
     full = PLANS[m.plan]["amount"] / 100
@@ -176,6 +185,7 @@ button{{background:#00d4a0;border:0;border-radius:10px;padding:10px 16px;font-we
 <input name="code" placeholder="Coupon code" maxlength="20" {'value=' + chr(34) + (row.get('coupon_code') or '') + chr(34) if row and row.get('coupon_code') else ''} {'disabled' if pct else ''}>
 <button {'disabled' if pct else ''}>Apply</button></form>
 <p style="margin-top:14px">Scan the QR with Google Pay or any UPI app. The amount is locked to the exact total shown.</p>
+<p style="margin-top:6px">Your account is ready &mdash; sign in anytime with your email and password at <a href="/login">/login</a>.</p>
 <form method="post" action="/checkout/{merchant_id}/paid-claim" style="margin-top:12px">
 <button style="width:100%;max-width:280px;padding:12px 16px;font-size:15px">I&#39;ve paid</button>
 </form>
