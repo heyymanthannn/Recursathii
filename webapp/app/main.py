@@ -63,6 +63,8 @@ async def api_signup(request: Request):
     plan, email = data.get("plan"), data.get("email") or ""
     if plan not in PLANS or not email:
         raise HTTPException(status_code=400, detail="plan and email required")
+    if not (data.get("phone") or "").strip():
+        raise HTTPException(status_code=400, detail="phone number required to start your trial")
     mid = "m_" + _uuid.uuid4().hex[:10]
     m = billing.onboard(mid, email, plan)
     m.name = data.get("name") or ""

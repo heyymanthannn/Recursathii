@@ -85,6 +85,8 @@ async def signup(request: Request, name: str = Form(""), business: str = Form(""
                  upi_vpa: str = Form(""), password: str = Form("")):
     if not all([name, business, email, password]):
         return render("signup.html", request, error="Name, business, email and password are required.")
+    if not phone.strip():
+        return render("signup.html", request, error="Phone number is required to start your trial.")
     if len(password) < 8:
         return render("signup.html", request, error="Password must be at least 8 characters.")
     if models.get_user_by_email(email):

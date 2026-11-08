@@ -576,7 +576,7 @@ footer a:hover{color:var(--ink)}
     <form id="signupForm" novalidate>
       <input name="name" placeholder="Your name" autocomplete="name" required>
       <input name="email" type="email" placeholder="Work email" autocomplete="email" required>
-      <input name="phone" type="tel" placeholder="Phone (optional)" autocomplete="tel">
+      <input name="phone" type="tel" placeholder="Phone (WhatsApp)" autocomplete="tel" required>
       <button class="btn btn-primary" type="submit">Create account</button>
       <p class="fmsg" id="formMsg"></p>
     </form>
@@ -611,6 +611,7 @@ document.getElementById('signupForm').addEventListener('submit',async function(e
   e.preventDefault();
   var f=e.target, msg=document.getElementById('formMsg'), btn=f.querySelector('button');
   var g=function(n){return ((f.elements[n]||{}).value||'').trim();};
+  if(!g('phone')){msg.textContent='Phone number is required to start your free trial.';btn.textContent='Create account';return;}
   msg.textContent='';msg.classList.remove('ok');btn.textContent='Creating account…';btn.disabled=true;var slow=null;
   try{
     slow=setTimeout(function(){msg.textContent='Warming up the server — first load can take up to a minute. Staying on it…';},4000);
