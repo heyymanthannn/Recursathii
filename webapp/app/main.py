@@ -111,9 +111,16 @@ async def checkout_page(merchant_id: str, claimed: int = 0):
     from . import manual_upi, db
     from fastapi.responses import HTMLResponse
     m = billing.MERCHANTS.get(merchant_id)
+    row = _merchant_row(merchant_id)
+    if not m and row:
+        m = billing.Merchant(merchant_id, row.get("email", ""), row.get("plan") or "starter")
+        billing.MERCHANTS[merchant_id] = m
     if not m or not config.MANUAL_UPI_ID:
         raise HTTPException(status_code=404, detail="checkout page not found")
-    row = _merchant_row(merchant_id)
+    if row:
+        m.status = row.get("status") or m.status
+        m.name = row.get("name") or m.name
+        m.phone = row.get("phone") or m.phone
     full = PLANS[m.plan]["amount"] / 100
     amt = _pay_amount(m.plan, row)
     pct = (row or {}).get("discount_pct") or 0
@@ -123,7 +130,7 @@ async def checkout_page(merchant_id: str, claimed: int = 0):
     if m.status == "active":
         coupon_msg = '<div class="ok" style="color:#00d4a0;font-weight:600">Your account is already active - no payment needed.</div>'
     if claimed and m.status == "trial":
-        coupon_msg = '<div class="ok" style="color:#00d4a0;font-weight:600">Payment submitted. Verifying now - your account goes live the moment it clears.</div>'
+        coupon_msg = '<div class="ok" style="color:#00d4a0;font-weight:600">Payment submitted. You&#39;re all set - your account goes live the moment it&#39;s confirmed.</div>'
     html = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -151,11 +158,10 @@ button{{background:#00d4a0;border:0;border-radius:10px;padding:10px 16px;font-we
 <input name="code" placeholder="Coupon code" maxlength="20" {'value=' + chr(34) + (row.get('coupon_code') or '') + chr(34) if row and row.get('coupon_code') else ''} {'disabled' if pct else ''}>
 <button {'disabled' if pct else ''}>Apply</button></form>
 <p style="margin-top:14px">Scan the QR with Google Pay or any UPI app. The amount is locked to the exact total shown.</p>
-<form method="post" action="/checkout/{merchant_id}/paid-claim" style="margin-top:12px;display:flex;flex-direction:column;align-items:center">
-<input name="utr" placeholder="UTR / reference no. from your UPI app" maxlength="30" style="width:100%;max-width:280px" required>
-<button style="margin-top:8px;width:100%;max-width:280px">I&#39;ve paid - verify now</button>
+<form method="post" action="/checkout/{merchant_id}/paid-claim" style="margin-top:12px">
+<button style="width:100%;max-width:280px;padding:12px 16px;font-size:15px">I&#39;ve paid</button>
 </form>
-<p style="margin-top:6px">After paying, tap the button with your UTR: we check it right away and your account goes live the moment it clears.</p>
+<p style="margin-top:6px">Paid? Just tap the button. Your account goes live the moment payment is confirmed.</p>
 <div class="st">You'll hear from us on {m.email} once it's live.</div></div></body></html>"""
     return HTMLResponse(html)
 
@@ -167,6 +173,11 @@ async def checkout_paid_claim(merchant_id: str, utr: str = Form("")):
     from . import db
     import time as _time
     m = billing.MERCHANTS.get(merchant_id)
+    row = _merchant_row(merchant_id)
+    if not m and row:
+        m = billing.Merchant(merchant_id, row.get("email", ""), row.get("plan") or "starter")
+        billing.MERCHANTS[merchant_id] = m
+        m.status = row.get("status") or "trial"
     if not m or not config.MANUAL_UPI_ID:
         raise HTTPException(status_code=404, detail="checkout page not found")
     row = _merchant_row(merchant_id) or {}
