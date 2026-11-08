@@ -515,7 +515,7 @@ document.getElementById('signupForm').addEventListener('submit',async function(e
     var r=null,d=null,ct='';
     for(var attempt=1;attempt<=5;attempt++){
       try{
-        r=await fetch(''/api/signup'', {method:'POST',headers:{'Content-Type':'application/json'},body:body});
+        r=await fetch('/api/signup', {method:'POST',headers:{'Content-Type':'application/json'},body:body});
         ct=(r.headers.get('content-type')||'');d=null;
         try{if(ct.indexOf('json')>-1)d=await r.json();}catch(_){}
         break;
