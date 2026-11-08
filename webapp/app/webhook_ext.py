@@ -22,6 +22,15 @@ def handle(payload: dict, base_url: str):
             if owner and cu:
                 auto.send_confirmation(owner, inv, cu, base_url)
         return {"ok": True, "matched": True, "invoice": inv["number"], "status": "paid"}
+    if event == "payment.refunded":
+        ref = pay_entity.get("id", "")
+        pay = models.one("SELECT * FROM payments WHERE reference=? AND status='confirmed'", (ref,))
+        if pay:
+            models.refund_payment(pay["id"], note=f"gateway refund {ref}", gateway="razorpay")
+            models.log_activity(inv["owner_id"], "refund",
+                                f"Refund recorded on invoice {inv['number']} ({pay['amount']/100:,.0f})")
+            return {"ok": True, "matched": True, "invoice": inv["number"], "status": "refunded"}
+        return {"ok": True, "matched": True, "invoice": inv["number"], "status": "refund: no matching payment"}
     if event == "payment.failed":
         models.record_event(owner["id"], "failed", "razorpay", inv["customer_id"],
                             pay_entity.get("amount", inv["amount"]),

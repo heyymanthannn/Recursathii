@@ -119,7 +119,7 @@ def _pay_amount(plan: str, row: dict | None) -> float:
 
 @app.get("/checkout/{merchant_id}")
 async def checkout_page(merchant_id: str, claimed: int = 0):
-    """Checkout: plan summary, coupon entry, live-updating UPI QR."""
+    """Premium checkout: plan summary, coupon entry, live-updating UPI QR."""
     from . import manual_upi, db
     from fastapi.responses import HTMLResponse
     m = billing.MERCHANTS.get(merchant_id)
@@ -136,46 +136,83 @@ async def checkout_page(merchant_id: str, claimed: int = 0):
     full = PLANS[m.plan]["amount"] / 100
     amt = _pay_amount(m.plan, row)
     pct = (row or {}).get("discount_pct") or 0
-    coupon_msg = ""
+    plan_name = {"starter": "Starter", "growth": "Growth", "scale": "Scale"}.get(m.plan, m.plan.title())
+    note = ""
     if pct:
-        coupon_msg = f'<div class="ok" style="color:#00d4a0;font-weight:600">Coupon applied: {pct}% off. You pay &#8377;{amt:,.0f} instead of &#8377;{full:,.0f}.</div>'
+        note = f'<div class="ok">Coupon applied: {pct}% off. You pay &#8377;{amt:,.0f} instead of &#8377;{full:,.0f}.</div>'
     if m.status == "active":
-        coupon_msg = '<div class="ok" style="color:#00d4a0;font-weight:600">Your account is already active - no payment needed.</div>'
+        note = '<div class="ok">Your account is already active - no payment needed.</div>'
     if claimed and m.status == "trial":
-        coupon_msg = '<div class="ok" style="color:#00d4a0;font-weight:600">Payment submitted. You&#39;re all set - your account goes live the moment it&#39;s confirmed.</div>'
+        note = '<div class="ok">Payment submitted. You\'re all set - your account goes live the moment it\'s confirmed.</div>'
     html = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Checkout - RecurSaathi</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
-<style>body{{background:#0a0e1a;color:#e8ecf6;font-family:Inter,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:24px;margin:0}}
-.c{{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:38px 32px;max-width:440px;width:100%;text-align:center}}
-h1{{font-family:'Space Grotesk';font-size:24px;letter-spacing:-.02em;margin:0 0 6px}}
-.amt{{font-size:34px;font-family:'Space Grotesk';font-weight:700;color:#00d4a0;margin:14px 0 4px}}
-img{{width:200px;height:200px;border-radius:14px;background:#fff;padding:10px;margin:14px 0}}
-.vpa{{font-family:monospace;font-size:14px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:9px 13px;display:inline-block}}
-p{{color:#9aa3b8;font-size:14px;line-height:1.6}}
-.st{{color:#ffd166;font-size:13px;margin-top:18px}}
-form{{margin-top:16px;display:flex;gap:8px;justify-content:center}}
-input{{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:10px 12px;color:#e8ecf6;font-size:14px;width:150px;text-transform:uppercase}}
-button{{background:#00d4a0;border:0;border-radius:10px;padding:10px 16px;font-weight:600;color:#06251d;cursor:pointer}}
-.strike{{text-decoration:line-through;color:#9aa3b8}}</style></head><body>
-<div class="c"><h1>Checkout</h1>
-<p>RecurSaathi {m.plan} plan &middot; 14-day free trial of the platform, then monthly. Money goes straight to the bank, no middleman.</p>
-{coupon_msg}
-<div class="amt">&#8377;{amt:,.0f}{f' <span class="strike" style="font-size:16px">&#8377;{full:,.0f}</span>' if pct else ''}<span style="font-size:15px;color:#9aa3b8">/month &middot; {m.plan} plan</span></div>
+<title>Checkout · RecurSaathi</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%237c6cff'/%3E%3Cstop offset='1' stop-color='%2346d8ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='9' fill='url(%23g)'/%3E%3Cpath d='M16 9a7 7 0 1 0 7 7' stroke='white' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Cpath d='M23 12v4h-4' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#faf8f3">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400..700&display=swap" rel="stylesheet">
+<style>
+*{{box-sizing:border-box}}
+body{{background:#faf8f3;color:#23233b;font-family:Inter,sans-serif;margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:28px 16px}}
+.w{{width:100%;max-width:520px}}
+.top{{display:flex;align-items:center;gap:10px;margin-bottom:22px}}
+.top svg{{width:30px;height:30px}}
+.brand{{font-family:Fraunces,serif;font-size:20px;color:#20264a}}
+.brand b{{color:#7c6cff}}
+.card{{background:#fff;border:1px solid #ece8df;border-radius:18px;padding:28px;box-shadow:0 10px 30px rgba(32,38,74,.06);margin-bottom:16px}}
+.pill{{display:inline-block;background:#f0edff;color:#5b4bd6;font-size:12px;font-weight:600;padding:4px 12px;border-radius:99px;letter-spacing:.02em}}
+h1{{font-family:Fraunces,serif;font-size:26px;color:#20264a;margin:12px 0 4px}}
+.sub{{color:#6b6f8e;font-size:14px;line-height:1.55;margin:0 0 14px}}
+.amt{{font-size:38px;font-weight:700;color:#20264a;letter-spacing:-.02em}}
+.amt small{{font-size:15px;color:#6b6f8e;font-weight:500}}
+.strike{{text-decoration:line-through;color:#9aa0bd;font-size:18px;font-weight:500;margin-left:8px}}
+.line{{display:flex;justify-content:space-between;font-size:14px;color:#4a4e6d;padding:9px 0;border-bottom:1px solid #f2efe8}}
+.line b{{color:#20264a}}
+.qr{{text-align:center;padding:18px 0 6px}}
+.qr img{{width:190px;height:190px;border-radius:14px;background:#fff;padding:8px;border:1px solid #ece8df}}
+.vpa{{font-family:ui-monospace,monospace;font-size:14px;background:#f5f3ec;border:1px solid #ece8df;border-radius:10px;padding:9px 14px;display:inline-block;color:#3a3f63}}
+.qr p{{color:#6b6f8e;font-size:13px;margin:8px 0 0}}
+form{{display:flex;gap:8px;margin-top:14px}}
+input{{flex:1;border:1px solid #e2ddcf;border-radius:10px;padding:11px 12px;font-size:14px;background:#fff;color:#23233b;text-transform:uppercase}}
+.btn{{background:linear-gradient(135deg,#7c6cff,#5a8dff);border:0;border-radius:12px;padding:13px 18px;font-weight:600;color:#fff;font-size:15px;cursor:pointer;width:100%}}
+.btn:hover{{filter:brightness(1.05)}}
+.btn.ghost{{background:#fff;color:#5b4bd6;border:1px solid #d8d2ff}}
+.ok{{background:#eefaf3;border:1px solid #bfead4;color:#0d7a4a;font-size:13.5px;font-weight:600;border-radius:10px;padding:10px 14px;margin-bottom:14px}}
+.fine{{color:#8a8fae;font-size:12px;line-height:1.6;margin:12px 0 0}}
+a{{color:#5b4bd6}}
+.foot{{text-align:center;color:#9aa0bd;font-size:12px;margin-top:6px}}
+@media(max-width:480px){{.card{{padding:20px}}.amt{{font-size:32px}}}}
+</style></head><body>
+<div class="w">
+<div class="top">
+<svg viewBox="0 0 32 32"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c6cff"/><stop offset="1" stop-color="#46d8ff"/></linearGradient></defs><rect width="32" height="32" rx="9" fill="url(#g)"/><path d="M16 9a7 7 0 1 0 7 7" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M23 12v4h-4" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+<span class="brand">Recur<b>Saathi</b></span></div>
+<div class="card">
+<span class="pill">{plan_name} plan</span>
+<h1>Your subscription</h1>
+<p class="sub">14-day free trial of the full platform, then billed monthly. Cancel any time from your billing page.</p>
+{note}
+<div class="amt">&#8377;{amt:,.0f}{f'<span class="strike">&#8377;{full:,.0f}</span>' if pct else ''}<small> /month</small></div>
+<div style="margin:12px 0 4px">
+<div class="line"><span>Plan</span><b>{plan_name}</b></div>
+<div class="line"><span>Billing</span><b>Monthly</b></div>
+<div class="line"><span>Account</span><b>{m.email}</b></div>
+</div>
+<div class="qr">
 <img src="/pay-qr/{merchant_id}.png" alt="UPI QR code">
-<div class="vpa">{config.MANUAL_UPI_ID}</div>
+<div style="margin-top:10px"><span class="vpa">{config.MANUAL_UPI_ID}</span></div>
+<p>Scan with Google Pay or any UPI app. The amount is locked to the exact total shown.</p>
+</div>
 <form method="post" action="/checkout/{merchant_id}/coupon">
 <input name="code" placeholder="Coupon code" maxlength="20" {'value=' + chr(34) + (row.get('coupon_code') or '') + chr(34) if row and row.get('coupon_code') else ''} {'disabled' if pct else ''}>
-<button {'disabled' if pct else ''}>Apply</button></form>
-<p style="margin-top:14px">Scan the QR with Google Pay or any UPI app. The amount is locked to the exact total shown.</p>
-<p style="margin-top:6px">Your account is ready &mdash; sign in anytime with your email and password at <a href="/login">/login</a>.</p>
-<form method="post" action="/checkout/{merchant_id}/paid-claim" style="margin-top:12px">
-<button style="width:100%;max-width:280px;padding:12px 16px;font-size:15px">I&#39;ve paid</button>
-</form>
-<p style="margin-top:6px">Paid? Just tap the button. Your account goes live the moment payment is confirmed.</p>
-<div class="st">You'll hear from us on {m.email} once it's live.</div></div></body></html>"""
+<button class="btn ghost" style="width:auto" {'disabled' if pct else ''}>Apply</button></form>
+<form method="post" action="/checkout/{merchant_id}/paid-claim" style="margin-top:6px">
+<button class="btn">I've paid</button></form>
+<p class="sub" style="margin-top:10px;text-align:center;font-size:13px">Your account goes live the moment payment is confirmed. You'll hear from us on {m.email}.</p>
+<p class="fine">Prices exclude 18% GST; payment provider charges may apply. Your customers' invoice payments never come here - they go straight to your own bank via your UPI ID or your own gateway. Subscription payments go to RecurSaathi.</p>
+</div>
+<div class="foot">Already have an account? <a href="/login">Sign in</a> &middot; <a href="/">recursathii.onrender.com</a></div>
+</div></body></html>"""
     return HTMLResponse(html)
 
 
@@ -507,10 +544,12 @@ from fastapi.exceptions import HTTPException as _HTTPException
 from . import webhook_ext
 from .webui import router as webui_router
 from .portal import router as portal_router
+from .assistant import router as assistant_router
 from .admin import router as admin_router
 
 app.include_router(webui_router)
 app.include_router(portal_router)
+app.include_router(assistant_router)
 app.include_router(admin_router)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 

@@ -73,6 +73,9 @@ CREATE INDEX IF NOT EXISTS ix_cust_owner ON customers(owner_id);
 def init():
     with conn() as c:
         c.executescript(SCHEMA)
+        c.execute("""CREATE TABLE IF NOT EXISTS portal_users(
+  id TEXT PRIMARY KEY, email TEXT UNIQUE NOT NULL, pw_hash TEXT NOT NULL,
+  created INTEGER)""")
         cols = [r["name"] for r in c.execute("PRAGMA table_info(users)")]
         if "parent_id" not in cols:
             c.execute("ALTER TABLE users ADD COLUMN parent_id TEXT")
@@ -229,6 +232,21 @@ def mark_invoice_paid(inv, method, reference="", note=""):
        "VALUES(:id,:owner_id,:invoice_id,:customer_id,:amount,:method,:status,:reference,:note,:created,:confirmed_at)", pay)
     ex("UPDATE invoices SET status='paid', paid_at=? WHERE id=?", (now(), inv["id"]))
     return pay
+
+def refund_payment(payment_id, note="", gateway="manual"):
+    """Record a refund against a confirmed payment. The invoice stays marked
+    paid with its history; the payment itself shows refunded and a refund
+    event lands in pay_events for reconciliation."""
+    pay = one("SELECT * FROM payments WHERE id=?", (payment_id,))
+    if not pay or pay["status"] != "confirmed":
+        return None
+    ex("UPDATE payments SET status='refunded', note=? WHERE id=?",
+       ((pay["note"] + " | refunded: " + note).strip(" |") if note else "refunded", payment_id))
+    ex("INSERT INTO pay_events(id,owner_id,kind,gateway,customer_id,amount,decline_code,invoice_id,created) "
+       "VALUES(?,?,?,?,?,?,?,?,?)",
+       (uid(), pay["owner_id"], "refund", gateway, pay["customer_id"], pay["amount"], "", pay["invoice_id"], now()))
+    return dict(pay)
+
 
 def record_payment_attempt(inv, method, status="pending", reference="", note=""):
     pay = {"id": uid(), "owner_id": inv["owner_id"], "invoice_id": inv["id"],

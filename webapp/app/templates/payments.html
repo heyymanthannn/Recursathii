@@ -7,14 +7,22 @@
 <div class="card"><div class="label">Payment attempts</div><div class="kpi blue">{{ m.attempts }}</div></div>
 <div class="card"><div class="label">Success rate</div><div class="kpi purple">{{ m.success_rate }}%</div></div>
 </div>
+<h2>Reconciliation</h2>
+<div class="cards">
+<div class="card"><div class="label">Confirmed</div><div class="kpi green">{{ recon.confirmed_n }} <span class="badge-note">({{ inr(recon.confirmed_amt) }})</span></div></div>
+<div class="card"><div class="label">Refunded</div><div class="kpi red">{{ recon.refunded_n }} <span class="badge-note">({{ inr(recon.refunded_amt) }})</span></div></div>
+<div class="card"><div class="label">Net collected</div><div class="kpi blue">{{ inr(recon.net_amt) }}</div></div>
+<div class="card"><div class="label">Webhook &amp; link confirmed</div><div class="kpi purple">{{ recon.gateway_n }} <span class="badge-note">of {{ recon.confirmed_n }} payments verified via gateway</span></div></div>
+</div>
 <h2>Recent transactions</h2>
 <div class="card">{% if pays %}<table>
-<tr><th>Customer</th><th>Invoice</th><th>Amount</th><th>Method</th><th>Status</th><th>When</th></tr>
+<tr><th>Customer</th><th>Invoice</th><th>Amount</th><th>Method</th><th>Status</th><th>When</th><th></th></tr>
 {% for p in pays %}<tr>
 <td>{{ p.customer_name or "-" }}</td><td>{{ p.invoice_number or "-" }}</td><td>{{ inr(p.amount) }}</td>
 <td>{{ p.method or "-" }}</td>
 <td><span class="pill {{ p.status }}">{{ p.status }}</span></td>
 <td class="muted">{{ p.created | datetime }}</td>
+{% if p.status == "confirmed" %}<td><form method="post" action="/payments/{{ p.id }}/refund" onsubmit="return confirm('Record a refund against this payment?')"><button class="btn ghost sm">Refund</button></form></td>{% else %}<td></td>{% endif %}
 </tr>{% endfor %}
 </table>{% else %}<div class="empty">No transactions yet. They appear the moment an invoice is paid or an attempt is recorded.</div>{% endif %}</div>
 <h2>Failed payments</h2>

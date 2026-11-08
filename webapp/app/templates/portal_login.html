@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Your invoices · RecurSaathi</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400..700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{background:#faf8f3;color:#23233b;font-family:Inter,sans-serif;margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:28px 16px}
+.w{width:100%;max-width:440px}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:22px}
+.brand{font-family:Fraunces,serif;font-size:20px;color:#20264a}.brand b{color:#7c6cff}
+.card{background:#fff;border:1px solid #ece8df;border-radius:18px;padding:28px;box-shadow:0 10px 30px rgba(32,38,74,.06);margin-bottom:14px}
+h1{font-family:Fraunces,serif;font-size:24px;color:#20264a;margin:0 0 6px}
+.sub{color:#6b6f8e;font-size:14px;line-height:1.55;margin:0 0 14px}
+label{display:block;font-size:13px;font-weight:600;color:#3a3f63;margin:12px 0 4px}
+input{width:100%;border:1px solid #e2ddcf;border-radius:10px;padding:11px 12px;font-size:14px;background:#fff;color:#23233b}
+.btn{background:linear-gradient(135deg,#7c6cff,#5a8dff);border:0;border-radius:12px;padding:13px 18px;font-weight:600;color:#fff;font-size:15px;cursor:pointer;width:100%;margin-top:16px}
+.btn.ghost{background:#fff;color:#5b4bd6;border:1px solid #d8d2ff}
+.ok{background:#eefaf3;border:1px solid #bfead4;color:#0d7a4a;font-size:13.5px;border-radius:10px;padding:10px 14px;margin-bottom:12px}
+.err{background:#fdf0ef;border:1px solid #f5c6c0;color:#b3261e;font-size:13.5px;border-radius:10px;padding:10px 14px;margin-bottom:12px}
+.fine{color:#8a8fae;font-size:12px;line-height:1.6;margin:10px 0 0}
+</style></head><body><div class="w">
+<div class="top"><svg width="30" height="30" viewBox="0 0 32 32"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c6cff"/><stop offset="1" stop-color="#46d8ff"/></linearGradient></defs><rect width="32" height="32" rx="9" fill="url(#g)"/><path d="M16 9a7 7 0 1 0 7 7" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M23 12v4h-4" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+<span class="brand">Recur<b>Saathi</b></span></div>
+{% if created %}<div class="ok">Account created. You're signed in.</div>{% endif %}
+<div class="card">
+<h1>Your invoices</h1>
+<p class="sub">Sign in to see every invoice a business has sent you, download PDFs and pay online.</p>
+{% if err %}<div class="err">{{ err }}</div>{% endif %}
+<form method="post" action="/portal/login">
+<label>Email</label><input type="email" name="email" required placeholder="you@example.com">
+<label>Password</label><input type="password" name="password" required>
+<button class="btn">Sign in</button>
+</form>
+</div>
+<div class="card">
+<h1 style="font-size:20px">First time here?</h1>
+<p class="sub">Set a password for the email your invoice arrived at.</p>
+<form method="post" action="/portal/register">
+<label>Email</label><input type="email" name="email" required placeholder="you@example.com">
+<label>Create password (8+ characters)</label><input type="password" name="password" required minlength="8">
+<button class="btn ghost">Create account</button>
+</form>
+</div>
+<p class="fine">Your data is private: you only ever see your own invoices. <a href="/" style="color:#5b4bd6">Back to RecurSaathi</a></p>
+</div></body></html>

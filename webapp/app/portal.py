@@ -93,3 +93,140 @@ async def opt_out(request: Request, phone: str = Form("")):
         models.ex("UPDATE customers SET wa_opt_out=1 WHERE phone=?", (phone.strip(),))
         return render("optout_done.html", request)
     return render("optout_done.html", request, error="Enter the phone number you want to opt out.")
+
+
+# ---------- customer portal accounts (separate login, strict isolation) ----------
+import hashlib, os
+from itsdangerous import URLSafeTimedSerializer, BadSignature
+from . import vault as _vault
+
+PORTAL_COOKIE = "rs_portal_session"
+PORTAL_TTL = 14 * 86400
+_ps = URLSafeTimedSerializer(_vault.SECRET, salt="rs-portal-session")
+
+
+def _portal_hash(pw: str) -> str:
+    salt = os.urandom(16).hex()
+    h = hashlib.pbkdf2_hmac("sha256", pw.encode(), bytes.fromhex(salt), 200_000).hex()
+    return f"{salt}${h}"
+
+
+def _portal_check(pw: str, stored: str) -> bool:
+    try:
+        salt, want = stored.split("$", 1)
+        got = hashlib.pbkdf2_hmac("sha256", pw.encode(), bytes.fromhex(salt), 200_000).hex()
+        return got == want
+    except Exception:
+        return False
+
+
+def portal_customer(request):
+    """The logged-in portal customer's email (lowercased), or None."""
+    cookie = request.cookies.get(PORTAL_COOKIE)
+    if not cookie:
+        return None
+    try:
+        return _ps.loads(cookie, max_age=PORTAL_TTL)
+    except BadSignature:
+        return None
+
+
+def _portal_session(response, email: str):
+    response.set_cookie(PORTAL_COOKIE, _ps.dumps(email.lower()),
+                        httponly=True, samesite="lax", max_age=PORTAL_TTL)
+
+
+def _customer_invoices(email):
+    """Only this customer's invoices, matched on their email. Nothing else."""
+    rows = models.q(
+        """SELECT i.*, o.business AS business_name, o.name AS owner_name,
+                  o.upi_vpa AS owner_vpa, o.payee_name AS owner_payee
+           FROM invoices i JOIN customers cu ON cu.id=i.customer_id
+           JOIN users o ON o.id=i.owner_id
+           WHERE LOWER(cu.email)=? ORDER BY i.created DESC""", (email.lower(),))
+    return [dict(r) for r in rows]
+
+
+@router.get("/portal", response_class=HTMLResponse)
+async def portal_login_page(request: Request):
+    email = portal_customer(request)
+    if email:
+        return RedirectResponse("/portal/home", status_code=303)
+    return render("portal_login.html", request, err="",
+                  created=request.query_params.get("created") == "1")
+
+
+@router.post("/portal/login")
+async def portal_login(request: Request, email: str = Form(""), password: str = Form("")):
+    email = (email or "").strip().lower()
+    row = models.one("SELECT * FROM portal_users WHERE email=?", (email,))
+    if not row or not _portal_check(password or "", row["pw_hash"]):
+        return render("portal_login.html", request, err="Wrong email or password.", created=False)
+    resp = RedirectResponse("/portal/home", status_code=303)
+    _portal_session(resp, email)
+    return resp
+
+
+@router.post("/portal/register")
+async def portal_register(request: Request, email: str = Form(""), password: str = Form("")):
+    """Set a portal password for this email. Only allowed when at least one
+    invoice already exists for that email (they got a link from a business)."""
+    email = (email or "").strip().lower()
+    if len(password or "") < 8:
+        return render("portal_login.html", request,
+                      err="Password needs at least 8 characters.", created=False)
+    has_inv = models.one(
+        "SELECT 1 AS ok FROM invoices i JOIN customers cu ON cu.id=i.customer_id "
+        "WHERE LOWER(cu.email)=?", (email,))
+    if not has_inv:
+        return render("portal_login.html", request,
+                      err="No invoices found for this email yet. Ask the business to send one.", created=False)
+    if models.one("SELECT 1 AS ok FROM portal_users WHERE email=?", (email,)):
+        return render("portal_login.html", request,
+                      err="Account exists. Log in instead.", created=False)
+    models.ex("INSERT INTO portal_users(id, email, pw_hash, created) VALUES(?,?,?,?)",
+              (models.uid(), email, _portal_hash(password), models.now()))
+    models.log_audit("", "portal.register", email)
+    resp = RedirectResponse("/portal/home", status_code=303)
+    _portal_session(resp, email)
+    return resp
+
+
+@router.get("/portal/logout")
+async def portal_logout():
+    resp = RedirectResponse("/portal", status_code=303)
+    resp.delete_cookie(PORTAL_COOKIE)
+    return resp
+
+
+@router.get("/portal/home", response_class=HTMLResponse)
+async def portal_home(request: Request):
+    email = portal_customer(request)
+    if not email:
+        return RedirectResponse("/portal", status_code=303)
+    invs = _customer_invoices(email)
+    pays = models.q(
+        """SELECT p.*, i.number AS inv_number, i.id AS inv_id FROM payments p
+           JOIN invoices i ON i.id=p.invoice_id
+           JOIN customers cu ON cu.id=p.customer_id
+           WHERE LOWER(cu.email)=? ORDER BY p.created DESC LIMIT 50""", (email,))
+    return render("portal_home.html", request, invs=invs, pays=pays, email=email)
+
+
+@router.get("/portal/invoice/{iid}/pdf")
+async def portal_invoice_pdf(request: Request, iid: str):
+    email = portal_customer(request)
+    if not email:
+        return RedirectResponse("/portal", status_code=303)
+    inv = models.one(
+        """SELECT i.* FROM invoices i JOIN customers cu ON cu.id=i.customer_id
+           WHERE i.id=? AND LOWER(cu.email)=?""", (iid, email.lower()))
+    if not inv:
+        return Response(status_code=404)
+    from . import pdfgen
+    inv = dict(inv)
+    cu = models.get_customer(inv["customer_id"])
+    owner = models.get_user(inv["owner_id"])
+    pdf = pdfgen.invoice_pdf_bytes(inv, cu, owner, pay_url="")
+    return Response(pdf, media_type="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="{inv["number"]}.pdf"'})

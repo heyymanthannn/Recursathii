@@ -496,7 +496,33 @@ async def payments_page(request: Request):
     m = models.owner_metrics(user["id"])
     pays = models.recent_payments(user["id"], limit=50)
     fails = models.q("SELECT e.*, cu.name AS customer_name FROM pay_events e LEFT JOIN customers cu ON cu.id=e.customer_id WHERE e.owner_id=? AND e.kind='failed' ORDER BY e.created DESC LIMIT 50", (user["id"],))
-    return render("payments.html", request, user=user, tab="payments", m=m, pays=pays, fails=fails, inr=inr)
+    recon = {
+        "confirmed_n": 0, "confirmed_amt": 0, "refunded_n": 0, "refunded_amt": 0,
+        "net_amt": 0, "gateway_n": 0}
+    for r in models.q("SELECT status, method, COUNT(*) AS n, COALESCE(SUM(amount),0) AS amt FROM payments WHERE owner_id=? GROUP BY status", (user["id"],)):
+        if r["status"] == "confirmed":
+            recon["confirmed_n"] = r["n"]; recon["confirmed_amt"] = r["amt"]
+            recon["net_amt"] = r["amt"]
+            recon["gateway_n"] = models.one("SELECT COUNT(*) AS n FROM payments WHERE owner_id=? AND status='confirmed' AND method='razorpay'", (user["id"],))["n"]
+        elif r["status"] == "refunded":
+            recon["refunded_n"] = r["n"]; recon["refunded_amt"] = r["amt"]
+            recon["net_amt"] -= r["amt"]
+    return render("payments.html", request, user=user, tab="payments", m=m, pays=pays, fails=fails, recon=recon, inr=inr)
+
+@router.post("/payments/{pid}/refund")
+async def payments_refund(request: Request, pid: str, note: str = Form("")):
+    """Owner records a refund they processed at their own gateway."""
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    pay = models.one("SELECT * FROM payments WHERE id=? AND owner_id=?", (pid, user["id"]))
+    if pay:
+        r = models.refund_payment(pid, note=note or "", gateway="manual")
+        if r:
+            models.log_activity(user["id"], "refund", f"Refund recorded on {r['reference'] or r['id']}")
+            models.log_audit(user["id"], "payment.refund", pid)
+    return RedirectResponse("/payments", status_code=303)
+
 
 # ---------- analytics ----------
 @router.get("/analytics", response_class=HTMLResponse)
@@ -538,6 +564,36 @@ async def analytics_export(request: Request, report: str = "recovery"):
                 v = time.strftime("%Y-%m-%d %H:%M", time.localtime(v))
             vals.append(str(v).replace(",", " "))
         lines.append(",".join(vals))
+    if request.query_params.get("format") == "pdf":
+        from . import pdfgen
+        from fpdf import FPDF
+        pdf = FPDF(format="A4")
+        pdf.set_auto_page_break(auto=True, margin=18)
+        pdf.add_page()
+        pdf.set_font("Helvetica", "B", 20)
+        title = "Failed payments report" if report == "failed" else "Recovery report"
+        pdf.cell(0, 12, title, new_x="LMARGIN", new_y="NEXT")
+        pdf.set_font("Helvetica", "", 10)
+        pdf.set_text_color(90, 90, 100)
+        pdf.cell(0, 7, user.get("business") or user.get("name") or "", new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 7, "Generated " + time.strftime("%d %b %Y, %H:%M"), new_x="LMARGIN", new_y="NEXT")
+        pdf.ln(4)
+        pdf.set_text_color(0, 0, 0)
+        pdf.set_font("Helvetica", "B", 9)
+        for h in head:
+            pdf.cell(min(90, 180 / len(head)), 8, h[:20], border=1)
+        pdf.ln(8)
+        pdf.set_font("Helvetica", "", 9)
+        for r in rows:
+            d = dict(r)
+            for h in head:
+                v = str(d.get(h, ""))
+                if h == "when" and d.get(h):
+                    v = time.strftime("%Y-%m-%d", time.localtime(d[h]))
+                pdf.cell(min(90, 180 / len(head)), 8, v[:26], border=1)
+            pdf.ln(8)
+        return Response(bytes(pdf.output()), media_type="application/pdf",
+                        headers={"Content-Disposition": f'attachment; filename="{fname.replace(".csv", ".pdf")}"'})
     return Response("\n".join(lines) + "\n", media_type="text/csv",
                     headers={"Content-Disposition": f"attachment; filename={fname}"})
 

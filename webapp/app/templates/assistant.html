@@ -1,0 +1,49 @@
+{% extends "base.html" %}{% block title %}AI Recovery Assistant · RecurSaathi{% endblock %}{% block content %}
+<h1>AI Recovery Assistant</h1>
+<p class="sub">Analysis built from your own records: what needs attention first, what to do next, and ready-to-send drafts. Nothing is invented and nothing sends without you.</p>
+<div class="cards" style="margin:14px 0">
+<div class="card"><div class="label">Recovered last 7 days</div><div class="kpi blue">{{ inr(summary.recovered_amt) }} <span class="muted" style="font-size:13px">· {{ summary.recovered_n }} payments</span></div></div>
+<div class="card"><div class="label">Outstanding now</div><div class="kpi lav">{{ inr(summary.outstanding_amt) }} <span class="muted" style="font-size:13px">· {{ summary.outstanding_n }} invoices</span></div></div>
+<div class="card"><div class="label">Failed payments (7d)</div><div class="kpi purple">{{ summary.failed_n }} <span class="muted" style="font-size:13px">· {{ inr(summary.failed_amt) }}</span></div></div>
+<div class="card"><div class="label">Messages sent (7d)</div><div class="kpi blue">{{ summary.messages_sent }} <span class="muted" style="font-size:13px">· {{ summary.messages_queued }} queued</span></div></div>
+</div>
+
+<h2>Priority queue</h2>
+<p class="sub">Ranked by how late each invoice is and how much is at stake, with the next-best action for each.</p>
+{% if rows %}
+{% for r in rows %}
+<div class="card" style="margin:12px 0">
+<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:baseline">
+<div><b>{{ r.cu.name if r.cu else 'Customer' }}</b> <span class="muted">· {{ r.inv.number }} · due {{ r.inv.due_date }} · {{ r.inv.days_overdue }} days overdue</span></div>
+<span class="pill {{ r.inv.priority }}">{{ r.inv.priority|capitalize }} priority · {{ inr(r.inv.amount) }}</span>
+</div>
+<div class="muted" style="margin:8px 0">&#9654; {{ r.action }}</div>
+<details>
+<summary class="btn ghost sm" style="display:inline-block;cursor:pointer">Review drafts ({{ r.stage }})</summary>
+<div style="margin-top:10px">
+<div class="label">Email subject</div><input class="in" style="width:100%" value="{{ r.sub }}" readonly>
+<div class="label">Email body</div><textarea class="in" rows="6" style="width:100%" readonly>{{ r.ebody }}</textarea>
+<div class="label">WhatsApp</div><textarea class="in" rows="3" style="width:100%" readonly>{{ r.wbody }}</textarea>
+<form method="post" action="/invoices/{{ r.inv.id }}/remind" style="margin-top:8px"><button class="btn sm">Send this reminder</button></form>
+</div>
+</details>
+</div>
+{% endfor %}
+{% else %}
+<div class="card"><div class="empty">Nothing overdue right now - clean slate.</div></div>
+{% endif %}
+
+<h2>Dormant customers</h2>
+{% if dormant %}
+<div class="card"><table><tr><th>Customer</th><th>Segment</th><th>Lifetime</th><th>Last paid</th><th>Days inactive</th></tr>
+{% for c in dormant %}<tr><td>{{ c.name }}</td><td>{{ c.segment }}</td><td>{{ inr(c.lifetime) }}</td><td>{{ c.last_paid_at|datetime }}</td><td>{{ c.days_inactive }}</td></tr>{% endfor %}
+</table><div class="muted" style="margin-top:8px">45+ days without a payment. Run a reactivation campaign from the Campaigns page.</div></div>
+{% else %}<div class="card"><div class="empty">No dormant customers yet.</div></div>{% endif %}
+
+<h2>Failed payments</h2>
+{% if fails %}
+<div class="card"><table><tr><th>When</th><th>Customer</th><th>Amount</th><th>Reason</th><th>Retry eligible</th></tr>
+{% for f in fails %}<tr><td>{{ f.created|datetime }}</td><td>{{ f.customer_name or '-' }}</td><td>{{ inr(f.amount) }}</td><td>{{ f.decline_code or '-' }}</td><td>{{ 'Yes - retry worth another shot' if f.retry_ok else 'Ask the customer to use another method' }}</td></tr>{% endfor %}
+</table></div>
+{% else %}<div class="card"><div class="empty">No failed payments recorded.</div></div>{% endif %}
+{% endblock %}
