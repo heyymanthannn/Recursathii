@@ -194,6 +194,10 @@ async def robots_txt():
 async def sitemap_xml():
     return FileResponse("landing/sitemap.xml", media_type="application/xml")
 
+@app.get("/indexnow-key.txt", include_in_schema=False)
+async def indexnow_key():
+    return FileResponse("landing/indexnow-key.txt", media_type="text/plain")
+
 
 @app.post("/webhooks/youpi")
 async def youpi_webhook(request: Request):
