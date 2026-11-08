@@ -115,7 +115,8 @@ p{{color:#9aa3b8;font-size:14px;line-height:1.6}}
 <div class="amt">&#8377;{amt:,.0f}<span style="font-size:15px;color:#9aa3b8">/month · {m.plan} plan</span></div>
 <img src="/pay-qr/{merchant_id}.png" alt="UPI QR code">
 <div class="vpa">{config.MANUAL_UPI_ID}</div>
-<p style="margin-top:18px">Your account activates as soon as we confirm the payment (usually within a few hours).</p>
+<p style="margin-top:14px;color:#00d4a0;font-weight:600">Amount locked: the QR carries the exact full Rs {amt:,.0f}. Scan and pay it in one go - partial or smaller payments won't activate the account.</p>
+<p style="margin-top:14px">Your account activates as soon as we confirm the payment (usually within a few hours).</p>
 <div class="st">You'll hear from us on {m.email} once it's live.</div></div></body></html>"""
     from fastapi.responses import HTMLResponse
     return HTMLResponse(html)
@@ -141,7 +142,7 @@ async def admin_mark_paid(request: Request, x_admin_token: str = Header(default=
 async def admin_pending(x_admin_token: str = Header(default="")):
     if x_admin_token != config.ADMIN_TOKEN:
         raise HTTPException(status_code=401, detail="invalid admin token")
-    return {"pending": manual_upi.pending()}
+    return {"pending": manual_upi.pending(), "activations": manual_upi.activations()}
 
 @app.post("/onboard")
 async def onboard(request: Request):

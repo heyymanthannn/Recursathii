@@ -33,12 +33,25 @@ def init():
           playbook TEXT, body TEXT, at REAL
         );
         """)
+        # Column migrations (safe to re-run).
+        for stmt in (
+            "ALTER TABLE merchants ADD COLUMN next_month_discount INTEGER DEFAULT 0",
+            "ALTER TABLE merchants ADD COLUMN welcome_sent INTEGER DEFAULT 0",
+        ):
+            try:
+                c.execute(stmt)
+            except Exception:
+                pass
 
 def save_merchant(m):
     with _conn() as c:
-        c.execute("INSERT OR REPLACE INTO merchants VALUES(?,?,?,?,?,?,?)",
-                  (m["id"], m.get("email"), m.get("name"), m.get("phone"),
-                   m.get("plan"), m.get("status"), m.get("subscription_id")))
+        init()
+        c.execute(
+            "INSERT OR REPLACE INTO merchants(id,email,name,phone,plan,status,"
+            "subscription_id,next_month_discount,welcome_sent) VALUES(?,?,?,?,?,?,?,?,?)",
+            (m["id"], m.get("email"), m.get("name"), m.get("phone"),
+             m.get("plan"), m.get("status"), m.get("subscription_id"),
+             m.get("next_month_discount", 0), m.get("welcome_sent", 0)))
 
 def load_merchants() -> dict:
     init()
