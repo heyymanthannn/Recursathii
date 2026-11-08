@@ -121,6 +121,24 @@ async def checkout_page(merchant_id: str, claimed: int = 0):
         m.status = row.get("status") or m.status
         m.name = row.get("name") or m.name
         m.phone = row.get("phone") or m.phone
+    if m.plan == "scale":
+        html = f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Checkout - RecurSaathi</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<style>body{{background:#0a0e1a;color:#e8ecf6;font-family:Inter,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:24px;margin:0}}
+.c{{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:38px 32px;max-width:440px;width:100%;text-align:center}}
+h1{{font-family:'Space Grotesk';font-size:24px;letter-spacing:-.02em;margin:0 0 6px}}
+.amt{{font-size:30px;font-family:'Space Grotesk';font-weight:700;color:#00d4a0;margin:14px 0 4px}}
+p{{color:#9aa3b8;font-size:14px;line-height:1.6}}
+a{{color:#00d4a0}}</style></head><body>
+<div class="c"><h1>Scale plan</h1>
+<div class="amt">10% of recovered revenue</div>
+<p>No fixed monthly fee. You pay a share of what we actually recover for you, billed monthly after we set the plan up together.</p>
+<p>Your 14-day free trial starts now. We&apos;ll reach out on {m.email} to set up Scale billing, or write to <a href="mailto:recursathi@gmail.com">recursathi@gmail.com</a> anytime.</p>
+</div></body></html>"""
+        return HTMLResponse(html)
     full = PLANS[m.plan]["amount"] / 100
     amt = _pay_amount(m.plan, row)
     pct = (row or {}).get("discount_pct") or 0
@@ -232,6 +250,8 @@ async def pay_qr(merchant_id: str):
     from fastapi.responses import Response
     m = billing.MERCHANTS.get(merchant_id)
     if not m or not config.MANUAL_UPI_ID:
+        raise HTTPException(status_code=404, detail="qr not found")
+    if m.plan == "scale":
         raise HTTPException(status_code=404, detail="qr not found")
     row = _merchant_row(merchant_id)
     return Response(content=manual_upi.qr_png(m.plan, merchant_id, _pay_amount(m.plan, row)), media_type="image/png")
