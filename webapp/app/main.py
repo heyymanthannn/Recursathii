@@ -470,6 +470,10 @@ async def privacy_page():
 async def terms_page():
     return FileResponse("landing/terms.html")
 
+@app.get("/upi-autopay-recovery", include_in_schema=False)
+async def upi_autopay_recovery_page():
+    return FileResponse("landing/upi-autopay-recovery.html")
+
 @app.get("/guide", include_in_schema=False)
 async def guide_page():
     return FileResponse("landing/guide.html")

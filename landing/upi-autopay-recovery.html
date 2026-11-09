@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UPI AutoPay Failed Payment Recovery | AutoPay Retry &amp; Recovery Software</title>
+<meta name="description" content="UPI AutoPay mandates fail every month: no balance, paused mandates, bank downtime. RecurSaathi reads the failure reason, retries inside RBI windows and recovers the payment over WhatsApp. Built for Indian D2C subscription businesses. 14-day free trial.">
+<meta name="keywords" content="UPI AutoPay failed payment recovery, UPI AutoPay retry, autopay mandate failed, failed UPI subscription payment, UPI autopay recovery software, dunning software India, recurring payment recovery India">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%237c6cf8'/%3E%3Cstop offset='1' stop-color='%235ac8fa'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Ctext x='32' y='44' font-size='34' font-family='Arial' font-weight='700' fill='white' text-anchor='middle'%3ER%3C/text%3E%3C/svg%3E">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#f5f5f7">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="RecurSaathi">
+<meta property="og:title" content="UPI AutoPay Failed Payment Recovery | RecurSaathi">
+<meta property="og:description" content="Failed UPI AutoPay debits recovered automatically: reason-first diagnosis, RBI-timed retries, WhatsApp payment links and promise-to-pay tracking. 14-day free trial.">
+<meta property="og:url" content="https://recursathii.onrender.com/upi-autopay-recovery">
+<meta property="og:locale" content="en_IN">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="UPI AutoPay Failed Payment Recovery | RecurSaathi">
+<meta name="twitter:description" content="Every failed UPI AutoPay mandate gets a reason, a timed retry and a WhatsApp payment link. Built for Indian D2C subscriptions.">
+<link rel="canonical" href="https://recursathii.onrender.com/upi-autopay-recovery">
+<script type="application/ld+json">
+{
+ "@context":"https://schema.org",
+ "@graph":[
+  {"@type":"SoftwareApplication","name":"RecurSaathi","applicationCategory":"BusinessApplication","operatingSystem":"Web","description":"UPI AutoPay failed payment recovery for Indian subscription businesses.","url":"https://recursathii.onrender.com/upi-autopay-recovery","offers":{"@type":"Offer","price":"2999","priceCurrency":"INR","description":"14-day free trial"}},
+  {"@type":"FAQPage","mainEntity":[
+   {"@type":"Question","name":"Why do UPI AutoPay payments fail?","acceptedAnswer":{"@type":"Answer","text":"Most UPI AutoPay debits fail for routine reasons: the customer's account is short of balance, they paused or deleted the mandate, the bank or UPI rails are down, a daily limit was hit, or the mandate expired. The reason matters because each one needs a different recovery move."}},
+   {"@type":"Question","name":"How does RecurSaathi recover a failed UPI AutoPay payment?","acceptedAnswer":{"@type":"Answer","text":"RecurSaathi reads the failure reason from the gateway response, retries at the right window for that reason, and sends a WhatsApp and email nudge with a one-tap payment link. If the customer replies with a promise to pay, the follow-up is rescheduled automatically."}},
+   {"@type":"Question","name":"Is retrying failed AutoPay debits RBI-compliant?","acceptedAnswer":{"@type":"Answer","text":"RBI's recurring mandate rules, including the 24-hour pre-debit notification and the no-additional-authentication limit for smaller mandates, limit brute-force retries. RecurSaathi times retries inside the allowed windows and uses payment links over WhatsApp for the rest."}},
+   {"@type":"Question","name":"Do you hold my customers' money?","acceptedAnswer":{"@type":"Answer","text":"No. Recovered payments land in your own gateway account or your own UPI ID. RecurSaathi automates, tracks and reports; money never flows through us."}}
+  ]}
+ ]
+}
+</script>
+<style>
+/* ============ RecurSaathi — Apple-style liquid glass ============ */
+:root{
+  --ink:#1d1d1f; --mut:#515154; --faint:#86868b;
+  --blue:#0071e3; --blue-d:#0066cc;
+  --vio:#7c6cf8; --cyan:#5ac8fa; --pink:#ff9ac4; --amber:#ffb84d;
+  --bg:#f5f5f7; --line:rgba(0,0,0,.08);
+  --glass:rgba(255,255,255,.55);
+  --glass-strong:rgba(255,255,255,.72);
+  --r-lg:28px; --r-md:22px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:76px}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI",Inter,Roboto,sans-serif;
+  color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.55;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+img{max-width:100%}
+.wrap{max-width:1120px;margin:0 auto;padding:0 22px}
+.wrap-wide{max-width:1240px;margin:0 auto;padding:0 22px}
+
+/* aurora backdrop */
+.aurora{position:fixed;inset:0;z-index:-2;overflow:hidden;pointer-events:none}
+.aurora i{position:absolute;border-radius:50%;filter:blur(90px);opacity:.5;will-change:transform}
+.aurora .b1{width:52vw;height:52vw;background:radial-gradient(circle at 30% 30%,rgba(124,108,248,.55),transparent 65%);top:-18vw;left:-12vw;animation:drift1 26s ease-in-out infinite alternate}
+.aurora .b2{width:46vw;height:46vw;background:radial-gradient(circle at 60% 40%,rgba(90,200,250,.5),transparent 65%);top:16vh;right:-16vw;animation:drift2 32s ease-in-out infinite alternate}
+.aurora .b3{width:40vw;height:40vw;background:radial-gradient(circle at 50% 50%,rgba(255,154,196,.42),transparent 65%);bottom:-14vw;left:18vw;animation:drift3 38s ease-in-out infinite alternate}
+.aurora .b4{width:34vw;height:34vw;background:radial-gradient(circle at 50% 50%,rgba(255,184,77,.35),transparent 65%);bottom:8vh;right:6vw;animation:drift1 30s ease-in-out infinite alternate-reverse}
+@keyframes drift1{from{transform:translate(0,0) scale(1)}to{transform:translate(6vw,4vh) scale(1.12)}}
+@keyframes drift2{from{transform:translate(0,0) scale(1)}to{transform:translate(-7vw,6vh) scale(1.08)}}
+@keyframes drift3{from{transform:translate(0,0) scale(1.05)}to{transform:translate(5vw,-5vh) scale(.95)}}
+
+/* glass primitives */
+.glass{position:relative;background:var(--glass);backdrop-filter:blur(28px) saturate(170%);-webkit-backdrop-filter:blur(28px) saturate(170%);border-radius:var(--r-lg);border:1px solid rgba(255,255,255,.65);box-shadow:0 12px 40px rgba(31,38,135,.09),inset 0 1px 0 rgba(255,255,255,.85)}
+.glass::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(115deg,rgba(255,255,255,.5) 0%,rgba(255,255,255,0) 24%,rgba(255,255,255,0) 72%,rgba(255,255,255,.28) 100%);opacity:.7}
+.gsoft{background:rgba(255,255,255,.4);box-shadow:0 8px 28px rgba(31,38,135,.07),inset 0 1px 0 rgba(255,255,255,.8)}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;padding:13px 26px;font-size:15.5px;font-weight:600;border:1px solid transparent;cursor:pointer;transition:transform .22s cubic-bezier(.2,.7,.3,1.2),box-shadow .22s,background .22s;white-space:nowrap}
+.btn:hover{transform:translateY(-2px)}
+.btn:active{transform:translateY(0) scale(.98)}
+.btn-primary{background:linear-gradient(135deg,#6d5ef5,#8a7bff 55%,#5ac8fa);color:#fff;box-shadow:0 8px 24px rgba(109,94,245,.35),inset 0 1px 0 rgba(255,255,255,.4)}
+.btn-primary:hover{box-shadow:0 12px 32px rgba(109,94,245,.45)}
+.btn-ghost{background:rgba(255,255,255,.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:var(--ink);border-color:rgba(255,255,255,.7);box-shadow:0 4px 16px rgba(31,38,135,.08)}
+.btn-ghost:hover{background:rgba(255,255,255,.8)}
+.btn-lg{padding:16px 32px;font-size:17px}
+.btn-sm{padding:9px 18px;font-size:14px}
+
+/* nav */
+.nav{position:sticky;top:12px;z-index:60;margin:12px auto 0;max-width:1140px;width:calc(100% - 24px);border-radius:999px;background:rgba(255,255,255,.55);backdrop-filter:blur(26px) saturate(180%);-webkit-backdrop-filter:blur(26px) saturate(180%);border:1px solid rgba(255,255,255,.7);box-shadow:0 10px 34px rgba(31,38,135,.12),inset 0 1px 0 rgba(255,255,255,.9)}
+.nav .in{display:flex;align-items:center;gap:26px;height:58px;padding:0 10px 0 24px}
+.logo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:17px;letter-spacing:-.02em}
+.logo i{width:26px;height:26px;border-radius:8px;background:conic-gradient(from 210deg,var(--vio),var(--cyan),var(--pink),var(--vio));display:inline-block;box-shadow:0 3px 10px rgba(124,108,248,.4),inset 0 1px 0 rgba(255,255,255,.5)}
+.nlinks{display:flex;gap:24px;font-size:14px;color:var(--mut);font-weight:500}
+.nlinks a{position:relative;padding:4px 0;transition:color .2s}
+.nlinks a:hover{color:var(--ink)}
+.nbtn{margin-left:auto}
+@media(max-width:860px){.nlinks{display:none}}
+
+/* hero */
+.hero{padding:86px 0 40px;text-align:center;position:relative}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#4b3fd4;background:rgba(124,108,248,.14);border:1px solid rgba(124,108,248,.28);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-radius:999px;padding:7px 16px;margin-bottom:26px}
+h1{font-size:clamp(42px,6.6vw,78px);line-height:1.04;letter-spacing:-.045em;font-weight:700}
+h1 .grad{background:linear-gradient(100deg,#6d5ef5 10%,#9a6bff 40%,#5ac8fa 90%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{font-size:clamp(17px,2.1vw,21px);color:var(--mut);max-width:660px;margin:22px auto 0}
+.ctas{display:flex;gap:14px;justify-content:center;margin-top:34px;flex-wrap:wrap}
+.micro{margin-top:18px;font-size:13px;color:var(--faint)}
+
+/* dashboard mock */
+.mockwrap{margin:60px auto 0;max-width:1020px;position:relative}
+.mock{overflow:hidden;padding:0}
+.mockbar{display:flex;align-items:center;gap:7px;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.5)}
+.mockbar i{width:10px;height:10px;border-radius:50%;background:rgba(0,0,0,.14)}
+.mockbar b{margin-left:12px;font-size:12.5px;font-weight:600;color:var(--faint);letter-spacing:.02em}
+.mockin{padding:26px 28px 30px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.stat{border-radius:var(--r-md);padding:16px 18px;background:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.65);box-shadow:inset 0 1px 0 rgba(255,255,255,.85)}
+.stat small{display:block;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
+.stat b{display:block;font-size:clamp(19px,2.4vw,26px);letter-spacing:-.02em;margin-top:5px}
+.stat.g b{background:linear-gradient(90deg,#34c759,#2bd47d);-webkit-background-clip:text;background-clip:text;color:transparent}
+.stat.o b{background:linear-gradient(90deg,#ff9f0a,#ffb84d);-webkit-background-clip:text;background-clip:text;color:transparent}
+.stat.r b{background:linear-gradient(90deg,#ff5f57,#ff7b72);-webkit-background-clip:text;background-clip:text;color:transparent}
+.mockgrid{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;margin-top:16px}
+@media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}.mockgrid{grid-template-columns:1fr}}
+.chartbox,.movesbox{border-radius:var(--r-md);padding:18px 20px;background:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.65);box-shadow:inset 0 1px 0 rgba(255,255,255,.85)}
+.chartbox h4,.movesbox h4{font-size:12.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);margin-bottom:12px}
+.mkchart{display:flex;align-items:flex-end;gap:7px;height:120px}
+.mkchart i{flex:1;border-radius:8px 8px 3px 3px;background:linear-gradient(180deg,#8a7bff,#5ac8fa);opacity:.92;transform-origin:bottom}
+.moves{list-style:none;display:flex;flex-direction:column;gap:10px;font-size:14px}
+.moves li{display:flex;gap:10px;align-items:flex-start}
+.moves .dot{flex:none;width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#6d5ef5,#5ac8fa);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px;box-shadow:0 3px 8px rgba(109,94,245,.35)}
+.moves b{font-weight:600}
+.mocknote{margin-top:14px;font-size:12.5px;color:var(--faint);text-align:center}
+
+/* what's new */
+.whatsnew{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:34px auto 0}
+.wnchip{display:inline-flex;align-items:center;gap:9px;border-radius:999px;padding:9px 16px;font-size:13.5px;background:rgba(255,255,255,.5);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.7);box-shadow:0 6px 18px rgba(31,38,135,.07)}
+.wnchip .tag{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#fff;border-radius:999px;padding:3px 9px}
+.wnchip .tag.new{background:linear-gradient(135deg,#34c759,#2bd47d)}
+.wnchip .tag.imp{background:linear-gradient(135deg,#6d5ef5,#8a7bff)}
+.wnchip .d{color:var(--faint);font-weight:600}
+
+/* sections */
+section{padding:96px 0}
+.shead{text-align:center;max-width:760px;margin:0 auto 52px}
+.shead .kick{display:block;font-size:13.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#6d5ef5;margin-bottom:14px}
+h2{font-size:clamp(30px,4.4vw,52px);line-height:1.08;letter-spacing:-.035em;font-weight:700}
+.shead p{margin-top:16px;font-size:17px;color:var(--mut)}
+.alt{background:transparent}
+
+/* how it works */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+@media(max-width:860px){.steps{grid-template-columns:1fr}}
+.step{padding:30px 28px}
+.stepnum{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;color:#fff;background:linear-gradient(135deg,#6d5ef5,#5ac8fa);box-shadow:0 8px 20px rgba(109,94,245,.35),inset 0 1px 0 rgba(255,255,255,.4);margin-bottom:18px}
+.step h3{font-size:21px;letter-spacing:-.02em;margin-bottom:9px}
+.step p{font-size:15px;color:var(--mut)}
+
+/* features grid */
+.fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+@media(max-width:980px){.fgrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){.fgrid{grid-template-columns:1fr}}
+.fcard{padding:26px 26px 24px;border-radius:var(--r-md)}
+.fcard .ric{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:21px;margin-bottom:15px;background:rgba(124,108,248,.14);border:1px solid rgba(124,108,248,.2)}
+.fcard h3{font-size:19px;letter-spacing:-.02em;margin-bottom:8px}
+.fcard p{font-size:14.5px;color:var(--mut)}
+.badge{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#1d7a37;background:rgba(52,199,89,.16);border:1px solid rgba(52,199,89,.3);border-radius:999px;padding:3px 10px;margin-bottom:12px}
+
+/* radar */
+.rgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:stretch}
+@media(max-width:860px){.rgrid{grid-template-columns:1fr}}
+.rlist{display:flex;flex-direction:column;gap:14px}
+.ritem{padding:22px 24px;border-radius:var(--r-md);display:flex;gap:16px;align-items:flex-start}
+.ritem .ic{flex:none;width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:19px;background:rgba(90,200,250,.16);border:1px solid rgba(90,200,250,.25)}
+.ritem h3{font-size:17.5px;margin-bottom:5px;letter-spacing:-.01em}
+.ritem p{font-size:14px;color:var(--mut)}
+.radarpanel{padding:26px}
+.radarpanel h4{font-size:12.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);margin-bottom:14px}
+.rrow{display:flex;justify-content:space-between;align-items:center;padding:13px 4px;border-bottom:1px solid rgba(0,0,0,.06);font-size:14.5px}
+.rrow:last-of-type{border-bottom:none}
+.rrow .who b{display:block;font-weight:600}
+.rrow .who span{font-size:12.5px;color:var(--faint)}
+.rrow .amt{font-weight:700;letter-spacing:-.01em}
+.pill{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:999px;padding:4px 10px}
+.pill.red{color:#c0201a;background:rgba(255,95,87,.16);border:1px solid rgba(255,95,87,.3)}
+.pill.amber{color:#a05a00;background:rgba(255,159,10,.16);border:1px solid rgba(255,159,10,.3)}
+.pill.blue{color:#0058b0;background:rgba(0,113,227,.12);border:1px solid rgba(0,113,227,.25)}
+.panelnote{margin-top:12px;font-size:12px;color:var(--faint);text-align:center}
+
+/* analytics */
+.acenter{max-width:880px;margin:0 auto}
+.achart{display:flex;align-items:flex-end;gap:10px;height:190px;margin-top:8px}
+.achart i{flex:1;border-radius:10px 10px 4px 4px;background:linear-gradient(180deg,#8a7bff,#5ac8fa);opacity:.92;transform-origin:bottom}
+.alabels{display:flex;gap:10px;margin-top:8px}
+.alabels span{flex:1;text-align:center;font-size:11.5px;color:var(--faint);font-weight:600}
+
+/* pricing */
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:stretch}
+@media(max-width:880px){.pgrid{grid-template-columns:1fr;max-width:440px;margin:0 auto}}
+.pcard{padding:32px 30px;display:flex;flex-direction:column;border-radius:var(--r-lg)}
+.pcard .plan{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.pcard h3{font-size:26px;letter-spacing:-.02em;margin-top:6px}
+.pcard .cap{font-size:14px;color:var(--mut);margin-top:6px}
+.price{font-size:clamp(30px,3.6vw,40px);font-weight:700;letter-spacing:-.03em;margin:20px 0 4px}
+.price small{font-size:15px;font-weight:600;color:var(--faint)}
+.pcard ul{list-style:none;margin:18px 0 24px;display:flex;flex-direction:column;gap:9px;font-size:14px;color:var(--mut)}
+.pcard ul li::before{content:"✓";color:#34c759;font-weight:700;margin-right:9px}
+.pcard .btn{margin-top:auto}
+.pcard.hot{background:linear-gradient(160deg,rgba(124,108,248,.16),rgba(90,200,250,.14)),rgba(255,255,255,.6);box-shadow:0 18px 48px rgba(109,94,245,.2),inset 0 1px 0 rgba(255,255,255,.9)}
+.pop{position:absolute;top:-13px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#fff;background:linear-gradient(135deg,#6d5ef5,#8a7bff);border-radius:999px;padding:5px 14px;box-shadow:0 6px 16px rgba(109,94,245,.4)}
+.pcardwrap{position:relative}
+.pnote{text-align:center;margin-top:26px;font-size:13.5px;color:var(--faint)}
+
+/* who for */
+.chips{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:26px}
+.chip{border-radius:999px;padding:8px 16px;font-size:13px;font-weight:600;background:rgba(255,255,255,.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.7);box-shadow:0 4px 14px rgba(31,38,135,.06)}
+.wgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+@media(max-width:980px){.wgrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.wgrid{grid-template-columns:1fr}}
+.wcard{padding:24px 22px;border-radius:var(--r-md)}
+.wcard h3{font-size:17px;margin-bottom:7px}
+.wcard p{font-size:13.5px;color:var(--mut)}
+.moneynote{text-align:center;margin-top:30px;font-size:15px;color:var(--mut)}
+.moneynote b{color:var(--ink)}
+
+/* cta band */
+.ctaband{padding:30px 0 90px}
+.ctapanel{padding:64px 30px;text-align:center;background:linear-gradient(140deg,rgba(109,94,245,.9),rgba(122,110,250,.75) 45%,rgba(90,200,250,.75));box-shadow:0 30px 70px rgba(109,94,245,.35),inset 0 1px 0 rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.5)}
+.ctapanel h2{color:#fff}
+.ctapanel p{color:rgba(255,255,255,.85);font-size:17px;margin-top:12px}
+.ctapanel .ctas{margin-top:30px}
+.ctapanel .micro{color:rgba(255,255,255,.7)}
+
+/* faq */
+.faqlist{max-width:780px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.faq details{border-radius:var(--r-md);padding:0;overflow:hidden}
+.faq summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:20px 24px;font-size:16.5px;font-weight:600;letter-spacing:-.01em}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary .plus{flex:none;width:26px;height:26px;border-radius:50%;background:rgba(124,108,248,.14);border:1px solid rgba(124,108,248,.25);display:flex;align-items:center;justify-content:center;font-size:16px;color:#6d5ef5;transition:transform .25s}
+.faq details[open] .plus{transform:rotate(45deg)}
+.faq details p{padding:0 24px 20px;font-size:14.5px;color:var(--mut)}
+
+/* footer */
+footer{padding:60px 0 40px;border-top:1px solid var(--line)}
+.fgrid2{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:30px}
+@media(max-width:860px){.fgrid2{grid-template-columns:1fr 1fr}}
+footer p{font-size:13.5px;color:var(--mut);max-width:300px}
+footer h4{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-bottom:14px}
+footer ul{list-style:none;display:flex;flex-direction:column;gap:9px;font-size:14px;color:var(--mut)}
+footer a:hover{color:var(--ink)}
+.fbottom{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-top:44px;padding-top:22px;border-top:1px solid var(--line);font-size:12.5px;color:var(--faint)}
+.flag{display:inline-flex;align-items:center;gap:6px}
+
+/* signup modal */
+.modal{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .28s}
+.modal.open{opacity:1;pointer-events:auto}
+.modal .veil{position:absolute;inset:0;background:rgba(20,20,30,.35);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%)}
+.mcard{position:relative;width:100%;max-width:460px;padding:36px 34px 30px;border-radius:32px;transform:translateY(14px) scale(.97);transition:transform .32s cubic-bezier(.2,.8,.3,1.15)}
+.modal.open .mcard{transform:none}
+.mclose{position:absolute;top:16px;right:18px;width:32px;height:32px;border-radius:50%;border:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.6);color:var(--mut);font-size:16px;cursor:pointer}
+.mcard h3{font-size:24px;letter-spacing:-.02em}
+.mcard .msub{font-size:14px;color:var(--mut);margin-top:6px}
+.mcard form{margin-top:22px;display:flex;flex-direction:column;gap:12px}
+.mcard input{width:100%;border-radius:14px;border:1px solid rgba(0,0,0,.1);background:rgba(255,255,255,.75);padding:13px 15px;font-size:15px;font-family:inherit;outline:none;transition:border .2s,box-shadow .2s}
+.mcard input:focus{border-color:#6d5ef5;box-shadow:0 0 0 4px rgba(109,94,245,.18)}
+.mcard .btn{width:100%}
+.fmsg{font-size:13.5px;color:#c0201a;min-height:18px}
+.fmsg.ok{color:#1d7a37}
+
+/* promo popup */
+.popwrap{position:fixed;inset:0;z-index:90;display:flex;align-items:flex-end;justify-content:center;padding:26px;opacity:0;pointer-events:none;transition:opacity .3s}
+.popwrap.open{opacity:1;pointer-events:auto}
+.popwrap .veil{position:absolute;inset:0;background:rgba(20,20,30,.28);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.popcard{position:relative;width:100%;max-width:440px;padding:30px 30px 26px;border-radius:28px;transform:translateY(18px);transition:transform .3s cubic-bezier(.2,.8,.3,1.15)}
+.popwrap.open .popcard{transform:none}
+.popcard h3{font-size:21px;letter-spacing:-.02em}
+.popcard p{font-size:14.5px;color:var(--mut);margin-top:8px}
+.popcard .ctas{justify-content:flex-start;margin-top:20px}
+.pclose{position:absolute;top:14px;right:16px;width:30px;height:30px;border-radius:50%;border:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.6);color:var(--mut);font-size:15px;cursor:pointer}
+.pdismiss{background:none;border:none;color:var(--faint);font-size:13px;cursor:pointer;margin-top:12px}
+
+/* cookie bar */
+.cbar{position:fixed;left:50%;bottom:18px;transform:translate(-50%,90px);z-index:80;display:flex;align-items:center;gap:14px;max-width:620px;width:calc(100% - 32px);padding:14px 16px 14px 22px;border-radius:999px;font-size:13.5px;color:var(--mut);opacity:0;transition:transform .4s cubic-bezier(.2,.8,.3,1.1),opacity .4s}
+.cbar.on{transform:translate(-50%,0);opacity:1}
+
+/* reveal */
+.js .reveal{opacity:0;transform:translateY(26px);transition:opacity .7s cubic-bezier(.2,.65,.25,1),transform .7s cubic-bezier(.2,.65,.25,1)}
+.js .reveal.in{opacity:1;transform:none}
+.js .mkchart.in i,.js .achart.in i{animation:growbar .9s cubic-bezier(.2,.65,.25,1)}
+@keyframes growbar{from{transform:scaleY(.06)}to{transform:scaleY(1)}}
+@media(prefers-reduced-motion:reduce){
+  .aurora i{animation:none}
+  .js .reveal{opacity:1;transform:none;transition:none}
+  .js .mkchart.in i,.js .achart.in i{animation:none}
+  html{scroll-behavior:auto}
+}
+@media(max-width:640px){
+  section{padding:66px 0}
+  .hero{padding:56px 0 20px}
+  .ctapanel{padding:48px 22px}
+}
+
+/* autopay landing tweaks */
+.prose{max-width:780px;margin:0 auto}
+.prose p{font-size:16.5px;color:var(--mut);line-height:1.65;margin-bottom:14px}
+.prose h3{font-size:19px;margin:22px 0 8px}
+.trustrow{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:26px}
+.trustrow span{font-size:13px;color:var(--faint);border:1px solid rgba(124,108,248,.18);border-radius:999px;padding:7px 14px;background:rgba(255,255,255,.6)}
+</style>
+</head>
+<body id="top">
+<div class="aurora" aria-hidden="true"><i class="b1"></i><i class="b2"></i><i class="b3"></i><i class="b4"></i></div>
+
+<nav class="nav">
+  <div class="in">
+    <a class="logo" href="/"><i></i><span><b>Recur</b>Saathi</span></a>
+    <div class="nlinks">
+      <a href="/#features">Features</a>
+      <a href="/#how">How it works</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/#faq">FAQ</a>
+    </div>
+    <a class="btn btn-primary btn-sm nbtn" href="/">Start free trial</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="eyebrow">UPI AUTOPAY FAILED PAYMENT RECOVERY</span>
+    <h1>Your AutoPay debits <span class="grad">failed.</span><br>We bring the money back.</h1>
+    <p class="sub">RecurSaathi reads every failed UPI AutoPay mandate, works out why it failed, retries inside the RBI window and chases the payment over WhatsApp until it lands. Built for Indian D2C subscription businesses.</p>
+    <div class="ctas">
+      <a class="btn btn-primary btn-lg" href="/">Start free trial</a>
+      <a class="btn btn-ghost btn-lg" href="#flow">See the recovery flow</a>
+    </div>
+    <p class="micro">14 days free &middot; no card needed to start</p>
+  </div>
+</header>
+
+<main>
+<section id="why">
+  <div class="wrap">
+    <div class="shead reveal"><span class="kick">Why mandates fail</span><h2>Every failed AutoPay has a reason.<br>Most tools ignore it.</h2><p>"Payment failed" is not a recovery strategy. The reason decides the move.</p></div>
+    <div class="fgrid">
+      <div class="fcard glass reveal"><h3>Insufficient balance</h3><p>The account was short at debit time. Right move: retry at the next payday window and nudge the customer with a one-tap payment link.</p></div>
+      <div class="fcard glass reveal"><h3>Paused or cancelled mandate</h3><p>The customer paused or revoked the AutoPay mandate. Right move: stop hammering retries and ask them to re-authorise over WhatsApp.</p></div>
+      <div class="fcard glass reveal"><h3>Bank or rail downtime</h3><p>The bank or UPI rails were down. Right move: retry later the same day, when the rails are back.</p></div>
+      <div class="fcard glass reveal"><h3>Limit exhausted</h3><p>A daily or per-transaction limit blocked the debit. Right move: retry outside the busy window, or collect manually first.</p></div>
+      <div class="fcard glass reveal"><h3>Mandate expired</h3><p>The mandate's validity ran out. Right move: re-enrol the customer before the subscription lapses.</p></div>
+      <div class="fcard glass reveal"><h3>Customer changed bank or card</h3><p>The instrument behind the mandate is gone. Right move: a friendly re-authorisation link, not another declined retry.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="flow">
+  <div class="wrap">
+    <div class="shead reveal"><span class="kick">The recovery flow</span><h2>Failed &rarr; reason &rarr; retry &rarr; WhatsApp &rarr; done.</h2><p>Five steps, run automatically for every failed mandate.</p></div>
+    <div class="steps">
+      <div class="step glass reveal"><span class="stepnum">1</span><h3>Detect</h3><p>Every AutoPay debit and card subscription charge is watched. A failure is caught the moment the gateway reports it.</p></div>
+      <div class="step glass reveal"><span class="stepnum">2</span><h3>Diagnose</h3><p>The failure reason is read and classified: balance, pause, downtime, limit or expiry. No blanket retry.</p></div>
+      <div class="step glass reveal"><span class="stepnum">3</span><h3>Retry smart</h3><p>Retries are timed inside RBI's recurring-mandate windows, the 24-hour pre-debit notification respected, spaced for the reason.</p></div>
+    </div>
+    <div class="steps">
+      <div class="step glass reveal"><span class="stepnum">4</span><h3>Nudge</h3><p>A WhatsApp and email nudge goes out with a one-tap payment link to your own UPI ID or gateway. The customer pays in seconds.</p></div>
+      <div class="step glass reveal"><span class="stepnum">5</span><h3>Track promises</h3><p>Replied "Friday, promise"? The follow-up is rescheduled automatically and tracked to the rupee in your dashboard.</p></div>
+      <div class="step glass reveal"><span class="stepnum">&infin;</span><h3>It keeps running</h3><p>Every mandate, every month. Recoveries land in one dashboard, updated as money moves.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="d2c">
+  <div class="wrap">
+    <div class="shead reveal"><span class="kick">Built for D2C subscriptions</span><h2>Not a collections dashboard.<br>A subscription revenue backstop.</h2><p>RecurSaathi is built around how Indian D2C brands actually run recurring revenue.</p></div>
+    <div class="prose reveal">
+      <p>Snack boxes, coffee replenishment, wellness refills, membership renewals: your revenue is a stack of UPI AutoPay mandates and card subscriptions renewing every month. When a slice of them fails silently, you find out at month-end, after the churn is already real.</p>
+      <p>RecurSaathi treats each failed renewal as a customer conversation, not a collections ticket. The customer who was short on the 1st gets a payday-timed retry and a WhatsApp link, not a debt letter. The one who paused the mandate gets a re-authorisation nudge while they still like your product. Your recovery rate becomes something you can watch daily, not discover quarterly.</p>
+      <p>And it works from day one without gateway paperwork: manual UPI mode with your own UPI ID, then Razorpay AutoPay retries when you connect it.</p>
+    </div>
+    <div class="trustrow">
+      <span>RBI-timed retries</span><span>WhatsApp + email nudges</span><span>Reason-first diagnosis</span><span>Promise-to-pay tracking</span><span>Works without Razorpay</span><span>14-day free trial</span>
+    </div>
+  </div>
+</section>
+
+<section id="faq" class="faq">
+  <div class="wrap">
+    <div class="shead reveal"><span class="kick">FAQ</span><h2>UPI AutoPay recovery, answered.</h2></div>
+    <div class="faqlist">
+      <details class="glass reveal"><summary>Why do UPI AutoPay payments fail?<span class="plus">+</span></summary><p>Most failures are routine: the customer's account is short of balance, they paused or deleted the mandate, the bank or UPI rails were down, a daily limit was hit, or the mandate expired. The reason matters because each one needs a different recovery move.</p></details>
+      <details class="glass reveal"><summary>How does RecurSaathi recover a failed AutoPay payment?<span class="plus">+</span></summary><p>The failure reason is read from the gateway response, the retry is timed for that reason, and a WhatsApp and email nudge goes out with a one-tap payment link. If the customer replies with a promise to pay, the follow-up is rescheduled automatically.</p></details>
+      <details class="glass reveal"><summary>Is retrying failed AutoPay debits RBI-compliant?<span class="plus">+</span></summary><p>RBI's recurring mandate rules, including the 24-hour pre-debit notification and the no-additional-authentication limit for smaller mandates, limit brute-force retries. RecurSaathi times retries inside the allowed windows and uses WhatsApp payment links for the rest.</p></details>
+      <details class="glass reveal"><summary>Do I need Razorpay to use it?<span class="plus">+</span></summary><p>No. Manual UPI mode works from day one: generate a payment page and QR for your own UPI ID and mark the invoice paid when money lands. Connect Razorpay whenever you want automatic retries.</p></details>
+      <details class="glass reveal"><summary>Do you hold my customers' money?<span class="plus">+</span></summary><p>No. Recovered payments land in your own gateway account or your own UPI ID. RecurSaathi automates, tracks and reports; money never flows through us.</p></details>
+    </div>
+  </div>
+</section>
+
+<section id="cta">
+  <div class="wrap">
+    <div class="ctapanel reveal">
+      <h2>Stop losing renewals to failed AutoPay.</h2>
+      <p>Set it up once. Every failed mandate gets a reason, a retry and a nudge, every month.</p>
+      <div class="ctas"><a class="btn btn-primary btn-lg" href="/" style="background:#fff">Start free trial</a></div>
+      <p class="micro">14 days free &middot; no card needed to start</p>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="fgrid2">
+      <div>
+        <a class="logo" href="/"><i></i><span><b>Recur</b>Saathi</span></a>
+        <p style="margin-top:14px">Revenue recovery for Indian subscription businesses. Failed payments, overdue invoices and dormant customers, managed end to end.</p>
+      </div>
+      <div><h4>Product</h4><ul><li><a href="/#how">How it works</a></li><li><a href="/#features">Features</a></li><li><a href="/upi-autopay-recovery">UPI AutoPay recovery</a></li><li><a href="/#pricing">Pricing</a></li></ul></div>
+      <div><h4>Company</h4><ul><li><a href="/guide">Recovery guide</a></li><li><a href="/#faq">FAQ</a></li><li><a href="mailto:recursathi@gmail.com">recursathi@gmail.com</a></li></ul></div>
+      <div><h4>Legal</h4><ul><li><a href="/privacy">Privacy Policy</a></li><li><a href="/terms">Terms of Service</a></li></ul></div>
+    </div>
+    <div class="fbottom"><span>&copy; RecurSaathi</span><span class="flag">🇮🇳 Made in India</span></div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var list=[].slice.call(document.querySelectorAll('.shead,.fcard,.step,.faq details,.ctapanel,.prose,.trustrow'));
+  if(!('IntersectionObserver' in window)){list.forEach(function(t){t.classList.add('in')});return}
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.12,rootMargin:'0px 0px -40px 0px'});
+  list.forEach(function(t){t.classList.add('reveal');io.observe(t)});
+})();
+</script>
+</body>
+</html>
