@@ -165,18 +165,16 @@ def run_due_calls(owner, base_url):
             counts["calls_waiting_provider"] += 1
             continue
         try:
-            with httpx.Client(timeout=20) as cl:
-                r = cl.post(_ret.CALL_URL, headers={"Authorization": f"Bearer {_ret.CALL_TOKEN}"},
-                            json={"to": _ret._norm_phone(cu["phone"]), "task": script,
-                                  "metadata": {"owner_id": owner["id"], "invoice_id": inv["id"]}})
-            if r.status_code < 400:
+            status = _ret.place_provider_call(_ret._norm_phone(cu["phone"]), script,
+                                              {"owner_id": owner["id"], "invoice_id": inv["id"]})
+            if status == "call_placed":
                 models.set_outbox_status(o["id"], "sent", "AI repayment call placed")
                 models.ex("UPDATE outbox SET sent=? WHERE id=?", (models.now(), o["id"]))
                 models.log_activity(owner["id"], "automation",
                                     f"Repayment call placed to {cu['name']} for invoice {inv['number']}")
                 counts["calls_placed"] += 1
             else:
-                models.set_outbox_status(o["id"], "failed", f"voice provider returned {r.status_code}")
+                models.set_outbox_status(o["id"], "failed", f"voice provider error: {status}")
                 counts["failed"] += 1
         except Exception as e:
             models.set_outbox_status(o["id"], "failed", str(e)[:200])

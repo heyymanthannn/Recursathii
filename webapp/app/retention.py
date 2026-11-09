@@ -17,6 +17,31 @@ RETENTION_COUPON_PCT = int(os.environ.get("RETENTION_COUPON_PCT", "20"))
 
 CALL_URL = os.environ.get("RETENTION_CALL_URL", "")
 CALL_TOKEN = os.environ.get("RETENTION_CALL_TOKEN", "")
+OMNIDIM_AGENT_ID = os.environ.get("OMNIDIM_AGENT_ID", "")
+
+
+def place_provider_call(num: str, script: str, metadata: dict) -> str:
+    """Fire an AI voice call through the configured provider. Omnidimension
+    (omnidim.io) uses its own dispatch shape: agent_id + to_number + call_context
+    (the call's task/prompt travels as variables the agent reads)."""
+    try:
+        with httpx.Client(timeout=25) as cl:
+            headers = {"Authorization": f"Bearer {CALL_TOKEN}", "Content-Type": "application/json"}
+            if OMNIDIM_AGENT_ID or "omnidim" in CALL_URL:
+                payload = {
+                    "agent_id": int(OMNIDIM_AGENT_ID),
+                    "to_number": num,
+                    "call_context": {"task": script},
+                    "metadata": metadata,
+                }
+                url = CALL_URL or "https://omnidim.io/api/v1/calls/dispatch"
+            else:
+                payload = {"to": num, "task": script, "metadata": metadata}
+                url = CALL_URL
+            r = cl.post(url, headers=headers, json=payload)
+        return "call_placed" if r.status_code < 400 else f"call_failed:{r.status_code}"
+    except Exception as e:
+        return f"call_failed:{str(e)[:120]}"
 
 PRICE_WORDS = ("price", "expensive", "cost", "costly", "mehenga", "mahenga", "paisa", "budget", "afford")
 
@@ -67,13 +92,7 @@ def _place_call(m: dict, script: str) -> str:
     num = _norm_phone(m.get("phone"))
     if not voice_ready() or not num:
         return "no_voice_provider" if not voice_ready() else "no_phone"
-    try:
-        with httpx.Client(timeout=20) as cl:
-            r = cl.post(CALL_URL, headers={"Authorization": f"Bearer {CALL_TOKEN}"},
-                        json={"to": num, "task": script, "metadata": {"merchant_id": m["id"]}})
-        return "call_placed" if r.status_code < 400 else f"call_failed:{r.status_code}"
-    except Exception as e:
-        return f"call_failed:{str(e)[:120]}"
+    return place_provider_call(num, script, {"merchant_id": m["id"]})
 
 
 def _first_touch(m: dict, counts: dict):
