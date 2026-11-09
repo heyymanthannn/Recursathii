@@ -122,9 +122,10 @@ def run_dormant_reactivation(owner):
     return counts
 
 def run_due_calls(owner, base_url):
-    """AI repayment calls for overdue customers. Needs a voice provider; until
-    one is connected the call and its script queue in the outbox, visibly
-    waiting, instead of pretending a call was made."""
+    """DAILY AI agent calls for overdue customers. One call per overdue invoice
+    per day (per-day dedupe), polite on day 1 of overdue, firmer after 7.
+    Needs a voice provider; until one is connected the call and its script
+    queue in the outbox, visibly waiting, instead of pretending a call was made."""
     from . import retention as _ret
     counts = {"calls_placed": 0, "calls_waiting_provider": 0, "skipped": 0, "failed": 0}
     if not models.get_automations(owner["id"]).get("due_call", True):
@@ -137,19 +138,30 @@ def run_due_calls(owner, base_url):
         cu = models.get_customer(inv["customer_id"])
         if not cu or not cu.get("phone") or cu.get("wa_opt_out"):
             continue
-        dedupe = f"due_call:{inv['id']}:{stage}"
+        dedupe = f"due_call:{inv['id']}:{stage}:{today}"
         if models.one("SELECT id FROM outbox WHERE dedupe=?", (dedupe,)):
             continue
         ctx = _ctx(owner, inv, cu, base_url)
         ctx["phone"] = cu["phone"]
         tpl = models.get_template(owner["id"], "due_call")
-        script = _render(tpl["body"] if tpl else DEFAULTS["due_call"]["call_script"], **ctx)
+        base_script = tpl["body"] if tpl else DEFAULTS["due_call"]["call_script"]
+        if stage == "overdue_7":
+            tone = ("They are more than a week overdue. Stay polite but be direct: ask for a "
+                    "firm payment date, offer the payment link {pay_link}, and set up a "
+                    "promise-to-pay on the call. Do not promise discounts.")
+        elif stage == "overdue_1":
+            tone = ("Be warm and brief. Assume it slipped their mind. Remind them of the amount "
+                    "and due date, offer the payment link {pay_link}, and thank them for their "
+                    "business. Note any promise they make.")
+        else:
+            tone = "Remind them politely, offer the payment link {pay_link}, and note if they promise a date."
+        script = _render(base_script + " " + tone, **ctx)
         o = models.queue(owner["id"], "call", _ret._norm_phone(cu["phone"]), "due_call", "", script,
                          dedupe=dedupe)
         if not o:
             continue
         if not _ret.voice_ready():
-            models.set_outbox_status(o["id"], "no_channel", "voice provider not connected yet")
+            models.set_outbox_status(o["id"], "no_channel", "daily AI agent call queued - voice provider not connected yet")
             counts["calls_waiting_provider"] += 1
             continue
         try:

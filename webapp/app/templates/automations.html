@@ -6,14 +6,18 @@
 {% for k in keys %}
 <div class="card">
 <div class="inline" style="justify-content:space-between">
-<div><b>{{ {'reminder_due':'Payment reminder (due today)','overdue_1':'Overdue notice (1-7 days)','overdue_7':'Final reminder (7+ days)','failed_payment':'Failed payment nudge','payment_confirm':'Payment confirmation','dormant_reactivate':'Dormant customer reactivation','due_call':'Repayment calls to overdue customers (needs voice provider)'}[k] }}</b>
-<div class="badge-note">{{ 'email + whatsapp' }}</div></div>
+<div><b>{{ {'reminder_due':'Payment reminder (due today)','overdue_1':'Overdue notice (1-7 days)','overdue_7':'Final reminder (7+ days)','failed_payment':'Failed payment nudge','payment_confirm':'Payment confirmation','dormant_reactivate':'Dormant customer reactivation','due_call':'AI agent daily calls (needs a voice provider)'}[k] }}</b>
+{% if k == 'due_call' %}<div class="badge-note">one AI call per customer per day, until they pay or the invoice is 14+ days overdue</div>{% else %}<div class="badge-note">{{ 'email + whatsapp' }}</div>{% endif %}</div>
 <form method="post" action="/automations/toggle"><input type="hidden" name="key" value="{{ k }}"><input type="hidden" name="enabled" value="{{ '0' if keys[k] else '1' }}"><button class="btn sm {{ 'ghost' if keys[k] else '' }}">{{ 'Disable' if keys[k] else 'Enable' }}</button></form>
 </div>
 <form method="post" action="/automations/template" class="stack" style="margin-top:12px">
 <input type="hidden" name="key" value="{{ k }}">
+{% if k == 'due_call' %}
+<div><label>Call script (what the AI agent says on the call, variables: {customer_name} {business} {number} {amount} {due_date} {pay_link} {phone})</label><textarea name="subject" rows="1" style="display:none">{{ tpls[k].subject if tpls[k] else 'AI agent call' }}</textarea><textarea name="body" rows="5">{{ tpls[k].body if tpls[k] else defaults[k]['email_body'] }}</textarea></div>
+{% else %}
 <div><label>Email subject</label><input name="subject" value="{{ tpls[k].subject if tpls[k] else defaults[k]['email_subject'] }}"></div>
 <div><label>Message body (email and whatsapp, variables: {customer_name} {business} {number} {amount} {due_date} {pay_link})</label><textarea name="body" rows="5">{{ tpls[k].body if tpls[k] else defaults[k]['email_body'] }}</textarea></div>
+{% endif %}
 <button class="btn ghost sm">Save template</button>
 </form>
 </div>
