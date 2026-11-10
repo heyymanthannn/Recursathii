@@ -1,0 +1,73 @@
+/* RecurSaathi premium light theme: shared shell overrides for the Early Access site.
+   Loaded after each page's own styles, so these rules win on equal specificity. */
+:root{
+  --bg:#f6f7fb; --card:#ffffff; --ink:#10132a; --muted:#5a6079; --faint:#8b90a7;
+  --line:#e8eaf3; --blue:#4f6bff; --violet:#7b5cff;
+  --grad:linear-gradient(100deg,#4f6bff,#7b5cff);
+  --radius:16px; --shadow:0 10px 30px rgba(24,32,84,.07);
+  /* legacy token aliases */
+  --mut:#5a6079; --vio:#7b5cff; --cyan:#5ac8fa; --pink:#ff9ac4; --amber:#ffb84d;
+  --glass:#ffffff; --glass-strong:#ffffff; --r-lg:16px; --r-md:16px;
+}
+html{scroll-padding-top:90px}
+body{background:var(--bg);color:var(--ink);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+
+/* kill the old animated backdrop */
+.aurora,.aurora i{display:none!important}
+
+/* shell: sticky light nav */
+.nav{position:sticky;top:0;z-index:50;background:rgba(246,247,251,.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.nav .in{display:flex;align-items:center;gap:26px;height:66px;max-width:1120px;margin:0 auto;padding:0 22px}
+.logo{display:inline-flex;align-items:center;gap:9px;font-size:18px;letter-spacing:-.2px;color:var(--ink)}
+.logo i{width:28px;height:28px;border-radius:8px;background:var(--grad);display:inline-block;flex:none}
+.logo b{font-weight:700}
+.nlinks{display:flex;gap:22px;margin-left:auto;font-size:14.5px;color:var(--muted)}
+.nlinks a{white-space:nowrap}
+.nlinks a:hover{color:var(--ink)}
+.nbtn,.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;font-weight:600;border:1px solid transparent;cursor:pointer;transition:transform .2s,box-shadow .2s;white-space:nowrap;text-align:center}
+.nbtn{padding:10px 20px;font-size:14px}
+.btn{padding:14px 28px;font-size:15.5px}
+.btn:hover{transform:translateY(-2px)}
+.btn-primary{background:var(--grad);color:#fff;box-shadow:0 8px 20px rgba(79,107,255,.25)}
+.btn-ghost{background:var(--card);border-color:var(--line);color:var(--ink)}
+.btn-sm{padding:9px 18px;font-size:13.5px}
+
+/* content chrome */
+.page{padding:56px 0 24px}
+.kick2,.eyebrow{display:block;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--violet);margin-bottom:12px}
+h1,h2,h3{color:var(--ink);letter-spacing:-.02em}
+h1{font-weight:800;line-height:1.08}
+h2{font-weight:800;line-height:1.15}
+.lede,.lead,.ssub,.msub{color:var(--muted)}
+.wrap,.wrap-wide{max-width:1120px}
+section{scroll-margin-top:80px}
+
+/* cards, panels, tools */
+.tool,.res,.calcbox,.chartbox,.wcard,.mcard,.fcard,.pcard,.pop-card,.radarpanel,.calcfaq,.panelnote,.calcgrid>*,.authorbox,.cnote,.imp,.calcgrid{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.tool{padding:24px}
+.tool input,.tool select,.tool textarea{border:1px solid var(--line);border-radius:12px;background:#fbfbfe;color:var(--ink)}
+.res{background:#f7f8ff;border-color:#dfe4ff}
+.prose p,.prose li{color:#3f4358}
+.prose h2{color:var(--ink)}
+.prose th{color:var(--faint)}
+.badge{border-radius:999px}
+
+/* sticky conversion bar */
+.cbar{background:#fff;border:1px solid var(--line);box-shadow:var(--shadow);border-radius:999px;color:var(--muted)}
+
+/* footer */
+footer{border-top:1px solid var(--line);background:var(--bg);color:var(--muted);padding:48px 0 30px}
+footer h4{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+footer a:hover{color:var(--ink)}
+footer .logo i{width:24px;height:24px}
+.fbottom{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);margin-top:36px;padding-top:20px;font-size:13px;color:var(--faint)}
+
+/* reveal-on-scroll, safe */
+.js .reveal{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s ease}
+.js .reveal.in{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){.js .reveal{opacity:1;transform:none;transition:none}}
+@media(max-width:900px){
+  .nlinks{display:none}
+  .page{padding:40px 0 20px}
+}

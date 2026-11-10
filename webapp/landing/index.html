@@ -83,6 +83,15 @@ footer{padding:56px 0 34px}
 .fbottom{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);margin-top:44px;padding-top:22px;font-size:13px;color:var(--faint)}
 .reveal{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s ease}
 .reveal.in{opacity:1;transform:none}
+/* faq + security */
+.faqwrap{max-width:760px;margin:0 auto}
+.faqwrap details{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 22px;margin-bottom:12px;box-shadow:var(--shadow)}
+.faqwrap summary{font-weight:600;cursor:pointer;font-size:16px;list-style:none;position:relative;padding-right:30px;letter-spacing:-.01em}
+.faqwrap summary::-webkit-details-marker{display:none}
+.faqwrap summary::after{content:"+";position:absolute;right:2px;top:-2px;font-weight:700;color:var(--violet);font-size:18px}
+.faqwrap details[open] summary::after{content:"\2013"}
+.faqwrap details p{color:var(--muted);font-size:14.5px;margin-top:10px}
+@media(max-width:900px){.grid3{grid-template-columns:1fr}}
 @media(max-width:900px){
   .navlinks{display:none}
   .grid3,.steps{grid-template-columns:1fr}
@@ -200,6 +209,33 @@ footer{padding:56px 0 34px}
         <button class="btn btn-primary btn-lg" type="submit" style="width:100%">Request Early Access</button>
         <p class="fnote" id="fnote">This opens your email app with your details filled in. Nothing is stored or sent from this website.</p>
       </form>
+    </div>
+  </div>
+</section>
+
+<section id="security" style="padding-top:0">
+  <div class="wrap">
+    <div class="shead reveal"><span class="kick">Security &amp; trust</span><h2>Built safe from day one.</h2><p>How the current build protects your records and your customers.</p></div>
+    <div class="grid3">
+      <div class="card reveal"><span class="chip">In the build</span><h3>Hashed logins</h3><p>Passwords are stored only as salted PBKDF2-SHA256 hashes, never in plain text. Optional two-factor login (one-time codes) is included on every account.</p></div>
+      <div class="card reveal"><span class="chip">In the build</span><h3>Role-based access</h3><p>Owner, admin, staff and viewer roles, each with its own permissions. Staff and viewer accounts cannot touch billing or settings.</p></div>
+      <div class="card reveal"><span class="chip">In the build</span><h3>Audit trail</h3><p>Every recovery action, automated message and payment verification is recorded with who did it and when.</p></div>
+      <div class="card reveal"><span class="chip">In the build</span><h3>Your money never passes through us</h3><p>Customers pay straight into your own Razorpay account through the payment links we send. RecurSaathi reads payment status only.</p></div>
+      <div class="card reveal"><span class="chip">In preparation</span><h3>Encrypted backups</h3><p>Database snapshots are encrypted before leaving the server and stored off-site on a private bucket. This activates before public launch.</p></div>
+      <div class="card reveal"><span class="chip">In the build</span><h3>Your data stays yours</h3><p>Export all your records anytime, or delete your account and its data, both built into the settings.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="faq" style="padding-top:0">
+  <div class="wrap">
+    <div class="shead reveal" style="margin-left:auto;margin-right:auto;text-align:center"><span class="kick">FAQ</span><h2>Straight answers.</h2></div>
+    <div class="faqwrap reveal">
+      <details open><summary>What exactly does RecurSaathi do?</summary><p>It automates payment follow-ups over your own billing records: failed card and UPI AutoPay payments get retried inside RBI&rsquo;s allowed windows, overdue invoices get chased, and dormant repeat customers get flagged for win-back. The intelligence is rule-based logic on your own data &mdash; no third-party AI services.</p></details>
+      <details><summary>Does customer money ever pass through RecurSaathi?</summary><p>No. Payment links go to your own Razorpay account (or your own UPI ID), so money settles directly to you. RecurSaathi only reads the payment status so it knows when to stop following up.</p></details>
+      <details><summary>How do retries stay within RBI rules?</summary><p>Retries run through your connected Razorpay account, scheduled inside the retry windows the RBI permits for UPI AutoPay. Decline codes are read before anything is retried, so a hard decline isn&rsquo;t retried blindly.</p></details>
+      <details><summary>What does early access include?</summary><p>You use the current build on real billing, get a direct line to the person building it, and your feedback sets the roadmap. Early partners get founding terms at launch. Requests are reviewed one by one.</p></details>
+      <details><summary>Does the request form store anything?</summary><p>No. Submitting it opens your email app with your details filled in &mdash; nothing is stored or sent from this website.</p></details>
     </div>
   </div>
 </section>

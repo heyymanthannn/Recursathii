@@ -468,6 +468,14 @@ async def index():
 async def privacy_page():
     return FileResponse("landing/privacy.html")
 
+@app.get("/config.js")
+def _config_js():
+    return FileResponse("landing/config.js", media_type="application/javascript")
+
+@app.get("/site.css")
+def _site_css():
+    return FileResponse("landing/site.css", media_type="text/css")
+
 
 @app.get("/terms", include_in_schema=False)
 async def terms_page():
