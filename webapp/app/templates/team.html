@@ -10,6 +10,7 @@
   <div><label>Role</label><select name="role">
     <option value="staff">Staff &mdash; full access except billing and settings</option>
     <option value="viewer">Viewer &mdash; read-only</option>
+    {% if user and 'advanced_permissions' in user.get('features', []) %}<option value="manager">Manager &mdash; runs the business, no billing or settings</option>{% endif %}
   </select></div>
   <button class="btn">Add team member</button>
 </form>

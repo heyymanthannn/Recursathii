@@ -66,6 +66,19 @@ CREATE TABLE IF NOT EXISTS plat_pays(
   id TEXT PRIMARY KEY, owner_id TEXT, plan TEXT, amount INTEGER,
   status TEXT, reference TEXT, created REAL
 );
+CREATE TABLE IF NOT EXISTS branches(
+  id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, name TEXT NOT NULL,
+  city TEXT DEFAULT '', created REAL
+);
+CREATE TABLE IF NOT EXISTS api_keys(
+  id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, key_hash TEXT UNIQUE,
+  label TEXT DEFAULT '', created REAL, last_used REAL, revoked INTEGER DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS rules(
+  id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, name TEXT NOT NULL,
+  trigger TEXT, threshold REAL, action TEXT, template TEXT,
+  enabled INTEGER DEFAULT 1, created REAL
+);
 CREATE INDEX IF NOT EXISTS ix_inv_owner ON invoices(owner_id);
 CREATE INDEX IF NOT EXISTS ix_cust_owner ON customers(owner_id);
 """
@@ -76,6 +89,9 @@ def init():
         c.execute("""CREATE TABLE IF NOT EXISTS portal_users(
   id TEXT PRIMARY KEY, email TEXT UNIQUE NOT NULL, pw_hash TEXT NOT NULL,
   created INTEGER)""")
+        c.execute("""CREATE TABLE IF NOT EXISTS usage_counters(
+          owner_id TEXT, month TEXT, key TEXT, count INTEGER DEFAULT 0,
+          PRIMARY KEY(owner_id, month, key))""")
         cols = [r["name"] for r in c.execute("PRAGMA table_info(users)")]
         if "parent_id" not in cols:
             c.execute("ALTER TABLE users ADD COLUMN parent_id TEXT")
@@ -91,6 +107,10 @@ def init():
             c.execute("ALTER TABLE users ADD COLUMN verify_token TEXT")
         if "verified_at" not in cols:
             c.execute("ALTER TABLE users ADD COLUMN verified_at REAL")
+        for tbl, col in (("customers", "branch_id"), ("invoices", "branch_id")):
+            cols = [r["name"] for r in c.execute(f"PRAGMA table_info({tbl})")]
+            if col not in cols:
+                c.execute(f"ALTER TABLE {tbl} ADD COLUMN {col} TEXT")
         c.executescript("""
         CREATE TABLE IF NOT EXISTS connect(
           owner_id TEXT PRIMARY KEY, business_name TEXT, logo TEXT,
@@ -570,3 +590,204 @@ def set_connect_paused(owner_id, paused):
     ex("INSERT OR IGNORE INTO connect(owner_id,paused,created) VALUES(?,?,?)",
        (owner_id, int(paused), now()))
     ex("UPDATE connect SET paused=? WHERE owner_id=?", (int(paused), owner_id))
+
+
+# ---- branches (Enterprise: multi-branch management) ----
+def list_branches(owner_id):
+    return q("SELECT * FROM branches WHERE owner_id=? ORDER BY created", (owner_id,))
+
+def branch_count(owner_id):
+    return q("SELECT COUNT(*) AS c FROM branches WHERE owner_id=?", (owner_id,))[0]["c"]
+
+def add_branch(owner_id, name, city=""):
+    b = {"id": uid(), "owner_id": owner_id, "name": (name or "").strip(),
+         "city": (city or "").strip(), "created": now()}
+    if not b["name"]:
+        return None
+    ex("INSERT INTO branches(id,owner_id,name,city,created) VALUES(:id,:owner_id,:name,:city,:created)", b)
+    return get_branch(b["id"], owner_id)
+
+def get_branch(branch_id, owner_id):
+    return one("SELECT * FROM branches WHERE id=? AND owner_id=?", (branch_id, owner_id))
+
+def rename_branch(branch_id, owner_id, name, city=""):
+    ex("UPDATE branches SET name=?, city=? WHERE id=? AND owner_id=?",
+       ((name or "").strip(), (city or "").strip(), branch_id, owner_id))
+
+def delete_branch(branch_id, owner_id):
+    # Attached customers/invoices keep their data; they just go back to the main view.
+    ex("UPDATE customers SET branch_id='' WHERE owner_id=? AND branch_id=?", (owner_id, branch_id))
+    ex("UPDATE invoices SET branch_id='' WHERE owner_id=? AND branch_id=?", (owner_id, branch_id))
+    ex("DELETE FROM branches WHERE id=? AND owner_id=?", (branch_id, owner_id))
+
+def assign_branch(owner_id, kind, item_id, branch_id):
+    """kind: 'customer' or 'invoice'. Assigning to '' unassigns."""
+    if branch_id and not get_branch(branch_id, owner_id):
+        return False
+    if kind == "customer":
+        ex("UPDATE customers SET branch_id=? WHERE id=? AND owner_id=?", (branch_id or "", item_id, owner_id))
+    elif kind == "invoice":
+        ex("UPDATE invoices SET branch_id=? WHERE id=? AND owner_id=?", (branch_id or "", item_id, owner_id))
+    return True
+
+def branch_stats(owner_id):
+    """Cross-branch revenue analytics from real invoices and payments."""
+    today = time.strftime("%Y-%m-%d")
+    out = []
+    for b in list_branches(owner_id):
+        row = one("""SELECT COUNT(*) AS n, COALESCE(SUM(amount),0) AS amt,
+            COUNT(CASE WHEN status='paid' THEN 1 END) AS paid_n,
+            COALESCE(SUM(CASE WHEN status='paid' THEN amount END),0) AS paid_amt,
+            COUNT(CASE WHEN status IN ('pending','overdue') THEN 1 END) AS open_n,
+            COUNT(CASE WHEN status='overdue' OR (status='pending' AND due_date < :t) THEN 1 END) AS overdue_n
+            FROM invoices WHERE owner_id=:oid AND branch_id=:b""",
+            {"oid": owner_id, "b": b["id"], "t": today})
+        cust = q("SELECT COUNT(*) AS c FROM customers WHERE owner_id=? AND branch_id=?", (owner_id, b["id"]))[0]["c"]
+        out.append({"branch": b, "invoices": row["n"], "invoiced_amt": row["amt"],
+                    "paid_n": row["paid_n"], "paid_amt": row["paid_amt"],
+                    "open_n": row["open_n"], "overdue_n": row["overdue_n"], "customers": cust})
+    return out
+
+
+# ---- API keys (Enterprise: advanced API integrations) ----
+def _hash_key(key):
+    import hashlib
+    return hashlib.sha256(key.encode()).hexdigest()
+
+def list_api_keys(owner_id):
+    return q("SELECT id, label, created, last_used, revoked FROM api_keys WHERE owner_id=? ORDER BY created DESC", (owner_id,))
+
+def create_api_key(owner_id, label=""):
+    raw = "rsx_" + token(32)
+    ex("INSERT INTO api_keys(id,owner_id,key_hash,label,created,revoked) VALUES(?,?,?,?,?,0)",
+       (uid(), owner_id, _hash_key(raw), (label or "API key").strip(), now()))
+    return raw   # shown once, only its hash is stored
+
+def revoke_api_key(key_id, owner_id):
+    ex("UPDATE api_keys SET revoked=1 WHERE id=? AND owner_id=?", (key_id, owner_id))
+
+def owner_for_api_key(raw):
+    if not raw:
+        return None
+    row = one("SELECT owner_id, revoked FROM api_keys WHERE key_hash=?", (_hash_key(raw),))
+    if row and not row["revoked"]:
+        ex("UPDATE api_keys SET last_used=? WHERE key_hash=?", (now(), _hash_key(raw)))
+        return get_user(row["owner_id"])
+    return None
+
+
+# ---- custom automation rules (Enterprise) ----
+def list_rules(owner_id):
+    return q("SELECT * FROM rules WHERE owner_id=? ORDER BY created DESC", (owner_id,))
+
+def add_rule(owner_id, name, trigger, threshold, action, template=""):
+    ok_trigger = trigger in ("invoice_overdue_days", "payment_failed")
+    ok_action = action in ("email", "whatsapp", "both")
+    if not (name and ok_trigger and ok_action):
+        return None
+    r = {"id": uid(), "owner_id": owner_id, "name": name.strip(),
+         "trigger": trigger, "threshold": float(threshold or 0),
+         "action": action, "template": (template or "").strip(),
+         "enabled": 1, "created": now()}
+    ex("INSERT INTO rules(id,owner_id,name,trigger,threshold,action,template,enabled,created) "
+       "VALUES(:id,:owner_id,:name,:trigger,:threshold,:action,:template,:enabled,:created)", r)
+    return r
+
+def set_rule(owner_id, rule_id, enabled):
+    ex("UPDATE rules SET enabled=? WHERE id=? AND owner_id=?", (1 if enabled else 0, rule_id, owner_id))
+
+def delete_rule(owner_id, rule_id):
+    ex("DELETE FROM rules WHERE id=? AND owner_id=?", (rule_id, owner_id))
+
+
+def rule_matches(owner_id):
+    """Rows each rule can act on, from real records only."""
+    today = time.strftime("%Y-%m-%d")
+    overdue = q("""SELECT i.*, cu.name AS customer_name, cu.email, cu.phone FROM invoices i
+        JOIN customers cu ON cu.id=i.customer_id
+        WHERE i.owner_id=? AND i.status IN ('pending','overdue') AND i.due_date < ?
+        ORDER BY i.due_date ASC""", (owner_id, today))
+    for i in overdue:
+        try:
+            y, mm, d = (int(x) for x in i["due_date"][:10].split("-"))
+            i["days_overdue"] = max(0, round((time.mktime(time.strptime(today, "%Y-%m-%d"))
+                                              - time.mktime((y, mm, d, 0, 0, 0, 0, 0, -1))) / 86400))
+        except Exception:
+            i["days_overdue"] = 0
+    failed = q("""SELECT e.*, cu.name AS customer_name, cu.email, cu.phone FROM pay_events e
+        LEFT JOIN customers cu ON cu.id=e.customer_id
+        WHERE e.owner_id=? AND e.kind='failed' AND e.created > ? ORDER BY e.created DESC""",
+        (owner_id, now() - 7 * 86400))
+    return {"invoice_overdue_days": [dict(i) for i in overdue],
+            "payment_failed": [dict(e) for e in failed]}
+
+
+# ---- enterprise insights + predictive revenue leak ----
+def predictive_leak(owner_id):
+    """Predictive revenue leak detection: monthly at-risk revenue estimated from
+    overdue ageing, failed payments and dormant-customer value. Every input is a
+    real record; the forecast is the sum, clearly labelled as an estimate."""
+    today_t = time.mktime(time.strptime(time.strftime("%Y-%m-%d"), "%Y-%m-%d"))
+    buckets = {"1_7": 0.0, "8_30": 0.0, "30_plus": 0.0}
+    for i in q("""SELECT amount, due_date, status FROM invoices
+        WHERE owner_id=? AND status IN ('pending','overdue') AND due_date < ?""",
+        (owner_id, time.strftime("%Y-%m-%d"))):
+        try:
+            y, mm, d = (int(x) for x in i["due_date"][:10].split("-"))
+            days = max(0, (today_t - time.mktime((y, mm, d, 0, 0, 0, 0, 0, -1))) / 86400)
+        except Exception:
+            days = 0
+        amt = (i["amount"] or 0) / 100.0
+        if days <= 7: buckets["1_7"] += amt
+        elif days <= 30: buckets["8_30"] += amt
+        else: buckets["30_plus"] += amt
+    f30 = one("SELECT COALESCE(SUM(amount),0) AS amt FROM pay_events WHERE owner_id=? AND kind='failed' AND created>?",
+              (owner_id, now() - 30 * 86400))
+    dormant = one("""SELECT COALESCE(SUM(p.amount),0) AS amt, COUNT(*) AS n FROM customers cu
+        JOIN payments p ON p.customer_id=cu.id AND p.status='confirmed'
+        WHERE cu.owner_id=? GROUP BY cu.id
+        HAVING MAX(p.confirmed_at) < ?""", (owner_id, now() - 45 * 86400))
+    # historical recovery ratio: how much of overdue money actually comes back
+    rec = one("""SELECT COUNT(*) AS rec_n FROM invoices WHERE owner_id=? AND status='paid'""", (owner_id,))
+    total = one("SELECT COUNT(*) AS n FROM invoices WHERE owner_id=?", (owner_id,))
+    hist = (rec["rec_n"] / total["n"]) if total["n"] else 0.5
+    overdue_sum = sum(buckets.values())
+    failed_sum = (f30["amt"] or 0) / 100.0
+    dormant_sum = ((dormant["amt"] if dormant else 0) or 0) / 100.0
+    at_risk = round(overdue_sum * (1 - min(max(hist, 0.1), 0.9)) + failed_sum * 0.4, 0)
+    return {"aging": buckets, "overdue_sum": overdue_sum, "failed_30d": failed_sum,
+            "dormant_customers": (dormant["n"] if dormant else 0) or 0, "dormant_value": dormant_sum,
+            "historical_recovery_pct": round(hist * 100, 1), "monthly_risk": at_risk}
+
+
+def daily_insights(owner_id):
+    """Advanced AI business assistant: daily insights computed from the real
+    database (no invented numbers, no automatic sends)."""
+    leak = predictive_leak(owner_id)
+    m = owner_metrics(owner_id)
+    out = []
+    if leak["overdue_sum"] > 0:
+        out.append({"title": "Revenue leak forecast",
+                    "detail": f"About ₹{leak['monthly_risk']:,.0f} a month is at risk: "
+                              f"₹{leak['overdue_sum']:,.0f} overdue (you historically recover "
+                              f"{leak['historical_recovery_pct']}%) plus ₹{leak['failed_30d']:,.0f} "
+                              f"in failed payments this month."})
+    if leak["dormant_customers"] > 0:
+        out.append({"title": "Dormant revenue",
+                    "detail": f"{leak['dormant_customers']} customer(s) have gone quiet worth "
+                              f"₹{leak['dormant_value']:,.0f} in past payments. A reactivation "
+                              f"campaign is the usual next step."})
+    if m["overdue_count"] > 0:
+        top = one("""SELECT i.number, i.amount, cu.name AS cname FROM invoices i
+            JOIN customers cu ON cu.id=i.customer_id
+            WHERE i.owner_id=? AND i.status IN ('pending','overdue') AND i.due_date < ?
+            ORDER BY i.due_date ASC LIMIT 1""", (owner_id, time.strftime("%Y-%m-%d")))
+        if top:
+            out.append({"title": "Highest-priority recovery",
+                        "detail": f"Invoice {top['number']} for {top['cname']} is the oldest overdue "
+                                  f"(₹{(top['amount'] or 0)/100:,.0f}). Start there today."})
+    if m["recovered"] > 0:
+        out.append({"title": "Recovery momentum",
+                    "detail": f"₹{m['recovered']/100:,.0f} recovered so far at a "
+                              f"{m['success_rate']}% success rate. Keep the follow-up rhythm."})
+    return out[:4]

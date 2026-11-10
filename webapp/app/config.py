@@ -97,3 +97,31 @@ YOUPI_MERCHANT_ID = os.environ.get("YOUPI_MERCHANT_ID", "")
 MANUAL_UPI_ID = os.environ.get("MANUAL_UPI_ID", "")   # owner UPI handle, set in Render env (kept out of the public repo)
 MANUAL_UPI_PAYEE = os.environ.get("MANUAL_UPI_PAYEE", "RecurSaathi")
 ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "changeme-admin")  # for mark-paid endpoint
+
+# ---- Plan feature entitlements -------------------------------------------
+# A feature only appears in the UI or API when it is implemented in the app.
+# These keys gate exactly that: Enterprise adds ten capabilities on top of
+# everything in Growth. Starter and Growth keep every existing feature.
+FEATURE_LABELS = {
+    "multi_branch": "Multi-branch management (up to 5 branches)",
+    "custom_rules": "Custom automation rules",
+    "api_access": "Advanced API integrations (REST API + keys)",
+    "custom_reports": "Custom business reports (PDF)",
+    "advanced_permissions": "Advanced employee permissions (manager role)",
+    "predictive_leaks": "Predictive revenue leak detection",
+    "advanced_assistant": "Advanced AI business assistant (daily insights)",
+    "priority_support": "Priority support",
+    "onboarding": "Dedicated onboarding",
+}
+
+PLAN_FEATURES = {
+    "starter": [],
+    "growth": [],
+    "enterprise": ["multi_branch", "custom_rules", "api_access", "custom_reports",
+                   "advanced_permissions", "predictive_leaks", "advanced_assistant",
+                   "priority_support", "onboarding"],
+}
+
+def has_feature(plan, key):
+    """Backend entitlement check: is this feature part of the plan?"""
+    return key in PLAN_FEATURES.get(plan_key(plan), [])

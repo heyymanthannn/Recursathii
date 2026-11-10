@@ -1,0 +1,38 @@
+{% extends "base.html" %}{% block content %}
+<div class="formcard">
+<h1>Branches</h1>
+<p class="sub">Run every location from one dashboard. Records stay shared; each branch gets its own numbers.</p>
+{% if err %}<div class="err">{{ err }}</div>{% endif %}
+<form method="post" action="/branches/add" class="stack">
+  <div><label>Branch name</label><input name="name" required placeholder="Koramangala store"></div>
+  <div><label>City / area (optional)</label><input name="city" placeholder="Bengaluru"></div>
+  <button class="btn">Add branch</button>
+</form>
+</div>
+<h2>Branches ({{ branches | length }} / {{ max_branches }})</h2>
+<table><thead><tr><th>Name</th><th>City</th><th>Customers</th><th>Invoices</th><th>Recovered</th><th>Outstanding</th><th>Overdue</th><th></th></tr></thead><tbody>
+{% for s in stats %}<tr>
+  <td><b>{{ s.branch.name }}</b></td><td>{{ s.branch.city or "-" }}</td><td>{{ s.customers }}</td>
+  <td>{{ s.invoices }} ({{ inr(s.invoiced_amt) }})</td><td>{{ inr(s.paid_amt) }}</td>
+  <td>{{ inr(s.invoiced_amt - s.paid_amt) }}</td><td>{{ s.overdue_n }}</td>
+  <td class="actcell">
+    <form method="post" action="/branches/delete" style="display:inline"><input type="hidden" name="bid" value="{{ s.branch.id }}"><button class="btn sm ghost">Remove</button></form>
+  </td>
+</tr>{% else %}<tr><td colspan="8"><div class="empty">No branches yet. Add your first location above; every record starts in the main view.</div></td></tr>{% endfor %}
+</tbody></table>
+<div class="card formcard" style="margin-top:14px">
+<h2 style="margin-top:0">Assign a record to a branch</h2>
+<form method="post" action="/branches/assign" class="stack">
+  <div><label>Record</label><select name="item_id">
+    {% for c in customers %}<option value="{{ c.id }}">{{ c.name }} (customer)</option>{% endfor %}
+  </select></div>
+  <div><label>Branch</label><select name="branch_id">
+    <option value="">Main / unassigned</option>
+    {% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}
+  </select></div>
+  <input type="hidden" name="kind" value="customer">
+  <button class="btn ghost">Assign</button>
+</form>
+<p class="muted">Invoices inherit their branch from the customer when you assign one here. Cross-branch totals above are always from real records.</p>
+</div>
+{% endblock %}

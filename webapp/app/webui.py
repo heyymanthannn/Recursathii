@@ -12,7 +12,7 @@ def _role_gate(request: Request):
     u = auth.current_user(request)
     if not u:
         return
-    if u["role"] in ("staff", "viewer") and request.url.path.startswith(("/billing", "/settings", "/team", "/admin")):
+    if u["role"] in ("staff", "viewer", "manager") and request.url.path.startswith(("/billing", "/settings", "/team", "/admin")):
         raise HTTPException(status_code=403, detail="Owner access only")
     if request.method == "POST" and u["role"] == "viewer" and request.url.path not in ("/login", "/logout"):
         raise HTTPException(status_code=403, detail="Viewers have read-only access")
@@ -39,6 +39,13 @@ def render(name, request, user=None, **ctx):
                                  trial_left=trial_left, **ctx))
 
 def inr(p): return f"\u20b9{p/100:,.0f}"
+
+def feature_gate(user, key):
+    """Enterprise feature entitlement check. Returns a redirect when the plan
+    does not include the feature, else None."""
+    if not user or not config.has_feature(user.get("plan") or "starter", key):
+        return RedirectResponse("/billing?blocked=" + key, status_code=303)
+    return None
 
 
 def _wa_link(o):
@@ -78,6 +85,7 @@ def guard(request):
         models.update_user(owner["id"], plan_status="expired")
         row["plan_status"] = "expired"
     row["read_only"] = row["plan_status"] == "expired"
+    row["features"] = config.PLAN_FEATURES.get(config.plan_key(row.get("plan") or "starter"), [])
     return row
 
 # ---------- auth pages ----------
@@ -221,8 +229,12 @@ async def dashboard(request: Request):
     if user["plan_status"] == "trialing" and user["trial_ends"]:
         days = int((user["trial_ends"] - time.time()) // 86400)
         trial_left = f"{max(days,0)} days left in your free trial" if days >= 0 else "Your trial has ended"
+    leak = models.predictive_leak(user["id"]) if "predictive_leaks" in user.get("features", []) else None
+    insights = models.daily_insights(user["id"]) if "advanced_assistant" in user.get("features", []) else []
+    bstats = models.branch_stats(user["id"]) if "multi_branch" in user.get("features", []) else []
     return render("dashboard.html", request, user=user, tab="dashboard", m=m, chart=chart,
                   acts=acts, pays=pays, fails=fails, ov=ov, inr=inr, trial_left=trial_left, period=period,
+                  leak=leak, insights=insights, bstats=bstats,
                   channel_note=notify.retailer_email_ready(user["id"]) or notify.retailer_whatsapp_ready(user["id"]))
 
 # ---------- customers ----------
@@ -487,7 +499,9 @@ async def team_add(request: Request, name: str = Form(""), email: str = Form("")
     if user.get("read_only") or models.plan_limit_msg(user["id"], "team"):
         return RedirectResponse("/billing?blocked=team", status_code=303)
     team = models.list_team(user["id"])
-    if not name or not email or "@" not in email or role not in ("staff", "viewer"):
+    if role == "manager" and not config.has_feature(user["plan"], "advanced_permissions"):
+        role = "staff"
+    if not name or not email or "@" not in email or role not in ("staff", "viewer", "manager"):
         return render("team.html", request, user=user, tab="team", team=team,
                       new_pw="", new_err="Name, a valid email and a role are required.")
     if models.get_user_by_email(email):
@@ -941,4 +955,293 @@ async def settings_password(request: Request, current_password: str = Form(""),
         return RedirectResponse("/settings?pw=err", status_code=303)
     models.change_password(user["id"], auth.hash_pw(new_password))
     models.log_audit(user["id"], "settings.password", "changed")
+    return RedirectResponse("/settings", status_code=303)
+
+
+# ---------- Enterprise: multi-branch management ----------
+@router.get("/branches", response_class=HTMLResponse)
+async def branches_page(request: Request):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    blocked = feature_gate(user, "multi_branch")
+    if blocked:
+        return blocked
+    stats = models.branch_stats(user["id"])
+    customers = models.q("SELECT id, name FROM customers WHERE owner_id=? ORDER BY name LIMIT 200", (user["id"],))
+    return render("branches.html", request, user=user, tab="branches", stats=stats,
+                  branches=models.list_branches(user["id"]), customers=customers,
+                  max_branches=config.PLANS[config.plan_key(user["plan"])]["branches"],
+                  err="", inr=inr)
+
+@router.post("/branches/add")
+async def branches_add(request: Request, name: str = Form(""), city: str = Form("")):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    blocked = feature_gate(user, "multi_branch")
+    if blocked:
+        return blocked
+    stats = models.branch_stats(user["id"])
+    if len(stats) >= config.PLANS[config.plan_key(user["plan"])]["branches"]:
+        return render("branches.html", request, user=user, tab="branches", stats=stats,
+                      branches=models.list_branches(user["id"]),
+                      customers=models.q("SELECT id, name FROM customers WHERE owner_id=? ORDER BY name LIMIT 200", (user["id"],)),
+                      max_branches=config.PLANS[config.plan_key(user["plan"])]["branches"],
+                      err="Your plan covers 5 branches. Talk to us about more.", inr=inr)
+    models.add_branch(user["id"], name, city)
+    models.log_activity(user["id"], "branches", f"Added branch {name}")
+    return RedirectResponse("/branches", status_code=303)
+
+@router.post("/branches/rename")
+async def branches_rename(request: Request, bid: str = Form(""), name: str = Form(""), city: str = Form("")):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    blocked = feature_gate(user, "multi_branch")
+    if blocked:
+        return blocked
+    if bid and models.get_branch(bid, user["id"]):
+        models.rename_branch(bid, user["id"], name, city)
+    return RedirectResponse("/branches", status_code=303)
+
+@router.post("/branches/delete")
+async def branches_delete(request: Request, bid: str = Form("")):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    blocked = feature_gate(user, "multi_branch")
+    if blocked:
+        return blocked
+    if bid:
+        models.delete_branch(bid, user["id"])
+        models.log_activity(user["id"], "branches", "Removed a branch (its records stay)")
+    return RedirectResponse("/branches", status_code=303)
+
+@router.post("/branches/assign")
+async def branches_assign(request: Request, kind: str = Form("customer"),
+                          item_id: str = Form(""), branch_id: str = Form("")):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    blocked = feature_gate(user, "multi_branch")
+    if blocked:
+        return blocked
+    if kind in ("customer", "invoice") and item_id:
+        models.assign_branch(user["id"], kind, item_id, branch_id)
+    return RedirectResponse("/branches", status_code=303)
+
+
+# ---------- Enterprise: custom automation rules ----------
+@router.get("/rules", response_class=HTMLResponse)
+async def rules_page(request: Request):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    blocked = feature_gate(user, "custom_rules")
+    if blocked:
+        return blocked
+    return render("rules.html", request, user=user, tab="rules", rules=models.list_rules(user["id"]),
+                  usage=models.plan_usage(user["id"]), err="", note="")
+
+@router.post("/rules/add")
+async def rules_add(request: Request, name: str = Form(""), trigger: str = Form(""),
+                    threshold: str = Form(""), action: str = Form(""), template: str = Form("")):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    blocked = feature_gate(user, "custom_rules")
+    if blocked:
+        return blocked
+    if not models.add_rule(user["id"], name, trigger, threshold, action, template):
+        return render("rules.html", request, user=user, tab="rules", rules=models.list_rules(user["id"]),
+                      usage=models.plan_usage(user["id"]),
+                      err="Pick a name, a trigger and an action.", note="")
+    if models.plan_limit_msg(user["id"], "workflows"):
+        return render("rules.html", request, user=user, tab="rules", rules=models.list_rules(user["id"]),
+                      usage=models.plan_usage(user["id"]),
+                      err="Workflow limit reached on your plan.", note="")
+    models.log_activity(user["id"], "rules", f"Added automation rule {name}")
+    return RedirectResponse("/rules", status_code=303)
+
+@router.post("/rules/toggle")
+async def rules_toggle(request: Request, rid: str = Form(""), enabled: str = Form("")):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    blocked = feature_gate(user, "custom_rules")
+    if blocked:
+        return blocked
+    models.set_rule(user["id"], rid, enabled == "1")
+    return RedirectResponse("/rules", status_code=303)
+
+@router.post("/rules/delete")
+async def rules_delete(request: Request, rid: str = Form("")):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    blocked = feature_gate(user, "custom_rules")
+    if blocked:
+        return blocked
+    models.delete_rule(user["id"], rid)
+    return RedirectResponse("/rules", status_code=303)
+
+@router.post("/rules/run")
+async def rules_run(request: Request):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    blocked = feature_gate(user, "custom_rules")
+    if blocked:
+        return blocked
+    if user.get("read_only"):
+        return RedirectResponse("/billing", status_code=303)
+    n = run_custom_rules(user["id"], base_url(request))
+    return render("rules.html", request, user=user, tab="rules", rules=models.list_rules(user["id"]),
+                  usage=models.plan_usage(user["id"]), err="",
+                  note=f"Rules ran: {n} message(s) queued." if n else "Rules ran: nothing matched right now.")
+
+
+def run_custom_rules(owner_id, base=""):
+    """Run enabled custom rules against real records; queue messages in the
+    outbox (deduped, so a customer never gets the same rule twice per invoice)."""
+    from . import automations as auto
+    u = models.get_user(owner_id)
+    if not u:
+        return 0
+    matches = models.rule_matches(owner_id)
+    n = 0
+    for r in models.list_rules(owner_id):
+        if not r["enabled"]:
+            continue
+        thr = float(r["threshold"] or 0)
+        tpl = r["template"]
+        if r["trigger"] == "invoice_overdue_days":
+            rows = [i for i in matches["invoice_overdue_days"] if i["days_overdue"] >= thr]
+        else:
+            rows = [e for e in matches["payment_failed"] if (e.get("amount") or 0) >= thr * 100]
+        for row in rows:
+            cu = models.get_customer(row.get("customer_id")) or {}
+            inv = models.get_invoice(row.get("invoice_id") or row.get("id")) or {}
+            if not cu.get("email") and not cu.get("phone"):
+                continue
+            ctx = auto._ctx(u, inv or {"number": "-", "amount": row.get("amount") or 0,
+                                       "due_date": row.get("due_date", ""), "token": ""},
+                            cu, base)
+            subject = auto._render("Payment reminder from {{business}}", **ctx)
+            body = auto._render(tpl or ("Hi {{customer_name}}, a quick automated reminder about "
+                                        "invoice {{invoice_number}} for {{amount}}. "
+                                        "Pay here: {{payment_link}}"), **ctx)
+            wb = auto._render(tpl or ("Hi {{customer_name}}, a gentle reminder about invoice "
+                                      "{{invoice_number}} for {{amount}}. Pay here: {{payment_link}}"), **ctx)
+            sent = False
+            if r["action"] in ("email", "both") and cu.get("email"):
+                dedupe = f"rule:{r['id']}:{row.get('id')}:email"
+                o = models.queue(owner_id, "email", cu["email"], "custom_rule", subject, body, dedupe=dedupe)
+                if o:
+                    notify.deliver(o)
+                    sent = True
+            if r["action"] in ("whatsapp", "both") and cu.get("phone") and not cu.get("wa_opt_out"):
+                dedupe = f"rule:{r['id']}:{row.get('id')}:wa"
+                o = models.queue(owner_id, "whatsapp", cu["phone"], "custom_rule", subject, wb, dedupe=dedupe)
+                if o:
+                    notify.deliver(o)
+                    sent = True
+            if sent:
+                n += 1
+                models.bump_usage(owner_id, "rules_fires")
+    if n:
+        models.log_activity(owner_id, "rules", f"Custom rules queued {n} message(s)")
+    return n
+
+
+# ---------- Enterprise: custom business reports ----------
+@router.get("/reports", response_class=HTMLResponse)
+async def reports_page(request: Request):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    blocked = feature_gate(user, "custom_reports")
+    if blocked:
+        return blocked
+    return render("reports.html", request, user=user, tab="reports", done="", inr=inr)
+
+@router.post("/reports/generate")
+async def reports_generate(request: Request, title: str = Form("Business report"),
+                           sections: str = Form("")):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    blocked = feature_gate(user, "custom_reports")
+    if blocked:
+        return blocked
+    from . import pdfgen
+    picked = [s_ for s_ in (sections or "").split(",") if s_]
+    m = models.owner_metrics(user["id"])
+    today = time.strftime("%Y-%m-%d")
+    out = []
+    if not picked or "overview" in picked:
+        out.append(("Overview", [
+            ["Metric", "Value"],
+            ["Total invoices", str(m["total"])],
+            ["Recovered", inr(m["recovered"])],
+            ["Outstanding", inr(m["outstanding"])],
+            ["Overdue invoices", str(m["overdue_count"])],
+            ["Recovery rate", f"{m['success_rate']}%"],
+            ["Failed payments", f"{m['failed_count']} ({inr(m['failed_amount'])})"],
+        ], [110, 90]))
+    if "monthly" in picked:
+        rows = [[r["m"], str(r["invoiced"]), inr(r["invoiced_amt"]), inr(r["recovered"])]
+                for r in models.monthly_summary(user["id"], 6)]
+        out.append(("Monthly invoiced vs recovered", [["Month", "Invoices", "Invoiced", "Recovered"]] + rows, [40, 40, 60, 60]))
+    if "aging" in picked:
+        leak = models.predictive_leak(user["id"])
+        out.append(("Overdue ageing (at-risk estimate)", [
+            ["Ageing bucket", "Amount"],
+            ["1-7 days", f"Rs {leak['aging']['1_7']:,.0f}"],
+            ["8-30 days", f"Rs {leak['aging']['8_30']:,.0f}"],
+            ["30+ days", f"Rs {leak['aging']['30_plus']:,.0f}"],
+            ["Estimated monthly revenue at risk", f"Rs {leak['monthly_risk']:,.0f}"],
+        ], [110, 90]))
+    if "customers" in picked:
+        rows = models.q("""SELECT cu.name, COUNT(i.id) AS n, COALESCE(SUM(i.amount),0) AS amt
+            FROM customers cu JOIN invoices i ON i.customer_id=cu.id
+            WHERE cu.owner_id=? GROUP BY cu.id ORDER BY amt DESC LIMIT 10""", (user["id"],))
+        out.append(("Top customers by invoiced value", [["Customer", "Invoices", "Value"]] +
+                    [[r["name"], str(r["n"]), inr(r["amt"])] for r in rows], [90, 40, 70]))
+    if "failed" in picked:
+        rows = [[r["code"], str(r["n"]), inr(r["amt"])] for r in models.decline_breakdown(user["id"])]
+        out.append(("Failed payment reasons", [["Reason", "Count", "Amount"]] + rows, [90, 40, 70]))
+    data = pdfgen.business_report_pdf_bytes(user, title or "Business report", out)
+    models.log_audit(user["id"], "reports.generate", ",".join(picked))
+    return Response(data, media_type="application/pdf",
+                    headers={"Content-Disposition": 'attachment; filename="business-report.pdf"'})
+
+
+# ---------- Enterprise: API keys (settings) ----------
+@router.post("/settings/apikey/generate")
+async def settings_apikey_generate(request: Request, label: str = Form("")):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    blocked = feature_gate(user, "api_access")
+    if blocked:
+        return blocked
+    raw = models.create_api_key(user["id"], label)
+    models.log_audit(user["id"], "apikey.generate", label or "")
+    has_rzp = bool(payments.owner_creds(user))
+    cn = models.get_connect(user["id"]) or {}
+    return render("settings.html", request, user=user, tab="settings", has_rzp=has_rzp, inr=inr, cn=cn,
+                  api_keys=models.list_api_keys(user["id"]), new_api_key=raw)
+
+@router.post("/settings/apikey/revoke")
+async def settings_apikey_revoke(request: Request, kid: str = Form("")):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    blocked = feature_gate(user, "api_access")
+    if blocked:
+        return blocked
+    models.revoke_api_key(kid, user["id"])
+    models.log_audit(user["id"], "apikey.revoke", kid)
     return RedirectResponse("/settings", status_code=303)

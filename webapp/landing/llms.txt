@@ -20,3 +20,4 @@ Links:
 - [FAQ](https://recursathii.onrender.com/#faq)
 - [Privacy policy](https://recursathii.onrender.com/privacy)
 - [Terms of service](https://recursathii.onrender.com/terms)
+- Enterprise plan adds: multi-branch management (up to 5 branches), custom automation rules, REST API integrations with API keys (/api/v1), custom business reports (PDF), advanced employee permissions (manager role), predictive revenue leak detection, advanced AI business assistant with daily insights, priority support, dedicated onboarding.

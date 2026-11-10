@@ -27,6 +27,9 @@
     <a href="/payments" class="{{ 'on' if active_tab=='payments' }}"><span class="msym">payments</span><span class="navtext">Payments</span></a>
     <a href="/campaigns" class="{{ 'on' if active_tab=='campaigns' }}"><span class="msym">campaign</span><span class="navtext">Campaigns</span></a>
     <a href="/analytics" class="{{ 'on' if active_tab=='analytics' }}"><span class="msym">analytics</span><span class="navtext">Analytics</span></a>
+    {% if user and 'multi_branch' in user.get('features', []) %}<a href="/branches" class="{{ 'on' if active_tab=='branches' }}"><span class="msym">account_tree</span><span class="navtext">Branches</span></a>{% endif %}
+    {% if user and 'custom_rules' in user.get('features', []) %}<a href="/rules" class="{{ 'on' if active_tab=='rules' }}"><span class="msym">tune</span><span class="navtext">Custom Rules</span></a>{% endif %}
+    {% if user and 'custom_reports' in user.get('features', []) %}<a href="/reports" class="{{ 'on' if active_tab=='reports' }}"><span class="msym">description</span><span class="navtext">Reports</span></a>{% endif %}
     <a href="/integrations" class="{{ 'on' if active_tab=='integrations' }}"><span class="msym">extension</span><span class="navtext">Integrations</span></a>
     <a href="/billing" class="{{ 'on' if active_tab=='subscription' }}"><span class="msym">card_membership</span><span class="navtext">Subscription</span></a>
     <a href="/settings" class="{{ 'on' if active_tab=='settings' }}"><span class="msym">settings</span><span class="navtext">Settings</span></a>

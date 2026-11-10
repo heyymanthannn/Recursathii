@@ -543,6 +543,11 @@ def _automation_worker():
                     _auto.run_for_owner(o, config.BASE_URL)
                 except Exception:
                     pass
+                try:
+                    from .webui import run_custom_rules
+                    run_custom_rules(o["id"], config.BASE_URL)
+                except Exception:
+                    pass
             # flush messages that queued while a channel was missing
             try:
                 pending = _models.q("SELECT * FROM outbox WHERE status IN ('pending','no_channel') ORDER BY created LIMIT 50")
@@ -592,3 +597,52 @@ async def platform_webhook_extended(request: Request,
     fe = engine.ingest(payload)
     extra = webhook_ext.handle(payload, base)
     return {"ok": True, "engine": fe is not None, "invoice": extra}
+
+
+# ---------------- Enterprise REST API (API-key authenticated) ----------------
+from fastapi import Header as _Header
+
+def _api_owner(x_api_key: str | None):
+    owner = _models.owner_for_api_key(x_api_key or "")
+    if not owner:
+        raise _HTTPException(status_code=401, detail="Invalid or missing API key")
+    if not config.has_feature(owner.get("plan") or "starter", "api_access"):
+        raise _HTTPException(status_code=403, detail="API access is an Enterprise feature")
+    return owner
+
+@app.get("/api/v1/customers")
+async def api_v1_customers(request: Request, x_api_key: str | None = _Header(default=None),
+                           limit: int = 100, offset: int = 0):
+    """List customers (Enterprise API). Auth: X-API-Key header."""
+    owner = _api_owner(x_api_key)
+    limit = max(1, min(limit, 500))
+    rows = _models.q("SELECT id, name, email, phone, notes, created FROM customers "
+                     "WHERE owner_id=? ORDER BY created DESC LIMIT ? OFFSET ?",
+                     (owner["id"], limit, max(0, offset)))
+    total = _models.q("SELECT COUNT(*) AS c FROM customers WHERE owner_id=?", (owner["id"],))[0]["c"]
+    return {"count": len(rows), "total": total, "customers": rows}
+
+@app.get("/api/v1/invoices")
+async def api_v1_invoices(request: Request, x_api_key: str | None = _Header(default=None),
+                          status: str = "", limit: int = 100, offset: int = 0):
+    """List invoices (Enterprise API). Auth: X-API-Key header."""
+    owner = _api_owner(x_api_key)
+    limit = max(1, min(limit, 500))
+    if status not in ("", "pending", "overdue", "paid"):
+        status = ""
+    where, args = "owner_id=?", [owner["id"]]
+    if status:
+        where += " AND status=?"
+        args.append(status)
+    rows = _models.q(f"SELECT id, number, amount, due_date, status, created, paid_at "
+                     f"FROM invoices WHERE {where} ORDER BY created DESC LIMIT ? OFFSET ?",
+                     args + [limit, max(0, offset)])
+    total = _models.q(f"SELECT COUNT(*) AS c FROM invoices WHERE {where}", args)[0]["c"]
+    return {"count": len(rows), "total": total, "invoices": rows}
+
+@app.get("/api/v1/summary")
+async def api_v1_summary(request: Request, x_api_key: str | None = _Header(default=None)):
+    """Key recovery metrics (Enterprise API). Auth: X-API-Key header."""
+    owner = _api_owner(x_api_key)
+    return {"metrics": _models.owner_metrics(owner["id"]), "usage": _models.plan_usage(owner["id"])}
+

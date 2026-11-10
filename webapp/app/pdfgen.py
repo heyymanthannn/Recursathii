@@ -72,3 +72,46 @@ def invoice_pdf_bytes(inv, cu, user, pay_url=""):
     return bytes(pdf.output())
 
 import time  # noqa: E402  (used for the issued date)
+
+
+def _tbl(pdf, headers, rows, widths):
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.set_fill_color(245, 245, 250)
+    for h, w in zip(headers, widths):
+        pdf.cell(w, 8, h, border=1, fill=True)
+    pdf.ln()
+    pdf.set_font("Helvetica", "", 10)
+    for row in rows:
+        for cell, w in zip(row, widths):
+            pdf.cell(w, 8, str(cell), border=1)
+        pdf.ln()
+
+def business_report_pdf_bytes(user, title, sections):
+    """Custom business report (Enterprise): each section is
+    (heading, [table headers], [rows], [col widths]) or (heading, paragraph)."""
+    pdf = FPDF(format="A4")
+    pdf.set_auto_page_break(auto=True, margin=18)
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", 20)
+    pdf.cell(0, 12, title, new_x="LMARGIN", new_y="NEXT")
+    pdf.set_font("Helvetica", "", 11)
+    pdf.set_text_color(90, 90, 100)
+    pdf.cell(0, 7, user["business"] or user["name"] or "", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 7, time.strftime("Generated %d %b %Y, %H:%M"), new_x="LMARGIN", new_y="NEXT")
+    pdf.set_text_color(0, 0, 0)
+    pdf.ln(4)
+    for sec in sections:
+        heading, payload = sec[0], sec[1]
+        pdf.ln(2)
+        pdf.set_font("Helvetica", "B", 13)
+        pdf.cell(0, 9, heading, new_x="LMARGIN", new_y="NEXT")
+        pdf.set_draw_color(220, 220, 228)
+        if payload and isinstance(payload, list) and payload and isinstance(payload[0], (list, tuple)):
+            headers, rows, widths = payload
+            pdf.set_font("Helvetica", "", 10)
+            _tbl(pdf, headers, rows, widths)
+        else:
+            pdf.set_font("Helvetica", "", 11)
+            pdf.multi_cell(0, 7, str(payload or ""))
+        pdf.ln(2)
+    return bytes(pdf.output())

@@ -21,6 +21,34 @@
 <div class="card"><div class="label"><span class="msym kicon">person_search</span>Dormant customers</div><div class="kpi purple"><a href="/radar">view in Radar</a></div></div>
 </div>
 
+
+{% if leak or insights or bstats %}
+<div class="grid2" style="margin-top:14px">
+  <div>
+    {% if insights %}
+    <h2>Enterprise daily insights</h2>
+    <div class="card">{% for i in insights %}<div class="actrow"><b>{{ i.title }}</b><br>{{ i.detail }}</div>{% endfor %}</div>
+    {% endif %}
+    {% if leak %}
+    <h2>Predictive revenue leak</h2>
+    <div class="card">
+      <div class="kpi purple">{{ "Rs {:,.0f}".format(leak.monthly_risk) if leak.monthly_risk else "Rs 0" }} <span class="badge-note">estimated monthly at risk</span></div>
+      <p class="muted" style="margin:6px 0 0">Overdue Rs {{ "{:,.0f}".format(leak.overdue_sum) }} (1-7d Rs {{ "{:,.0f}".format(leak.aging["1_7"]) }} · 8-30d Rs {{ "{:,.0f}".format(leak.aging["8_30"]) }} · 30d+ Rs {{ "{:,.0f}".format(leak.aging["30_plus"]) }}), failed payments 30d Rs {{ "{:,.0f}".format(leak.failed_30d) }}, {{ leak.dormant_customers }} dormant customer(s) worth Rs {{ "{:,.0f}".format(leak.dormant_value) }}. You historically recover {{ leak.historical_recovery_pct }}%. Estimate from your real records.</p>
+    </div>
+    {% endif %}
+  </div>
+  <div>
+    {% if bstats %}
+    <h2>Branches</h2>
+    <div class="card"><table>
+      <tr><th>Branch</th><th>Recovered</th><th>Outstanding</th><th>Overdue</th></tr>
+      {% for b in bstats %}<tr><td>{{ b.branch.name }}</td><td>{{ inr(b.paid_amt) }}</td><td>{{ inr(b.invoiced_amt - b.paid_amt) }}</td><td>{{ b.overdue_n }}</td></tr>{% endfor %}
+    </table><p class="muted" style="margin:8px 0 0">Manage branches on the Branches page.</p></div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
 <h2>Workspaces</h2>
 <div class="tiles">
   <a class="tile" href="/dashboard"><span class="msym">dashboard</span><b>Overview</b><i>Metrics and recent activity</i></a>

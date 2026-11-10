@@ -1,4 +1,18 @@
 {% extends "base.html" %}{% block title %}Settings · RecurSaathi
+<div class="card formcard"><h2 style="margin-top:0">API access (Enterprise)</h2>
+<p class="muted">Connect your own software to RecurSaathi with a REST API. Send the key as an X-API-Key header to /api/v1/customers, /api/v1/invoices and /api/v1/summary. Keys are stored hashed; the full key is shown once.</p>
+{% if new_api_key %}<div class="ok">New API key: <b>{{ new_api_key }}</b> &mdash; copy it now, it is not shown again.</div>{% endif %}
+<form method="post" action="/settings/apikey/generate" class="stack">
+<div><label>Key label</label><input name="label" placeholder="My inventory app"></div>
+<button class="btn ghost">Generate API key</button>
+</form>
+{% if api_keys %}<table>
+<tr><th>Label</th><th>Created</th><th>Status</th><th></th></tr>
+{% for k in api_keys %}<tr><td>{{ k.label or "API key" }}</td><td>{{ k.created | datetime }}</td>
+<td><span class="pill {{ 'sent' if not k.revoked else 'pending' }}">{{ "Active" if not k.revoked else "Revoked" }}</span></td>
+<td>{% if not k.revoked %}<form method="post" action="/settings/apikey/revoke"><input type="hidden" name="kid" value="{{ k.id }}"><button class="btn sm ghost">Revoke</button></form>{% endif %}</td></tr>{% endfor %}
+</table>{% endif %}
+</div>
 <div class="card" style="margin-top:20px">
 <h2>Password</h2>
 <form method="post" action="/settings/password" class="stack">
@@ -79,6 +93,20 @@
 </form></div>
 </div>
 
+<div class="card formcard"><h2 style="margin-top:0">API access (Enterprise)</h2>
+<p class="muted">Connect your own software to RecurSaathi with a REST API. Send the key as an X-API-Key header to /api/v1/customers, /api/v1/invoices and /api/v1/summary. Keys are stored hashed; the full key is shown once.</p>
+{% if new_api_key %}<div class="ok">New API key: <b>{{ new_api_key }}</b> &mdash; copy it now, it is not shown again.</div>{% endif %}
+<form method="post" action="/settings/apikey/generate" class="stack">
+<div><label>Key label</label><input name="label" placeholder="My inventory app"></div>
+<button class="btn ghost">Generate API key</button>
+</form>
+{% if api_keys %}<table>
+<tr><th>Label</th><th>Created</th><th>Status</th><th></th></tr>
+{% for k in api_keys %}<tr><td>{{ k.label or "API key" }}</td><td>{{ k.created | datetime }}</td>
+<td><span class="pill {{ 'sent' if not k.revoked else 'pending' }}">{{ "Active" if not k.revoked else "Revoked" }}</span></td>
+<td>{% if not k.revoked %}<form method="post" action="/settings/apikey/revoke"><input type="hidden" name="kid" value="{{ k.id }}"><button class="btn sm ghost">Revoke</button></form>{% endif %}</td></tr>{% endfor %}
+</table>{% endif %}
+</div>
 <div class="card" style="margin-top:20px">
 <h2>Password</h2>
 <form method="post" action="/settings/password" class="stack">
