@@ -30,6 +30,7 @@
    "applicationCategory": "BusinessApplication",
    "operatingSystem": "Web",
    "description": "Failed payment and revenue recovery for Indian subscription businesses.",
+   "featureList": "RBI-timed payment retries by decline code, WhatsApp and email payment nudges, one-tap UPI payment links, overdue invoice follow-ups, dormant customer recovery, revenue analytics",
    "url": "https://recursathii.onrender.com/",
    "offers": {
     "@type": "OfferCatalog",
@@ -38,21 +39,21 @@
      {
       "@type": "Offer",
       "name": "Starter",
-      "price": "2999",
+      "price": "999",
       "priceCurrency": "INR"
      },
      {
       "@type": "Offer",
       "name": "Growth",
-      "price": "7999",
+      "price": "2499",
       "priceCurrency": "INR"
      },
      {
       "@type": "Offer",
       "name": "Scale",
-      "price": "0.10",
+      "price": "5999",
       "priceCurrency": "INR",
-      "description": "10% of recovered revenue"
+      "description": "Full platform with AI Recovery Assistant"
      }
     ]
    }
@@ -62,7 +63,7 @@
    "mainEntity": [
     {
      "@type": "Question",
-     "name": "Do you hold my customers' money?+",
+     "name": "Do you hold my customers' money?",
      "acceptedAnswer": {
       "@type": "Answer",
       "text": "No. Customer invoices pay your own Razorpay account or your own UPI ID. RecurSaathi automates, tracks and reports. Money never flows through us."
@@ -70,7 +71,7 @@
     },
     {
      "@type": "Question",
-     "name": "Do I need Razorpay to get started?+",
+     "name": "Do I need Razorpay to get started?",
      "acceptedAnswer": {
       "@type": "Answer",
       "text": "No. Manual UPI mode works from day one: generate a payment page and QR for your UPI ID, and mark the invoice paid when the money lands. Connect Razorpay whenever you outgrow it."
@@ -78,7 +79,7 @@
     },
     {
      "@type": "Question",
-     "name": "What happens before I connect email and WhatsApp?+",
+     "name": "What happens before I connect email and WhatsApp?",
      "acceptedAnswer": {
       "@type": "Answer",
       "text": "Automations are built and queued, and every message is honestly marked \"no channel\" instead of pretending to send. Connect your SMTP or WhatsApp Business API key and they start going out for real."
@@ -86,7 +87,7 @@
     },
     {
      "@type": "Question",
-     "name": "Are retries RBI-compliant?+",
+     "name": "Are retries RBI-compliant?",
      "acceptedAnswer": {
       "@type": "Answer",
       "text": "Yes. UPI Autopay and card retry windows follow RBI rules, including the 24-hour, 72-hour and day-7 windows. We never blind-retry hard declines like invalid cards."
@@ -94,7 +95,7 @@
     },
     {
      "@type": "Question",
-     "name": "Is my data safe?+",
+     "name": "Is my data safe?",
      "acceptedAnswer": {
       "@type": "Answer",
       "text": "We store gateway tokens, never card numbers or PANs. Passwords are salted and hashed. Every webhook is signature-verified, and every automation action lands in an audit trail."
@@ -102,10 +103,26 @@
     },
     {
      "@type": "Question",
-     "name": "Can customers opt out of reminders?+",
+     "name": "Can customers opt out of reminders?",
      "acceptedAnswer": {
       "@type": "Answer",
       "text": "Yes. Every message carries an opt-out link, and opted-out customers are excluded from all future reminders automatically."
+     }
+    }
+    {
+     "@type": "Question",
+     "name": "What is RecurSaathi?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "RecurSaathi is a revenue-recovery tool for Indian subscription businesses. It monitors failed card and UPI payments, retries inside RBI's allowed windows, follows up with WhatsApp and email nudges plus one-tap UPI payment links, and chases overdue invoices and dormant customers. Plans start at ₹999 a month with a 14-day free trial, no card needed."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "How do I recover failed UPI AutoPay payments in India?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Read the failure reason from your gateway response, retry soft declines like insufficient balance inside the allowed RBI windows (24 hours, 72 hours and day 7), and send the customer a same-day WhatsApp nudge with a one-tap UPI payment link. RecurSaathi automates this ladder, and the sequence works with any gateway."
      }
     }
    ]
@@ -548,6 +565,8 @@ footer a:hover{color:var(--ink)}
       <details class="glass reveal"><summary>Are retries RBI-compliant?<span class="plus">+</span></summary><p>Yes. UPI Autopay and card retry windows follow RBI rules, including the 24-hour, 72-hour and day-7 windows. We never blind-retry hard declines like invalid cards.</p></details>
       <details class="glass reveal"><summary>Is my data safe?<span class="plus">+</span></summary><p>We store gateway tokens, never card numbers or PANs. Passwords are salted and hashed. Every webhook is signature-verified, and every automation action lands in an audit trail.</p></details>
       <details class="glass reveal"><summary>Can customers opt out of reminders?<span class="plus">+</span></summary><p>Yes. Every message carries an opt-out link, and opted-out customers are excluded from all future reminders automatically.</p></details>
+      <details class="glass reveal"><summary>What is RecurSaathi?<span class="plus">+</span></summary><p>RecurSaathi is a revenue-recovery tool for Indian subscription businesses. It monitors failed card and UPI payments, retries inside RBI’s allowed windows, follows up with WhatsApp and email nudges plus one-tap UPI payment links, and chases overdue invoices and dormant customers. Plans start at ₹999 a month with a 14-day free trial, no card needed.</p></details>
+      <details class="glass reveal"><summary>How do I recover failed UPI AutoPay payments in India?<span class="plus">+</span></summary><p>Read the failure reason from your gateway response, retry soft declines like insufficient balance inside the allowed RBI windows (24 hours, 72 hours and day 7), and send the customer a same-day WhatsApp nudge with a one-tap UPI payment link. RecurSaathi automates this ladder, and the sequence works with any gateway.</p></details>
     </div>
   </div>
 </section>

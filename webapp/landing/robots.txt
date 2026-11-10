@@ -5,4 +5,20 @@ Disallow: /admin
 Disallow: /dashboard
 Disallow: /pay
 
+# AI answer engines are welcome to read and quote RecurSaathi.
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: PerplexityBot
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+User-agent: meta-externalagent
+User-agent: Amazonbot
+Allow: /
+Disallow: /checkout
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /pay
+
 Sitemap: https://recursathii.onrender.com/sitemap.xml

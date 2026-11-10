@@ -482,6 +482,10 @@ async def guide_page():
 async def robots_txt():
     return FileResponse("landing/robots.txt", media_type="text/plain")
 
+@app.get("/llms.txt", include_in_schema=False)
+async def llms_txt():
+    return FileResponse("landing/llms.txt", media_type="text/markdown")
+
 
 @app.get("/sitemap.xml", include_in_schema=False)
 async def sitemap_xml():
