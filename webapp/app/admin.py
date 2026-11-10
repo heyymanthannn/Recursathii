@@ -29,7 +29,7 @@ async def admin_home(request: Request):
     owners = models.q("SELECT * FROM users WHERE role='owner' ORDER BY created DESC")
     subs_active = [o for o in owners if o["plan_status"] == "active"]
     mrr = sum(1166 for o in subs_active)  # monthly normalized estimate; per-plan below
-    per_plan = {"starter": 2999, "growth": 7999, "scale": 0}
+    per_plan = {"starter": 999, "growth": 4999, "enterprise": 5999, "scale": 5999}
     mrr = sum(per_plan.get(o["plan"], 0) for o in subs_active)
     pays = models.list_plat_pays()
     support = models.list_support()

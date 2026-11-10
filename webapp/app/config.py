@@ -21,44 +21,68 @@ PLANS = {
         "max_mrr_tracked": None,
         "max_team": 1,
         "max_customers": 500,
-        "max_invoices_month": 100,
+        "max_invoices_month": 200,
+        "max_emails_month": 500,
+        "max_ai_ops_month": 100,
+        "max_workflows": 2,
+        "branches": 1,
         "gateways": 1,
-        "features": ["Customer management", "Invoice management", "Basic Recovery Radar",
-                      "Manual UPI payment collection", "Basic analytics", "Email notifications",
-                      "1 team member", "500 customers", "100 invoices/month"],
+        "features": ["Customer management", "Invoice management",
+                      "Recovery Radar (overdue detection)",
+                      "Manual UPI payment collection", "Email reminders",
+                      "Basic analytics", "Failed payment tracking",
+                      "1 team member", "500 customers", "200 invoices/month"],
     },
     "growth": {
         "plan_id_env": "RZP_PLAN_GROWTH",
-        "amount": 249900,            # Rs 2,499/mo
-        "annual_amount": 2499000,    # Rs 24,990/yr
+        "amount": 499900,            # Rs 4,999/mo
+        "annual_amount": 4999000,    # Rs 49,990/yr
         "name": "Growth",
         "trial_days": 14,
         "max_mrr_tracked": None,
         "max_team": 5,
-        "max_customers": 2500,
-        "max_invoices_month": 1000,
+        "max_customers": 5000,
+        "max_invoices_month": 2000,
+        "max_emails_month": 5000,
+        "max_ai_ops_month": 1000,
+        "max_workflows": 10,
+        "branches": 1,
         "gateways": 2,
-        "features": ["Everything in Starter", "Advanced Recovery Radar", "Automated email reminders",
-                      "WhatsApp integration (needs your WhatsApp Business account)", "Dormant customer recovery",
-                      "Failed payment tracking", "Advanced analytics", "5 team members",
-                      "2,500 customers", "1,000 invoices/month"],
+        "features": ["Everything in Starter",
+                      "Automated email & WhatsApp follow-ups (bring your WhatsApp Business account)",
+                      "Dormant customer reactivation", "AI Recovery Assistant",
+                      "Advanced analytics & weekly reports",
+                      "5 team members", "5,000 customers", "2,000 invoices/month"],
     },
-    "scale": {
-        "plan_id_env": "RZP_PLAN_SCALE",
+    "enterprise": {
+        "plan_id_env": "RZP_PLAN_SCALE",   # keeps the existing Razorpay plan env var
         "amount": 599900,            # Rs 5,999/mo
         "annual_amount": 5999000,    # Rs 59,990/yr
-        "name": "Scale",
+        "name": "Enterprise",
         "trial_days": 14,
         "max_mrr_tracked": None,
-        "max_team": 15,
+        "max_team": 10,
         "max_customers": 10000,
         "max_invoices_month": 5000,
+        "max_emails_month": 10000,
+        "max_ai_ops_month": 2500,
+        "max_workflows": 20,
+        "branches": 5,
         "gateways": 99,
-        "features": ["Everything in Growth", "AI Recovery Assistant", "Advanced reports",
-                      "Custom integrations", "Team management", "Priority support",
-                      "15 team members", "10,000 customers", "5,000 invoices/month"],
+        "features": ["Everything in Growth",
+                      "Advanced AI assistant & daily insights",
+                      "Custom business reports", "Team roles & permissions",
+                      "Priority support",
+                      "10 team members", "10,000 customers", "5,000 invoices/month"],
     },
 }
+
+# Older accounts may still carry plan="scale"; it maps to Enterprise.
+PLAN_ALIASES = {"scale": "enterprise"}
+
+
+def plan_key(plan):
+    return PLAN_ALIASES.get(plan, plan)
 
 # Razorpay transaction fee ~2% (verify at activation); GST applies on our invoices.
 RAZORPAY_FEE_PCT = 2.0

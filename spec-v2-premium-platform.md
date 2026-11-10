@@ -1,0 +1,36 @@
+# RECURSATHI — COMPLETE SAAS SUBSCRIPTION, BILLING & AI AUTOMATION SYSTEM
+(from Manthan, received Tue Nov 10, 2026 ~11:35 PM IST. Message truncated mid-section 6 at "6. Wo" — remainder pending.)
+
+PROJECT OVERVIEW
+Upgrade Recursathi into a premium AI-powered Revenue Recovery OS for small and medium-sized businesses.
+Helps businesses: recover overdue invoices; identify dormant customers; recover failed payments; automate customer communication; reduce repetitive manual work; identify revenue leaks; improve business performance using AI.
+Tagline: "Your Business. Your Revenue. Automated."
+Build a fully functional SaaS platform, not a visual demo. Preserve all existing working features and existing customer data.
+
+1. OFFICIAL SUBSCRIPTION PLANS (exactly three)
+- STARTER ₹999/mo — "Essential Business Automation" (small shops, retailers, freelancers). Features: Revenue Recovery Dashboard, Invoice Management, Overdue Invoice Detection, Basic Payment Reminders, Basic Dormant Customer Detection, Failed Payment Tracking, Basic Email Automation, Basic AI Recommendations, Monthly Revenue Recovery Reports, Customer Management, Basic Revenue Analytics, Payment Status Tracking, Basic Business Insights. Limits: 500 customers, 200 invoices/mo, 500 automated emails/mo, 100 AI ops/mo, 2 workflows, 1 staff account, 1 location.
+- GROWTH ₹4,999/mo — "Advanced AI Revenue Recovery", marked MOST POPULAR (growing retailers, agencies, service providers). Everything in Starter plus: Advanced AI Revenue Recovery, Smart Payment Follow-ups, Automated Customer Reactivation, Advanced Failed Payment Monitoring, AI Customer Segmentation, Smart Follow-up Scheduling, Advanced Email Automation, WhatsApp Automation Integration, Custom Automation Workflows, AI Business Recommendations, Advanced Revenue Analytics, Weekly Performance Reports, Recovery Performance Tracking, Customer Behaviour Analysis, Automated Customer Follow-ups, Custom Reminder Templates, Advanced Revenue Leak Detection, Business Performance Insights, Automation Performance Dashboard, Priority Customer Support. Limits: 5,000 customers, 2,000 invoices/mo, 5,000 emails/mo, 1,000 AI ops/mo, 10 workflows, 5 staff accounts, 1 location.
+- ENTERPRISE ₹5,999/mo — "Premium AI Business Automation" (established, multi-location). Everything in Growth plus: Advanced AI Business Assistant, Multiple AI Automation Agents, Predictive Revenue Leak Detection, Multi-Branch Management, Multiple Business Accounts, Advanced Customer Behaviour Analysis, Automated Daily Business Insights, Advanced AI Recovery Strategies, Custom AI Automation Agents, Advanced API Integrations, Third-Party Software Integrations, Custom Business Workflows, Advanced Analytics Dashboard, Custom Business Reports, Employee Permissions Management, Advanced Automation Rules, AI-Powered Business Recommendations, Cross-Branch Revenue Analytics, Centralized Business Management, Advanced Customer Segmentation, Automated Business Performance Reports, Custom Recovery Campaigns, Advanced Notification Management, Dedicated Onboarding, Priority Support. Limits: 25,000 customers, 10,000 invoices/mo, 20,000 emails/mo, 5,000 AI ops/mo, unlimited workflows (fair use), 20 staff accounts, max 10 branches.
+NOTE: current live site is Starter 999 / Growth 2,499 / Scale 5,999 — spec renames Scale to Enterprise and raises Growth to 4,999.
+
+2. ANNUAL PRICING (~2 months free): Starter ₹9,990/yr; Growth ₹49,990/yr; Enterprise ₹59,990/yr. Show monthly equivalent, annual total, savings.
+
+3. FREE TRIAL: 14 days, Growth features, no credit card, no auto-charge, trial countdown in dashboard, expiry notifications, upgrade anytime, expiry handling, data export, read-only grace period after expiry.
+
+4. SUBSCRIPTION MANAGEMENT: monthly + annual, secure payment integration, activation, automatic renewal where authorized, upgrade/downgrade, cancellation, payment-failure handling, renewal reminders, billing history, GST invoices where applicable, downloadable receipts, subscription status (Free Trial / Active / Payment Pending / Past Due / Cancelled / Expired), plan-based feature access, automatic usage tracking, usage-limit notifications, add-on purchases. Secure payment provider + verified webhooks; never treat a payment as successful based only on frontend response.
+
+5. PLAN-BASED ACCESS CONTROL: backend entitlement verification (not just frontend hiding), role-based access control, usage-limit enforcement, API-level permission checks, upgrade prompts on locked features, usage progress indicators, upgrade recommendations. Starter cannot access Growth/Enterprise features; Growth cannot access Enterprise features.
+
+6. PAID ADD-ONS: +5,000 emails ₹299; additional AI operations ₹499; additional branch ₹499/mo; custom integration from ₹999; premium onboarding ₹1,999 one-time. Display pricing, limits and third-party charges before purchase.
+
+7. AI AUTOMATION ENGINE (4 modules):
+A. Invoice Recovery Agent — detect overdue invoices, identify unpaid customers, schedule reminders, personalized email reminders, send follow-ups, track invoice status, stop reminders on verified payment, recovery reports, flag high-risk overdue invoices.
+B. Customer Reactivation Agent — identify inactive customers, analyze purchase history, segment by activity, personalized reactivation campaigns, schedule email/WhatsApp, track responses, measure reactivations, retention reports.
+C. Failed Payment Agent — detect failed transactions, identify affected customers, send failure notifications, schedule retry reminders, generate secure payment links where supported, track successful retries, stop follow-ups after verified payment, failed-payment reports.
+D. AI Business Analyst — revenue leakage analysis, performance trends, daily insights, recovery strategy recommendations, overdue payment patterns, customer behaviour, revenue risk forecasts, recovered-revenue tracking, weekly/monthly reports.
+All AI actions follow customer permissions, business rules and messaging consent.
+
+8. ADVANCED ENTERPRISE AI AGENTS (Enterprise-only): Revenue Intelligence Agent; Customer Retention Agent; Business Performance Agent; Multi-Branch Monitoring Agent; Predictive Analytics Agent; Wo[TRUNCATED — WhatsApp automation section and any further sections missing]
+
+
+AMENDMENT (Nov 10, 2026 ~11:40 PM IST, Manthan): Plans update keeps pricing Starter 999 / Growth 4,999 / Enterprise 5,999. Enterprise SIMPLIFIED: Growth features plus exactly 10 items - Advanced AI Business Assistant, Predictive Revenue Leak Detection, Advanced AI Recovery Recommendations, Multi-Branch Management (up to 5 branches), Custom Automation Rules, Advanced API Integrations, Custom Business Reports, Advanced Employee Permissions, Priority Support, Dedicated Onboarding. Enterprise limits: 10,000 customers, 5,000 invoices/mo, 10,000 emails/mo, 2,500 AI ops/mo, 20 workflows, 10 staff accounts, 5 branches. Starter and Growth features and limits unchanged from the spec. Growth = Most Popular; Enterprise = Premium. Update pricing page, feature comparison, subscription entitlements, usage tracking and upgrade/downgrade logic. Never display features as available unless implemented and working. Preserve all existing data and functionality.

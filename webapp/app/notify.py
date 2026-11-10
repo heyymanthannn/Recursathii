@@ -57,7 +57,7 @@ def _smtp_send(host, port, user, password, mail_from, to, subject, body):
     except Exception as e:
         return "failed", str(e)[:300]
 
-def send_email(to, subject, body, owner_id=None):
+def _send_email_raw(to, subject, body, owner_id=None):
     if owner_id:
         cn, err = _retailer(owner_id)
         if not cn:
@@ -85,7 +85,7 @@ def _wa_send(phone_id, token, num, body):
     except Exception as e:
         return "failed", str(e)[:300]
 
-def send_whatsapp(phone_e164, body, owner_id=None):
+def _send_whatsapp_raw(phone_e164, body, owner_id=None):
     num = (phone_e164 or "").replace(" ", "")
     if not num.startswith("+"):
         num = "+91" + num.lstrip("0")
@@ -99,6 +99,33 @@ def send_whatsapp(phone_e164, body, owner_id=None):
     if not whatsapp_ready():
         return "no_channel", "WhatsApp not configured"
     return _wa_send(WHATSAPP_PHONE_ID, WHATSAPP_TOKEN, num, body)
+
+
+def send_email(to, subject, body, owner_id=None):
+    """Plan-aware wrapper: enforces the message quota and counts successful sends."""
+    from . import models
+    if owner_id:
+        lim = models.plan_limit_msg(owner_id, "messages")
+        if lim:
+            return "limit_reached", lim
+    res = _send_email_raw(to, subject, body, owner_id)
+    if owner_id and res[0] == "sent":
+        models.bump_usage(owner_id, "messages")
+    return res
+
+
+def send_whatsapp(phone_e164, body, owner_id=None):
+    """Plan-aware wrapper: enforces the message quota and counts successful sends."""
+    from . import models
+    if owner_id:
+        lim = models.plan_limit_msg(owner_id, "messages")
+        if lim:
+            return "limit_reached", lim
+    res = _send_whatsapp_raw(phone_e164, body, owner_id)
+    if owner_id and res[0] == "sent":
+        models.bump_usage(owner_id, "messages")
+    return res
+
 
 def verify_retailer_whatsapp(owner_id):
     """Ping the WhatsApp Cloud API with the retailer's stored creds. (ok, err)."""

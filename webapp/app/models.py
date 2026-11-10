@@ -364,19 +364,33 @@ def list_plat_pays(owner_id=""):
 # ---- owner dashboard metrics ----
 
 def plan_usage(owner_id):
-    """Live usage counts for plan limits: customers, invoices this month, team seats."""
+    """Live usage counts for plan limits: customers, invoices, messages, AI ops, workflows, team seats."""
     t = time.localtime()
     ms = time.mktime((t.tm_year, t.tm_mon, 1, 0, 0, 0, 0, 0, -1))
+    month = time.strftime("%Y-%m", t)
     cust = q("SELECT COUNT(*) AS c FROM customers WHERE owner_id=?", (owner_id,))[0]["c"]
     inv = q("SELECT COUNT(*) AS c FROM invoices WHERE owner_id=? AND created>=?", (owner_id, ms))[0]["c"]
-    return {"customers": cust, "invoices_month": inv, "team": len(list_team(owner_id))}
+    wf = q("SELECT COUNT(*) AS c FROM automations WHERE owner_id=? AND enabled=1", (owner_id,))[0]["c"]
+    uc = {r["key"]: r["count"] for r in q(
+        "SELECT key, count FROM usage_counters WHERE owner_id=? AND month=?", (owner_id, month))}
+    return {"customers": cust, "invoices_month": inv, "team": len(list_team(owner_id)),
+            "messages_month": uc.get("messages", 0), "ai_ops_month": uc.get("ai_ops", 0),
+            "workflows": wf}
+
+
+def bump_usage(owner_id, key, n=1):
+    """Count a billable action (automated messages, AI operations) for this month."""
+    month = time.strftime("%Y-%m")
+    ex("INSERT INTO usage_counters(owner_id,month,key,count) VALUES(?,?,?,?) "
+       "ON CONFLICT(owner_id,month,key) DO UPDATE SET count=count+?",
+       (owner_id, month, key, n, n))
 
 
 def plan_limit_msg(owner_id, kind):
     """Backend plan-limit check. Returns an upgrade message or '' when allowed."""
     from . import config
     u = dict(get_user(owner_id) or {})
-    p = config.PLANS.get(u.get("plan") or "starter") or config.PLANS["starter"]
+    p = config.PLANS.get(config.plan_key(u.get("plan") or "starter")) or config.PLANS["starter"]
     usage = plan_usage(owner_id)
     if kind == "customers" and usage["customers"] >= p["max_customers"]:
         return f"Your {p['name']} plan covers {p['max_customers']:,} customers."
@@ -384,6 +398,12 @@ def plan_limit_msg(owner_id, kind):
         return f"Your {p['name']} plan covers {p['max_invoices_month']:,} invoices a month."
     if kind == "team" and usage["team"] >= p["max_team"]:
         return f"Your {p['name']} plan includes {p['max_team']} team member(s)."
+    if kind == "messages" and usage["messages_month"] >= p.get("max_emails_month", 0):
+        return f"Your {p['name']} plan covers {p['max_emails_month']:,} automated messages a month."
+    if kind == "ai_ops" and usage["ai_ops_month"] >= p.get("max_ai_ops_month", 0):
+        return f"Your {p['name']} plan covers {p['max_ai_ops_month']:,} AI operations a month."
+    if kind == "workflows" and usage["workflows"] >= p.get("max_workflows", 0):
+        return f"Your {p['name']} plan includes {p['max_workflows']} automation workflows."
     return ""
 
 

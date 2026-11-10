@@ -36,6 +36,11 @@ def init():
           id INTEGER PRIMARY KEY AUTOINCREMENT, to_phone TEXT, event_id TEXT,
           playbook TEXT, body TEXT, at REAL
         );
+        CREATE TABLE IF NOT EXISTS usage_counters(
+          owner_id INTEGER, month TEXT, key TEXT,
+          count INTEGER DEFAULT 0,
+          PRIMARY KEY(owner_id, month, key)
+        );
         """)
         # Column migrations (safe to re-run).
         for stmt in (

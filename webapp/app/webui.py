@@ -515,6 +515,7 @@ async def billing_page(request: Request):
     if not user:
         return RedirectResponse("/login", status_code=303)
     pays = models.list_plat_pays(user["id"])
+    user["plan"] = config.plan_key(user.get("plan") or "starter")
     usage = models.plan_usage(user["id"])
     blocked = request.query_params.get("blocked", "")
     return render("billing.html", request, user=user, tab="subscription", pays=pays,
@@ -525,7 +526,8 @@ async def change_plan(request: Request, plan: str = Form(""), cycle: str = Form(
     user = guard(request)
     if not user:
         return RedirectResponse("/login", status_code=303)
-    if plan in config.PLANS and plan != user["plan"]:
+    plan = config.plan_key(plan)
+    if plan in config.PLANS and plan != config.plan_key(user["plan"]):
         p = config.PLANS[plan]
         if user["plan_status"] == "trialing":
             # Plan changes during a free trial are free; the trial keeps running.

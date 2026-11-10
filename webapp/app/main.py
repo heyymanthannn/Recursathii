@@ -65,6 +65,7 @@ async def api_signup(request: Request):
     import uuid as _uuid, os as _os
     data = await request.json()
     plan, email = data.get("plan"), data.get("email") or ""
+    plan = {"scale": "enterprise"}.get(plan, plan)
     if plan not in PLANS or not email:
         raise HTTPException(status_code=400, detail="plan and email required")
     if not (data.get("phone") or "").strip():
@@ -153,7 +154,8 @@ async def checkout_page(merchant_id: str, claimed: int = 0):
     full = PLANS[m.plan]["amount"] / 100
     amt = _pay_amount(m.plan, row)
     pct = (row or {}).get("discount_pct") or 0
-    plan_name = {"starter": "Starter", "growth": "Growth", "scale": "Scale"}.get(m.plan, m.plan.title())
+    plan_name = {"starter": "Starter", "growth": "Growth", "enterprise": "Enterprise",
+                 "scale": "Enterprise"}.get(m.plan, m.plan.title())
     note = ""
     if pct:
         note = f'<div class="ok">Coupon applied: {pct}% off. You pay &#8377;{amt:,.0f} instead of &#8377;{full:,.0f}.</div>'
@@ -411,6 +413,7 @@ async def onboard(request: Request):
 
 @app.get("/checkout/{plan}")
 async def checkout(plan: str, merchant_id: str = "demo"):
+    plan = {"scale": "enterprise"}.get(plan, plan)
     if plan not in PLANS:
         raise HTTPException(status_code=404, detail="unknown plan")
     billing.onboard(merchant_id, f"{merchant_id}@example.com", plan)

@@ -3,7 +3,7 @@
 > Revenue recovery for Indian subscription businesses. RecurSaathi monitors failed card and UPI payments, retries inside RBI's allowed windows, sends WhatsApp and email nudges with one-tap UPI payment links, and chases overdue invoices and dormant customers. 14-day free trial, no card needed.
 
 Key facts:
-- Pricing: Starter ₹999/mo, Growth ₹2,499/mo, Scale ₹5,999/mo; annual billing at 10 months' price (₹9,990 / ₹24,990 / ₹59,990); prices exclude 18% GST.
+- Pricing: Starter ₹999/mo, Growth ₹4,999/mo, Enterprise ₹5,999/mo; annual billing at 10 months' price (₹9,990 / ₹49,990 / ₹59,990); prices exclude 18% GST.
 - Works without a gateway: manual UPI mode collects on your own UPI handle with a QR, zero fees, no KYC; Razorpay AutoPay integration optional.
 - Never holds customer money: payments settle directly into the business's own Razorpay account or UPI ID.
 - RBI-compliant retries: 24-hour, 72-hour and day-7 windows, routed by decline code, never blind-retried on invalid cards; signature-verified webhooks.
