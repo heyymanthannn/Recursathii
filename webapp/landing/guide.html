@@ -309,7 +309,7 @@ footer a:hover{color:var(--ink)}
 </style>
 </head>
 <body>
-<div id="eaBanner" style="background:#eef0ff;border-bottom:1px solid #dcdcff;color:#3d3d8f;font-size:13px;text-align:center;padding:9px 16px;position:relative;z-index:60">RecurSaathi is in early access &mdash; this page describes the product we&rsquo;re building. <a href="mailto:recursathi@gmail.com?subject=RecurSaathi%20Early%20Access%20Request" style="color:#4f46e5;font-weight:700;text-decoration:underline">Request early access</a></div><style>.article{max-width:760px;margin:0 auto;padding:96px 0 60px}.article h1{font-size:clamp(30px,4.5vw,44px);line-height:1.12;letter-spacing:-.02em;margin:0 0 18px}.article .lede{font-size:18px;color:var(--mut);margin:0 0 34px}.article h2{font-size:23px;letter-spacing:-.01em;margin:34px 0 12px}.article p,.article li{font-size:16.5px;line-height:1.65;color:var(--mut)}.article strong{color:var(--ink)}.article a{color:var(--ink);text-decoration:underline;text-decoration-color:rgba(109,94,245,.5)}.article-cta{display:flex;gap:12px;margin-top:40px;flex-wrap:wrap}.crumb{font-size:14px;margin-bottom:26px}.crumb a{color:var(--mut);text-decoration:none}.crumb a:hover{color:var(--ink)}@media(max-width:640px){.article{padding:70px 0 40px}}</style>
+<div id="eaBanner" style="background:#eef0ff;border-bottom:1px solid #dcdcff;color:#3d3d8f;font-size:13px;text-align:center;padding:9px 16px;position:relative;z-index:60">RecurSaathi is in early access &mdash; this page describes the product we&rsquo;re building. <a href="#" data-ea-mail style="color:#4f46e5;font-weight:700;text-decoration:underline">Request early access</a></div><style>.article{max-width:760px;margin:0 auto;padding:96px 0 60px}.article h1{font-size:clamp(30px,4.5vw,44px);line-height:1.12;letter-spacing:-.02em;margin:0 0 18px}.article .lede{font-size:18px;color:var(--mut);margin:0 0 34px}.article h2{font-size:23px;letter-spacing:-.01em;margin:34px 0 12px}.article p,.article li{font-size:16.5px;line-height:1.65;color:var(--mut)}.article strong{color:var(--ink)}.article a{color:var(--ink);text-decoration:underline;text-decoration-color:rgba(109,94,245,.5)}.article-cta{display:flex;gap:12px;margin-top:40px;flex-wrap:wrap}.crumb{font-size:14px;margin-bottom:26px}.crumb a{color:var(--mut);text-decoration:none}.crumb a:hover{color:var(--ink)}@media(max-width:640px){.article{padding:70px 0 40px}}</style>
 <div class="aurora" aria-hidden="true"><i class="b1"></i><i class="b2"></i><i class="b3"></i><i class="b4"></i></div>
 
 <nav class="nav">
@@ -322,7 +322,7 @@ footer a:hover{color:var(--ink)}
       <a href="/pricing">Pricing</a>
       <a href="/#faq">FAQ</a>
     </div>
-    <a class="btn btn-primary btn-sm nbtn" href="mailto:recursathi@gmail.com?subject=RecurSaathi%20Early%20Access%20Request">Request early access</a>
+    <a class="btn btn-primary btn-sm nbtn" href="#" data-ea-mail>Request early access</a>
   </div>
 </nav>
 
@@ -359,10 +359,10 @@ footer a:hover{color:var(--ink)}
 
     <h2>How RecurSaathi automates this</h2>
     <p><a href="/#features">RecurSaathi</a> runs the whole loop for you: it monitors failed card and UPI payments, retries inside the RBI-permitted windows plus a longer next-day cadence, sends WhatsApp and email nudges with one-tap payment links, offers a manual UPI QR mode that works from day one without Razorpay, and shows you exactly how much was recovered in its <a href="/#analytics">analytics</a> and <a href="/#radar">Recovery Radar</a> views.</p>
-    <p>It works for coaching academies, gyms and studios, subscription ecommerce and any business billing customers on a cycle. <a href="mailto:recursathi@gmail.com?subject=RecurSaathi%20Early%20Access%20Request">Request early access</a> — no card needed.</p>
+    <p>It works for coaching academies, gyms and studios, subscription ecommerce and any business billing customers on a cycle. <a href="#" data-ea-mail>Request early access</a> — no card needed.</p>
 
     <div class="article-cta">
-      <a class="btn btn-primary" href="mailto:recursathi@gmail.com?subject=RecurSaathi%20Early%20Access%20Request">Request early access</a>
+      <a class="btn btn-primary" href="#" data-ea-mail>Request early access</a>
       <a class="btn btn-ghost" href="/#faq">Read the FAQ</a>
     </div>
    </article>
@@ -376,7 +376,7 @@ footer a:hover{color:var(--ink)}
         <p style="margin-top:14px">Revenue recovery for Indian subscription businesses. Failed payments, overdue invoices and dormant customers, managed end to end.</p>
       </div>
       <div><h4>Product</h4><ul><li><a href="/#how">How it works</a></li><li><a href="/#features">Features</a></li><li><a href="/#radar">Recovery Radar</a></li><li><a href="/#analytics">Analytics</a></li><li><a href="/pricing">Pricing</a></li></ul></div>
-      <div><h4>Company</h4><ul><li><a href="/#faq">FAQ</a></li><li><a href="mailto:recursathi@gmail.com">recursathi@gmail.com</a></li></ul></div>
+      <div><h4>Company</h4><ul><li><a href="/#faq">FAQ</a></li><li><a href="#" data-contact-mailto>Email us</a></li></ul></div>
       <div><h4>Legal</h4><ul><li><a href="/privacy">Privacy Policy</a></li><li><a href="/terms">Terms of Service</a></li></ul></div>
     </div>
     <div class="fbottom"><span>© RecurSaathi</span><span class="flag">🇮🇳 Made in India</span></div>
@@ -403,6 +403,7 @@ footer a:hover{color:var(--ink)}
 (function(){try{if(localStorage.getItem("rs_cookie_ok")!=="1"){document.getElementById("cbar").classList.add("on");}}catch(e){}
 document.getElementById("cbar-ok").addEventListener("click",function(){try{localStorage.setItem("rs_cookie_ok","1");}catch(e){}document.getElementById("cbar").classList.remove("on");});})();
 </script>
+<script src="config.js" defer></script>
 </body>
 </html>
 
@@ -413,5 +414,5 @@ document.getElementById("cbar-ok").addEventListener("click",function(){try{local
 <li>NPCI NACH product statistics (monthly figures including recurring debit returns): <a href="https://www.npci.org.in/product/nach/product-statistics" rel="noopener">npci.org.in/product/nach/product-statistics</a></li>
 </ul></div>
 <div class="authorbox" style="max-width:780px;margin:36px auto 0;padding:18px 22px;border:1px solid #e5e7eb;border-radius:14px;font-size:14.5px;color:#374151">
-<strong>About the author</strong><br>Written by Manthan Solapure, founder of RecurSaathi. Manthan builds payment-recovery tooling for Indian subscription businesses and studies how RBI retry rules play out on real failed payments. Questions? Write to recursathi@gmail.com.
+<strong>About the author</strong><br>Written by Manthan Solapure, founder of RecurSaathi. Manthan builds payment-recovery tooling for Indian subscription businesses and studies how RBI retry rules play out on real failed payments. Questions? <a href="#" data-contact-mailto>Email us</a>.
 </div>

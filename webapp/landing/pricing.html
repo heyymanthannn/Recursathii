@@ -58,8 +58,8 @@ footer a{color:var(--muted)}
 <script src="config.js"></script>
 <script>
 (function(){
-  var cfg=(window.EA_CONFIG&&window.EA_CONFIG.email)?window.EA_CONFIG:{email:"recursathi@gmail.com",subject:"RecurSaathi Early Access Request"};
-  var mailto="mailto:"+cfg.email+"?subject="+encodeURIComponent(cfg.subject);
+  var cfg=window.EA_CONFIG||{};
+  var mailto=cfg.email?"mailto:"+cfg.email+"?subject="+encodeURIComponent(cfg.subject||"RecurSaathi Early Access Request"):"#";
   document.querySelectorAll("[data-ea-mail]").forEach(function(a){a.setAttribute("href",mailto);});
 })();
 </script>

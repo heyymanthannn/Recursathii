@@ -394,7 +394,7 @@ html{scroll-behavior:smooth}
 .badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;margin-right:8px}
 .b-retry{background:#e4f4e6;color:#1d7a37}.b-wait{background:#fdf1dd;color:#9a6b1f}.b-stop{background:#fbe5e5;color:#b3261e}
 </style></head><body>
-<div id="eaBanner" style="background:#eef0ff;border-bottom:1px solid #dcdcff;color:#3d3d8f;font-size:13px;text-align:center;padding:9px 16px;position:relative;z-index:60">RecurSaathi is in early access &mdash; this page describes the product we&rsquo;re building. <a href="mailto:recursathi@gmail.com?subject=RecurSaathi%20Early%20Access%20Request" style="color:#4f46e5;font-weight:700;text-decoration:underline">Request early access</a></div>
+<div id="eaBanner" style="background:#eef0ff;border-bottom:1px solid #dcdcff;color:#3d3d8f;font-size:13px;text-align:center;padding:9px 16px;position:relative;z-index:60">RecurSaathi is in early access &mdash; this page describes the product we&rsquo;re building. <a href="#" data-ea-mail style="color:#4f46e5;font-weight:700;text-decoration:underline">Request early access</a></div>
 <div class="aurora" aria-hidden="true"><i class="b1"></i><i class="b2"></i><i class="b3"></i><i class="b4"></i></div>
 <nav class="nav">
   <div class="in">
@@ -407,7 +407,7 @@ html{scroll-behavior:smooth}
       <a href="/pricing">Pricing</a>
       <a href="/#faq">FAQ</a>
     </div>
-    <a class="btn btn-primary btn-sm nbtn" href="mailto:recursathi@gmail.com?subject=RecurSaathi%20Early%20Access%20Request">Request early access</a>
+    <a class="btn btn-primary btn-sm nbtn" href="#" data-ea-mail>Request early access</a>
   </div>
 </nav>
 <main class="page"><span class="kick2">Free tool</span><h1>Payment failure reason decoder</h1><p class="lead">Pick the decline code your gateway shows and get its plain-English meaning, whether it is worth retrying, and the next step. Runs in your browser.</p>
@@ -425,7 +425,7 @@ html{scroll-behavior:smooth}
 <p>A soft failure (balance, timeout, bank outage) usually fixes itself or fixes itself with a nudge. A hard failure (paused mandate, expired card, revoked mandate) needs the customer to act before any retry can succeed. Sorting your failures into these two buckets is the single highest-value thing you can do with a gateway export.</p>
 <h2>What RecurSaathi does with this</h2>
 <p>RecurSaathi sorts every failure for you, retries the soft ones on schedule and sends a human-readable nudge for the hard ones, with a verified "I've paid" path when the customer pays manually. You see the reason code next to each failed payment instead of digging through gateway logs.</p>
-<div class="cta2"><a class="btn btn-primary" href="mailto:recursathi@gmail.com?subject=RecurSaathi%20Early%20Access%20Request">Request early access</a><a class="herosec" href="/rbi-retry-window-checker">Retry window checker</a><a class="herosec" href="/guide">The recovery guide</a></div>
+<div class="cta2"><a class="btn btn-primary" href="#" data-ea-mail>Request early access</a><a class="herosec" href="/rbi-retry-window-checker">Retry window checker</a><a class="herosec" href="/guide">The recovery guide</a></div>
 </div>
 <section class="calcfaq"><h2>Questions people ask</h2><details><summary>My gateway shows a code that is not on this list.</summary><p>Pick the closest match by wording. Most codes map to one of these buckets: balance, mandate state, authentication, card state, connectivity or risk. If you are stuck, email us the code and we will tell you which bucket it lands in.</p></details><details><summary>Should I retry a payment that failed for insufficient funds?</summary><p>Yes, but not immediately. A retry after a gap is the usual move; a retry timed around the customer's payday is what actually converts.</p></details><details><summary>Can I just raise a one-time payment link instead?</summary><p>Often yes, and often better. A one-time link does not consume mandate retries and lets the customer pay the specific invoice right now.</p></details></section></main><footer>
   <div class="wrap">
@@ -435,7 +435,7 @@ html{scroll-behavior:smooth}
         <p style="margin-top:14px">Revenue recovery for Indian subscription businesses. Failed payments, overdue invoices and dormant customers, managed end to end.</p>
       </div>
       <div><h4>Product</h4><ul><li><a href="/#how">How it works</a></li><li><a href="/#features">Features</a></li><li><a href="/#radar">Recovery Radar</a></li><li><a href="/#analytics">Analytics</a></li><li><a href="/pricing">Pricing</a></li></ul></div>
-      <div><h4>Company</h4><ul><li><a href="/failed-payment-calculator">Free calculator</a></li><li><a href="/about">About</a></li><li><a href="/upi-autopay-recovery">UPI AutoPay recovery</a></li><li><a href="/guide">Recovery guide</a></li><li><a href="/#faq">FAQ</a></li><li><a href="mailto:recursathi@gmail.com">recursathi@gmail.com</a></li></ul></div>
+      <div><h4>Company</h4><ul><li><a href="/failed-payment-calculator">Free calculator</a></li><li><a href="/about">About</a></li><li><a href="/upi-autopay-recovery">UPI AutoPay recovery</a></li><li><a href="/guide">Recovery guide</a></li><li><a href="/#faq">FAQ</a></li><li><a href="#" data-contact-mailto>Email us</a></li></ul></div>
       <div><h4>Legal</h4><ul><li><a href="/privacy">Privacy Policy</a></li><li><a href="/terms">Terms of Service</a></li></ul></div>
     </div>
     <div class="fbottom"><span>© RecurSaathi</span><span class="flag">🇮🇳 Made in India</span></div>
@@ -448,4 +448,5 @@ html{scroll-behavior:smooth}
   function calc(){var c=C[parseInt(s.value,10)];o.innerHTML=B[c[0]]+'<div style="margin-top:8px"><b>What it means:</b> '+c[1]+'</div><div style="margin-top:6px"><b>What to do:</b> '+c[2]+'</div>'}
   s.addEventListener('change',calc);calc();
 })();
-</script></body></html>
+</script><script src="config.js" defer></script>
+</body></html>

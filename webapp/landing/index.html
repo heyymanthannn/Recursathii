@@ -130,7 +130,7 @@ footer{padding:56px 0 34px}
     <div class="trustrow reveal">
       <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>Your money never passes through us</span>
       <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>UPI AutoPay retries in RBI windows</span>
-      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>WhatsApp, email and UPI QR nudges</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>Email and WhatsApp nudges with one-tap UPI payment links</span>
     </div>
   </div>
 </header>
@@ -141,6 +141,7 @@ footer{padding:56px 0 34px}
       <div class="shead reveal"><span class="kick">What it does</span><h2>Every failed payment gets a second chance, on its own.</h2></div>
       <p class="reveal" style="color:var(--muted);max-width:560px">A customer&rsquo;s renewal fails. Most businesses find out when they reconcile the month &mdash; and by then the customer is halfway gone. RecurSaathi catches it the moment it happens: retries inside RBI&rsquo;s allowed windows, a WhatsApp or email nudge the same day with a one-tap UPI link, and a dashboard that shows exactly what was recovered.</p>
       <p class="reveal" style="color:var(--muted);max-width:560px;margin-top:16px">The recovery assistant is rule-based automation on your own records: decline codes decide retry timing, payment behaviour decides follow-up cadence. No black boxes.</p>
+      <p class="reveal" style="color:var(--faint);max-width:560px;margin-top:12px;font-size:14.5px">How it runs today: retries and payment links work through your own Razorpay account once it&rsquo;s connected; WhatsApp nudges send from your own WhatsApp Business number once that&rsquo;s connected; email nudges are built in. Customer money settles straight to you &mdash; it never passes through RecurSaathi.</p>
     </div>
     <div class="card reveal">
       <span class="chip">Early access</span>
@@ -155,7 +156,7 @@ footer{padding:56px 0 34px}
   <div class="wrap">
     <div class="shead reveal"><span class="kick">Capabilities</span><h2>Three things, done properly.</h2><p>What early access partners get first.</p></div>
     <div class="grid3">
-      <div class="card reveal"><span class="chip">Planned</span><h3>Payment Recovery</h3><p>Failed card and UPI AutoPay payments retried inside RBI&rsquo;s allowed windows, followed by WhatsApp and email nudges with one-tap UPI payment links. Decline codes are read before anything is retried.</p></div>
+      <div class="card reveal"><span class="chip">Planned</span><h3>Payment Recovery</h3><p>Failed card and UPI AutoPay payments retried inside RBI&rsquo;s allowed windows through your own Razorpay account, followed by email and WhatsApp nudges with one-tap UPI payment links. Decline codes are read before anything is retried.</p></div>
       <div class="card reveal"><span class="chip">Planned</span><h3>Customer Reactivation</h3><p>Dormant repeat customers are flagged automatically, grouped into win-back segments, and followed up with a campaign &mdash; so a silent customer doesn&rsquo;t quietly become a lost one.</p></div>
       <div class="card reveal"><span class="chip">Planned</span><h3>Revenue Intelligence</h3><p>A live picture of what&rsquo;s leaking: recovery rates, decline reasons, outstanding balance and every automated message, in one dashboard your whole team can read.</p></div>
     </div>
@@ -232,8 +233,8 @@ footer{padding:56px 0 34px}
 <script src="config.js"></script>
 <script>
 (function(){
-  var cfg = (window.EA_CONFIG && window.EA_CONFIG.email) ? window.EA_CONFIG : {email:"recursathi@gmail.com", subject:"RecurSaathi Early Access Request"};
-  var mailto = "mailto:"+cfg.email+"?subject="+encodeURIComponent(cfg.subject);
+  var cfg = window.EA_CONFIG || {};
+  var mailto = cfg.email ? "mailto:"+cfg.email+"?subject="+encodeURIComponent(cfg.subject||"RecurSaathi Early Access Request") : "#";
   document.querySelectorAll("[data-ea-mail]").forEach(function(a){a.setAttribute("href",mailto);});
   var form = document.getElementById("eaForm");
   if(form){
