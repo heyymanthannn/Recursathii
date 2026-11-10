@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>UPI AutoPay Failed Payment Recovery | RecurSaathi</title>
 <meta name="description" content="UPI AutoPay mandates fail every month: no balance, paused mandates, bank downtime. RecurSaathi reads the failure reason, retries inside RBI windows and recovers the payment over WhatsApp. Built for Indian D2C subscription businesses. 14-day free trial.">
-<meta name="keywords" content="UPI AutoPay failed payment recovery, UPI AutoPay retry, autopay mandate failed, failed UPI subscription payment, UPI autopay recovery software, dunning software India, recurring payment recovery India">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%237c6cf8'/%3E%3Cstop offset='1' stop-color='%235ac8fa'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Ctext x='32' y='44' font-size='34' font-family='Arial' font-weight='700' fill='white' text-anchor='middle'%3ER%3C/text%3E%3C/svg%3E">
 <meta name="robots" content="index,follow">
 <meta name="theme-color" content="#f5f5f7">
@@ -16,21 +15,124 @@
 <meta property="og:url" content="https://recursathii.onrender.com/upi-autopay-recovery">
 <meta property="og:locale" content="en_IN">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://recursathii.onrender.com/static/og-default.png">
+<meta property="og:image" content="https://recursathii.onrender.com/static/og-default.png">
 <meta name="twitter:title" content="UPI AutoPay Failed Payment Recovery | RecurSaathi">
 <meta name="twitter:description" content="Every failed UPI AutoPay mandate gets a reason, a timed retry and a WhatsApp payment link. Built for Indian D2C subscriptions.">
 <link rel="canonical" href="https://recursathii.onrender.com/upi-autopay-recovery">
+<link rel="alternate" hreflang="en-IN" href="https://recursathii.onrender.com/upi-autopay-recovery">
+<link rel="alternate" hreflang="x-default" href="https://recursathii.onrender.com/upi-autopay-recovery">
+
 <script type="application/ld+json">
 {
- "@context":"https://schema.org",
- "@graph":[
-  {"@type":"SoftwareApplication","name":"RecurSaathi","applicationCategory":"BusinessApplication","operatingSystem":"Web","description":"UPI AutoPay failed payment recovery for Indian subscription businesses.","url":"https://recursathii.onrender.com/upi-autopay-recovery","offers":{"@type":"OfferCatalog","name":"RecurSaathi plans","itemListElement":[{"@type":"Offer","name":"Starter","price":"999","priceCurrency":"INR"},{"@type":"Offer","name":"Growth","price":"2499","priceCurrency":"INR"},{"@type":"Offer","name":"Scale","price":"5999","priceCurrency":"INR"}]}},
-  {"@type":"FAQPage","mainEntity":[
-   {"@type":"Question","name":"Why do UPI AutoPay payments fail?","acceptedAnswer":{"@type":"Answer","text":"Most UPI AutoPay debits fail for routine reasons: the customer's account is short of balance, they paused or deleted the mandate, the bank or UPI rails are down, a daily limit was hit, or the mandate expired. The reason matters because each one needs a different recovery move."}},
-   {"@type":"Question","name":"How does RecurSaathi recover a failed UPI AutoPay payment?","acceptedAnswer":{"@type":"Answer","text":"RecurSaathi reads the failure reason from the gateway response, retries at the right window for that reason, and sends a WhatsApp and email nudge with a one-tap payment link. If the customer replies with a promise to pay, the follow-up is rescheduled automatically."}},
-   {"@type":"Question","name":"Is retrying failed AutoPay debits RBI-compliant?","acceptedAnswer":{"@type":"Answer","text":"RBI's recurring mandate rules, including the 24-hour pre-debit notification and the no-additional-authentication limit for smaller mandates, limit brute-force retries. RecurSaathi times retries inside the allowed windows and uses payment links over WhatsApp for the rest."}},
-   {"@type":"Question","name":"How common are failed recurring debits in India?","acceptedAnswer":{"@type":"Answer","text":"NPCI's August 2026 data shows 4.82 crore NACH recurring debit returns against 19.36 crore presentations, about one in four recurring debits coming back. The count covers all return reasons and counts a re-presented debit each time it is presented, so it is not a clean first-attempt failure rate, but the scale is real. Source: NPCI recurring payments statistics, Aug 2026."}},
-   {"@type":"Question","name":"Do you hold my customers' money?","acceptedAnswer":{"@type":"Answer","text":"No. Recovered payments land in your own gateway account or your own UPI ID. RecurSaathi automates, tracks and reports; money never flows through us."}}
-  ]}
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "Organization",
+   "@id": "https://recursathii.onrender.com/#org",
+   "name": "RecurSaathi",
+   "url": "https://recursathii.onrender.com/",
+   "logo": "https://recursathii.onrender.com/static/logo-512.png",
+   "email": "recursathi@gmail.com",
+   "areaServed": "IN"
+  },
+  {
+   "@type": "SoftwareApplication",
+   "name": "RecurSaathi",
+   "applicationCategory": "BusinessApplication",
+   "operatingSystem": "Web",
+   "description": "UPI AutoPay failed payment recovery for Indian subscription businesses.",
+   "url": "https://recursathii.onrender.com/upi-autopay-recovery",
+   "offers": {
+    "@type": "OfferCatalog",
+    "name": "RecurSaathi plans",
+    "itemListElement": [
+     {
+      "@type": "Offer",
+      "name": "Starter",
+      "price": "999",
+      "priceCurrency": "INR"
+     },
+     {
+      "@type": "Offer",
+      "name": "Growth",
+      "price": "2499",
+      "priceCurrency": "INR"
+     },
+     {
+      "@type": "Offer",
+      "name": "Scale",
+      "price": "5999",
+      "priceCurrency": "INR"
+     }
+    ]
+   },
+   "publisher": {
+    "@id": "https://recursathii.onrender.com/#org"
+   }
+  },
+  {
+   "@type": "FAQPage",
+   "mainEntity": [
+    {
+     "@type": "Question",
+     "name": "Why do UPI AutoPay payments fail?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Most UPI AutoPay debits fail for routine reasons: the customer's account is short of balance, they paused or deleted the mandate, the bank or UPI rails are down, a daily limit was hit, or the mandate expired. The reason matters because each one needs a different recovery move."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "How does RecurSaathi recover a failed UPI AutoPay payment?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "RecurSaathi reads the failure reason from the gateway response, retries at the right window for that reason, and sends a WhatsApp and email nudge with a one-tap payment link. If the customer replies with a promise to pay, the follow-up is rescheduled automatically."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Is retrying failed AutoPay debits RBI-compliant?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "RBI's recurring mandate rules, including the 24-hour pre-debit notification and the no-additional-authentication limit for smaller mandates, limit brute-force retries. RecurSaathi times retries inside the allowed windows and uses payment links over WhatsApp for the rest."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "How common are failed recurring debits in India?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "NPCI's August 2026 data shows 4.82 crore NACH recurring debit returns against 19.36 crore presentations, about one in four recurring debits coming back. The count covers all return reasons and counts a re-presented debit each time it is presented, so it is not a clean first-attempt failure rate, but the scale is real. Source: NPCI recurring payments statistics, Aug 2026."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Do you hold my customers' money?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "No. Recovered payments land in your own gateway account or your own UPI ID. RecurSaathi automates, tracks and reports; money never flows through us."
+     }
+    }
+   ]
+  },
+  {
+   "@type": "BreadcrumbList",
+   "itemListElement": [
+    {
+     "@type": "ListItem",
+     "position": 1,
+     "name": "RecurSaathi",
+     "item": "https://recursathii.onrender.com/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 2,
+     "name": "UPI AutoPay Failed Payment Recovery",
+     "item": "https://recursathii.onrender.com/upi-autopay-recovery"
+    }
+   ]
+  }
  ]
 }
 </script>

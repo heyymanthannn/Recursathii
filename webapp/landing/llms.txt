@@ -1,23 +1,20 @@
 # RecurSaathi
 
-> Revenue recovery for Indian subscription businesses. RecurSaathi monitors failed card and UPI payments, retries inside RBI's allowed windows, sends WhatsApp and email nudges with one-tap UPI payment links, and chases overdue invoices and dormant customers. 14-day free trial, no card needed.
+> RecurSaathi is a payment-recovery tool for Indian subscription businesses. It detects failed card and UPI AutoPay payments, retries inside RBI-allowed windows, sends WhatsApp and email nudges with one-tap UPI payment links, and tracks overdue invoices and dormant customers. Plans start at ₹999/month with a 14-day free trial. RecurSaathi never holds customer money: payments settle directly into the business's own Razorpay account or UPI ID.
 
-Key facts:
-- Pricing: Starter ₹999/mo, Growth ₹4,999/mo, Enterprise ₹5,999/mo; annual billing at 10 months' price (₹9,990 / ₹49,990 / ₹59,990); prices exclude 18% GST.
-- Works without a gateway: manual UPI mode collects on your own UPI handle with a QR, zero fees, no KYC; Razorpay AutoPay integration optional.
-- Never holds customer money: payments settle directly into the business's own Razorpay account or UPI ID.
-- RBI-compliant retries: 24-hour, 72-hour and day-7 windows, routed by decline code, never blind-retried on invalid cards; signature-verified webhooks.
-- AI agent calls: one polite daily call per overdue invoice with the payment link and a promise-to-pay note.
-- Other features: Recovery Radar (overdue, dormant, decline reasons), revenue analytics, invoices and public payment pages, customer payment portal, segmentation and reactivation, customer opt-outs honored automatically.
-- Built for: edtech and coaching, fitness and studios, D2C subscriptions, agencies and services.
-- Made in India, live since 2026. Contact: recursathi@gmail.com
+## Key pages
+- [Home](https://recursathii.onrender.com/): product overview, pricing, FAQ
+- [UPI AutoPay failed payment recovery](https://recursathii.onrender.com/upi-autopay-recovery): why mandates fail and the right recovery move for each reason
+- [Guide: recover failed subscription payments in India](https://recursathii.onrender.com/guide): RBI retry windows, dunning sequence, manual UPI backup
+- [Free failed payment loss calculator](https://recursathii.onrender.com/failed-payment-calculator): estimate monthly revenue lost to failed card and UPI AutoPay payments; runs in the browser, nothing stored
+- [About](https://recursathii.onrender.com/about)
+- [Privacy](https://recursathii.onrender.com/privacy)
+- [Terms](https://recursathii.onrender.com/terms)
 
-Links:
-- [Home](https://recursathii.onrender.com/)
-- [UPI AutoPay recovery](https://recursathii.onrender.com/upi-autopay-recovery)
-- [Recovery guide](https://recursathii.onrender.com/guide)
-- [Pricing](https://recursathii.onrender.com/#pricing)
-- [FAQ](https://recursathii.onrender.com/#faq)
-- [Privacy policy](https://recursathii.onrender.com/privacy)
-- [Terms of service](https://recursathii.onrender.com/terms)
-- Enterprise plan adds: multi-branch management (up to 5 branches), custom automation rules, REST API integrations with API keys (/api/v1), custom business reports (PDF), advanced employee permissions (manager role), predictive revenue leak detection, advanced AI business assistant with daily insights, priority support, dedicated onboarding.
+## Facts
+- Built for: edtech and coaching, fitness studios, D2C subscriptions, agencies
+- Works without a gateway (manual UPI QR mode); Razorpay AutoPay retries when connected
+- RBI-compliant retries: 24-hour, 72-hour and day-7 windows, routed by decline code, never blind-retried on invalid cards
+- Pricing (excl. 18% GST): Starter ₹999, Growth ₹4,999, Enterprise ₹5,999 per month; annual ₹9,990 / ₹49,990 / ₹59,990
+- Enterprise adds: multi-branch management (up to 5 branches), custom automation rules, REST API with keys, custom PDF reports, manager permissions, predictive revenue leak and daily insights (rule-based, on the business's own records)
+- Contact: recursathi@gmail.com

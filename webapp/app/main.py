@@ -481,6 +481,18 @@ async def upi_autopay_recovery_page():
 async def guide_page():
     return FileResponse("landing/guide.html")
 
+@app.get("/failed-payment-calculator", include_in_schema=False)
+async def calculator_page():
+    return FileResponse("landing/calculator.html")
+
+@app.get("/about", include_in_schema=False)
+async def about_page():
+    return FileResponse("landing/about.html")
+
+@app.get("/signup", include_in_schema=False)
+async def signup_page():
+    return FileResponse("landing/index.html")
+
 @app.get("/robots.txt", include_in_schema=False)
 async def robots_txt():
     return FileResponse("landing/robots.txt", media_type="text/plain")
