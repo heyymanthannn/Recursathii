@@ -40,8 +40,10 @@
     </div>
   </div>
 </aside>
+<button class="scrim" id="scrim" type="button" aria-label="Close menu" hidden tabindex="-1"></button>
 <div class="main">
   <header class="topbar">
+    <button class="menubtn msym" id="navbtn" type="button" aria-label="Open menu" aria-expanded="false">menu</button>
     <div class="ttitle">{{ active_tab|capitalize if active_tab else "Dashboard" }}</div>
     <div class="wschip"><span class="msym">workspaces</span>{{ user.business }}</div>
     <div class="tspacer"></div>
@@ -82,6 +84,9 @@
 <script>
 (function(){try{if(localStorage.getItem("rs_cookie_ok")!=="1"){document.getElementById("cbar").classList.add("on");}}catch(e){}
 document.getElementById("cbar-ok").addEventListener("click",function(){try{localStorage.setItem("rs_cookie_ok","1");}catch(e){}document.getElementById("cbar").classList.remove("on");});})();
+var navbtn=document.getElementById("navbtn"),navscrim=document.getElementById("scrim");
+if(navbtn){navbtn.addEventListener("click",function(){var open=document.body.classList.toggle("nav-open");navbtn.setAttribute("aria-expanded",open?"true":"false");if(navscrim)navscrim.hidden=!open;});}
+if(navscrim){navscrim.addEventListener("click",function(){document.body.classList.remove("nav-open");if(navbtn)navbtn.setAttribute("aria-expanded","false");navscrim.hidden=true;});}
 </script>
 
 {% if user and user.plan_status == 'trialing' and trial_left is not none %}

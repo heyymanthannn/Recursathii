@@ -29,7 +29,7 @@ h2{font-family:var(--head);font-size:16px;font-weight:620;letter-spacing:-.01em;
 p.sub{color:var(--mut);margin:5px 0 22px;font-size:14.5px;max-width:60ch}
 .muted{color:var(--mut)}
 .center{text-align:center}
-.msym{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+.msym{font-family:'Material Symbols Outlined';font-weight:normal;font-style:normal;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;word-wrap:normal;direction:ltr;-webkit-font-feature-settings:'liga';font-feature-settings:'liga';font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24;-webkit-font-smoothing:antialiased}
 
 /* ---------- app shell ---------- */
 body.app .sidebar{position:fixed;top:0;left:0;bottom:0;width:272px;display:flex;flex-direction:column;padding:20px 14px 16px;z-index:40;
@@ -75,6 +75,28 @@ body.app .wrap{max-width:1140px;width:100%;margin:0 auto;padding:30px 28px 56px}
   body.app .wrap{padding:20px 16px 48px}
   .topbar{padding:0 16px}
   .wschip{display:none}
+}
+
+
+/* ---------- mobile app drawer ---------- */
+.menubtn{display:none;align-items:center;justify-content:center;width:38px;height:38px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);font-size:20px;cursor:pointer;flex:none;padding:0}
+.scrim{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:39;border:0}
+@media(max-width:700px){
+  .menubtn{display:inline-flex}
+  body.app .sidebar{width:272px;padding:20px 14px 16px;transform:translateX(-105%);transition:transform .25s ease;box-shadow:0 12px 40px rgba(15,23,42,.18)}
+  body.app .sidebar .brand span{display:inline}
+  body.app .sidebar .snav a .navtext{display:inline}
+  body.app .sidebar .sfootmeta{display:block}
+  .snav a{justify-content:flex-start;padding:10px 12px}
+  .sfoot{justify-content:flex-start}
+  .brand{justify-content:flex-start;padding:4px 8px 22px}
+  body.app .main{margin-left:0}
+  body.nav-open .sidebar{transform:none}
+  body.nav-open .scrim{display:block}
+  .profile .pmeta{display:none}
+  .topbar{padding:0 12px;gap:10px}
+  .dhead{flex-direction:column;align-items:flex-start;gap:12px}
+  .dqactions{width:100%;flex-wrap:wrap;gap:8px}
 }
 
 /* ---------- public + auth ---------- */
