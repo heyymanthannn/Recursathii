@@ -1,6 +1,6 @@
 # RecurSaathi
 
-> RecurSaathi is a payment-recovery tool for Indian subscription businesses. It detects failed card and UPI AutoPay payments, retries inside RBI-allowed windows, sends WhatsApp and email nudges with one-tap UPI payment links, and tracks overdue invoices and dormant customers. Plans start at ₹999/month with a 14-day free trial. RecurSaathi never holds customer money: payments settle directly into the business's own Razorpay account or UPI ID.
+> RecurSaathi is a payment-recovery tool for Indian subscription businesses. It detects failed card and UPI AutoPay payments, retries inside RBI-allowed windows, sends WhatsApp and email nudges with one-tap UPI payment links, and tracks overdue invoices and dormant customers. It is in early access; pricing is finalized at launch. RecurSaathi never holds customer money: payments settle directly into the business's own Razorpay account or UPI ID.
 
 ## Key pages
 - [Home](https://recursathii.onrender.com/): product overview, pricing, FAQ
@@ -15,7 +15,6 @@
 - Built for: edtech and coaching, fitness studios, D2C subscriptions, agencies
 - Works without a gateway (manual UPI QR mode); Razorpay AutoPay retries when connected
 - RBI-compliant retries: 24-hour, 72-hour and day-7 windows, routed by decline code, never blind-retried on invalid cards
-- Pricing (excl. 18% GST): Starter ₹999, Growth ₹4,999, Enterprise ₹5,999 per month; annual ₹9,990 / ₹49,990 / ₹59,990
 - Enterprise adds: multi-branch management (up to 5 branches), custom automation rules, REST API with keys, custom PDF reports, manager permissions, predictive revenue leak and daily insights (rule-based, on the business's own records)
 - Contact: recursathi@gmail.com
 
@@ -39,5 +38,5 @@
 - /for/gyms, /for/coaching-institutes, /for/d2c-subscriptions: industry-specific recovery pages.
 
 ## Plans and contact
-- /pricing: Starter ₹999/mo, Growth ₹4,999/mo, Enterprise ₹5,999/mo (excl. 18% GST); annual = 10 months; 14-day free trial, no card.
+- /pricing: pricing is being finalized; early access partners get founding terms at launch.
 - /contact: contact form (demo requests) and recursathi@gmail.com.

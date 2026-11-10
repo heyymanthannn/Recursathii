@@ -394,6 +394,7 @@ html{scroll-behavior:smooth}
 .badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;margin-right:8px}
 .b-retry{background:#e4f4e6;color:#1d7a37}.b-wait{background:#fdf1dd;color:#9a6b1f}.b-stop{background:#fbe5e5;color:#b3261e}
 </style></head><body>
+<div id="eaBanner" style="background:#eef0ff;border-bottom:1px solid #dcdcff;color:#3d3d8f;font-size:13px;text-align:center;padding:9px 16px;position:relative;z-index:60">RecurSaathi is in early access &mdash; this page describes the product we&rsquo;re building. <a href="mailto:recursathi@gmail.com?subject=RecurSaathi%20Early%20Access%20Request" style="color:#4f46e5;font-weight:700;text-decoration:underline">Request early access</a></div>
 <div class="aurora" aria-hidden="true"><i class="b1"></i><i class="b2"></i><i class="b3"></i><i class="b4"></i></div>
 <nav class="nav">
   <div class="in">
@@ -403,11 +404,10 @@ html{scroll-behavior:smooth}
       <a href="/#features">Features</a>
       <a href="/#radar">Recovery Radar</a>
       <a href="/#analytics">Analytics</a>
-      <a href="/#pricing">Pricing</a>
+      <a href="/pricing">Pricing</a>
       <a href="/#faq">FAQ</a>
     </div>
-    <a class="nlogin" href="/login">Log in</a>
-    <a class="btn btn-primary btn-sm nbtn" href="/signup">Start free trial</a>
+    <a class="btn btn-primary btn-sm nbtn" href="mailto:recursathi@gmail.com?subject=RecurSaathi%20Early%20Access%20Request">Request early access</a>
   </div>
 </nav>
 <main class="page"><span class="kick2">Guide</span><h1>Retrying failed Razorpay AutoPay payments</h1><p class="lead">Razorpay's built-in retries are a start. Here is where they stop, and what a recovery layer picks up from there.</p>
@@ -430,7 +430,7 @@ html{scroll-behavior:smooth}
 </ul>
 <h2>How RecurSaathi fits with Razorpay</h2>
 <p>RecurSaathi is a recovery layer on top of your gateway, not a replacement for it. Keep billing on Razorpay; RecurSaathi tracks every failed payment, schedules retries that respect the e-mandate rules, sends the nudges between them, verifies manual "I've paid" claims, and goes after overdue invoices and dormant customers the gateway never touches.</p>
-<div class="cta2"><a class="btn btn-primary" href="/signup">Start 14-day free trial</a><a class="herosec" href="/upi-autopay-failure-decoder">Decode failure codes</a><a class="herosec" href="/guide">The recovery guide</a></div>
+<div class="cta2"><a class="btn btn-primary" href="mailto:recursathi@gmail.com?subject=RecurSaathi%20Early%20Access%20Request">Request early access</a><a class="herosec" href="/upi-autopay-failure-decoder">Decode failure codes</a><a class="herosec" href="/guide">The recovery guide</a></div>
 </div>
 <section class="calcfaq"><h2>Questions people ask</h2><details><summary>Does RecurSaathi replace Razorpay?</summary><p>No. Your billing and settlements stay on Razorpay. RecurSaathi works on top, handling the recovery workflow around failed payments, overdue invoices and dormant customers.</p></details><details><summary>Do I need to move my mandates?</summary><p>No. RecurSaathi tracks and schedules around the payments your gateway already processes; nothing is re-created or migrated.</p></details><details><summary>Does RecurSaathi hold customer money?</summary><p>No. Payments settle directly into your own account. RecurSaathi never touches the funds.</p></details></section></main><footer>
   <div class="wrap">
@@ -439,7 +439,7 @@ html{scroll-behavior:smooth}
         <a class="logo" href="/#top"><i></i><span><b>Recur</b>Saathi</span></a>
         <p style="margin-top:14px">Revenue recovery for Indian subscription businesses. Failed payments, overdue invoices and dormant customers, managed end to end.</p>
       </div>
-      <div><h4>Product</h4><ul><li><a href="/#how">How it works</a></li><li><a href="/#features">Features</a></li><li><a href="/#radar">Recovery Radar</a></li><li><a href="/#analytics">Analytics</a></li><li><a href="/#pricing">Pricing</a></li></ul></div>
+      <div><h4>Product</h4><ul><li><a href="/#how">How it works</a></li><li><a href="/#features">Features</a></li><li><a href="/#radar">Recovery Radar</a></li><li><a href="/#analytics">Analytics</a></li><li><a href="/pricing">Pricing</a></li></ul></div>
       <div><h4>Company</h4><ul><li><a href="/failed-payment-calculator">Free calculator</a></li><li><a href="/about">About</a></li><li><a href="/upi-autopay-recovery">UPI AutoPay recovery</a></li><li><a href="/guide">Recovery guide</a></li><li><a href="/#faq">FAQ</a></li><li><a href="mailto:recursathi@gmail.com">recursathi@gmail.com</a></li></ul></div>
       <div><h4>Legal</h4><ul><li><a href="/privacy">Privacy Policy</a></li><li><a href="/terms">Terms of Service</a></li></ul></div>
     </div>

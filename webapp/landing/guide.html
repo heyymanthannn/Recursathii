@@ -308,7 +308,8 @@ footer a:hover{color:var(--ink)}
 }
 </style>
 </head>
-<body><style>.article{max-width:760px;margin:0 auto;padding:96px 0 60px}.article h1{font-size:clamp(30px,4.5vw,44px);line-height:1.12;letter-spacing:-.02em;margin:0 0 18px}.article .lede{font-size:18px;color:var(--mut);margin:0 0 34px}.article h2{font-size:23px;letter-spacing:-.01em;margin:34px 0 12px}.article p,.article li{font-size:16.5px;line-height:1.65;color:var(--mut)}.article strong{color:var(--ink)}.article a{color:var(--ink);text-decoration:underline;text-decoration-color:rgba(109,94,245,.5)}.article-cta{display:flex;gap:12px;margin-top:40px;flex-wrap:wrap}.crumb{font-size:14px;margin-bottom:26px}.crumb a{color:var(--mut);text-decoration:none}.crumb a:hover{color:var(--ink)}@media(max-width:640px){.article{padding:70px 0 40px}}</style>
+<body>
+<div id="eaBanner" style="background:#eef0ff;border-bottom:1px solid #dcdcff;color:#3d3d8f;font-size:13px;text-align:center;padding:9px 16px;position:relative;z-index:60">RecurSaathi is in early access &mdash; this page describes the product we&rsquo;re building. <a href="mailto:recursathi@gmail.com?subject=RecurSaathi%20Early%20Access%20Request" style="color:#4f46e5;font-weight:700;text-decoration:underline">Request early access</a></div><style>.article{max-width:760px;margin:0 auto;padding:96px 0 60px}.article h1{font-size:clamp(30px,4.5vw,44px);line-height:1.12;letter-spacing:-.02em;margin:0 0 18px}.article .lede{font-size:18px;color:var(--mut);margin:0 0 34px}.article h2{font-size:23px;letter-spacing:-.01em;margin:34px 0 12px}.article p,.article li{font-size:16.5px;line-height:1.65;color:var(--mut)}.article strong{color:var(--ink)}.article a{color:var(--ink);text-decoration:underline;text-decoration-color:rgba(109,94,245,.5)}.article-cta{display:flex;gap:12px;margin-top:40px;flex-wrap:wrap}.crumb{font-size:14px;margin-bottom:26px}.crumb a{color:var(--mut);text-decoration:none}.crumb a:hover{color:var(--ink)}@media(max-width:640px){.article{padding:70px 0 40px}}</style>
 <div class="aurora" aria-hidden="true"><i class="b1"></i><i class="b2"></i><i class="b3"></i><i class="b4"></i></div>
 
 <nav class="nav">
@@ -318,10 +319,10 @@ footer a:hover{color:var(--ink)}
       <a href="/#features">Features</a>
       <a href="/#radar">Recovery Radar</a>
       <a href="/#analytics">Analytics</a>
-      <a href="/#pricing">Pricing</a>
+      <a href="/pricing">Pricing</a>
       <a href="/#faq">FAQ</a>
     </div>
-    <button class="btn btn-primary btn-sm nbtn" data-form="growth">Start free trial</button>
+    <a class="btn btn-primary btn-sm nbtn" href="mailto:recursathi@gmail.com?subject=RecurSaathi%20Early%20Access%20Request">Request early access</a>
   </div>
 </nav>
 
@@ -358,10 +359,10 @@ footer a:hover{color:var(--ink)}
 
     <h2>How RecurSaathi automates this</h2>
     <p><a href="/#features">RecurSaathi</a> runs the whole loop for you: it monitors failed card and UPI payments, retries inside the RBI-permitted windows plus a longer next-day cadence, sends WhatsApp and email nudges with one-tap payment links, offers a manual UPI QR mode that works from day one without Razorpay, and shows you exactly how much was recovered in its <a href="/#analytics">analytics</a> and <a href="/#radar">Recovery Radar</a> views.</p>
-    <p>It works for coaching academies, gyms and studios, subscription ecommerce and any business billing customers on a cycle. <a href="/signup">Start a 14-day free trial</a> — no card needed.</p>
+    <p>It works for coaching academies, gyms and studios, subscription ecommerce and any business billing customers on a cycle. <a href="mailto:recursathi@gmail.com?subject=RecurSaathi%20Early%20Access%20Request">Request early access</a> — no card needed.</p>
 
     <div class="article-cta">
-      <a class="btn btn-primary" href="/signup">Start a 14-day free trial</a>
+      <a class="btn btn-primary" href="mailto:recursathi@gmail.com?subject=RecurSaathi%20Early%20Access%20Request">Request early access</a>
       <a class="btn btn-ghost" href="/#faq">Read the FAQ</a>
     </div>
    </article>
@@ -374,7 +375,7 @@ footer a:hover{color:var(--ink)}
         <a class="logo" href="/#top"><i></i><span><b>Recur</b>Saathi</span></a>
         <p style="margin-top:14px">Revenue recovery for Indian subscription businesses. Failed payments, overdue invoices and dormant customers, managed end to end.</p>
       </div>
-      <div><h4>Product</h4><ul><li><a href="/#how">How it works</a></li><li><a href="/#features">Features</a></li><li><a href="/#radar">Recovery Radar</a></li><li><a href="/#analytics">Analytics</a></li><li><a href="/#pricing">Pricing</a></li></ul></div>
+      <div><h4>Product</h4><ul><li><a href="/#how">How it works</a></li><li><a href="/#features">Features</a></li><li><a href="/#radar">Recovery Radar</a></li><li><a href="/#analytics">Analytics</a></li><li><a href="/pricing">Pricing</a></li></ul></div>
       <div><h4>Company</h4><ul><li><a href="/#faq">FAQ</a></li><li><a href="mailto:recursathi@gmail.com">recursathi@gmail.com</a></li></ul></div>
       <div><h4>Legal</h4><ul><li><a href="/privacy">Privacy Policy</a></li><li><a href="/terms">Terms of Service</a></li></ul></div>
     </div>
@@ -382,93 +383,11 @@ footer a:hover{color:var(--ink)}
   </div>
 </footer>
 
-<div class="modal" id="signupModal" aria-hidden="true" role="dialog" aria-label="Start your free trial">
-  <div class="veil"></div>
-  <div class="mcard glass">
-    <button class="mclose" id="mclose" aria-label="Close">✕</button>
-    <h3 id="mplan">Start your free trial</h3>
-    <p class="msub">14 days free. No card needed to start.</p>
-    <form id="signupForm" novalidate>
-      <input name="name" placeholder="Your name" autocomplete="name" required>
-      <input name="email" type="email" placeholder="Work email" autocomplete="email" required>
-      <input name="phone" type="tel" placeholder="Phone (optional)" autocomplete="tel">
-      <button class="btn btn-primary" type="submit">Create account</button>
-      <p class="fmsg" id="formMsg"></p>
-    </form>
-  </div>
-</div>
-
-<div class="popwrap" id="promoPop" aria-hidden="true">
-  <div class="veil"></div>
-  <div class="popcard glass">
-    <button class="pclose" id="pclose" aria-label="Close">✕</button>
-    <h3>Stop losing revenue to failed payments</h3>
-    <p>RecurSaathi recovers failed card and UPI payments, chases overdue invoices and reactivates dormant customers. Start your free trial in under a minute.</p>
-    <div class="ctas"><button class="btn btn-primary" id="pcta">Start your free trial</button><button class="pdismiss" id="pdismiss">Maybe later</button></div>
-  </div>
-</div>
-
 <div class="cbar glass" id="cbar"><span>This site uses a few cookies to keep things working. No trackers, nothing shared.</span><button class="btn btn-ghost btn-sm" id="cbar-ok">Got it</button></div>
 
 <script>document.documentElement.classList.add('js')</script>
-<script>
-var modal=document.getElementById('signupModal'), chosen='growth';
-document.querySelectorAll('[data-form]').forEach(function(b){
-  b.addEventListener('click',function(e){e.preventDefault();chosen=b.getAttribute('data-form');openModal();});
-});
-function openModal(){
-  document.getElementById('mplan').textContent='Start your '+chosen.charAt(0).toUpperCase()+chosen.slice(1)+' free trial';
-  modal.classList.add('open');modal.setAttribute('aria-hidden','false');
-}
-document.getElementById('mclose').onclick=function(){modal.classList.remove('open');};
-modal.addEventListener('click',function(e){if(e.target===modal)modal.classList.remove('open');});
-document.getElementById('signupForm').addEventListener('submit',async function(e){
-  e.preventDefault();
-  var f=e.target, msg=document.getElementById('formMsg'), btn=f.querySelector('button');
-  var g=function(n){return ((f.elements[n]||{}).value||'').trim();};
-  msg.textContent='';msg.classList.remove('ok');btn.textContent='Creating account…';btn.disabled=true;var slow=null;
-  try{
-    slow=setTimeout(function(){msg.textContent='Warming up the server — first load can take up to a minute. Staying on it…';},4000);
-    var body=JSON.stringify({name:g('name'),email:g('email'),phone:g('phone'),plan:chosen});
-    var r=null,d=null,ct='';
-    for(var attempt=1;attempt<=5;attempt++){
-      try{
-        r=await fetch('/api/signup', {method:'POST',headers:{'Content-Type':'application/json'},body:body});
-        ct=(r.headers.get('content-type')||'');d=null;
-        try{if(ct.indexOf('json')>-1)d=await r.json();}catch(_){}
-        break;
-      }catch(netErr){
-        if(attempt<5){msg.textContent='Couldn\u2019t reach the server, it may be waking up. Retrying\u2026';await new Promise(function(res){setTimeout(res,3000);});}
-        else{msg.textContent='The signup server isn\u2019t reachable right now. Give it a minute and tap Create account again, or email recursathi@gmail.com.';return;}
-      }
-    }
-    if(!d){msg.textContent='This demo page has no signup server behind it. Signup works in the full app build, or email recursathi@gmail.com and we\u2019ll set you up.';return;}
-    if(!r.ok)throw new Error(d.detail||'Signup failed');
-    msg.textContent='Account created. Taking you to checkout…';msg.classList.add('ok');
-    setTimeout(function(){window.location.href=d.checkout_url;},600);
-  }catch(err){msg.textContent=(err&&err.message&&!/fetch/i.test(err.message))?err.message:'Something went wrong. Tap Create account again, or email recursathi@gmail.com.';}
-  finally{clearTimeout(slow);btn.disabled=false;btn.textContent='Create account';}
-});
-</script>
-<script>
-var pop=document.getElementById('promoPop');
-function rsPopSeen(){ try{return sessionStorage.getItem('rs_pop');}catch(e){return '1';} }
-function rsShowPop(){
-  if(rsPopSeen())return;
-  if(document.getElementById('signupModal').classList.contains('open'))return;
-  pop.classList.add('open');pop.setAttribute('aria-hidden','false');
-}
-function rsClosePop(){
-  pop.classList.remove('open');pop.setAttribute('aria-hidden','true');
-  try{sessionStorage.setItem('rs_pop','1');}catch(e){}
-}
-document.getElementById('pcta').onclick=function(){rsClosePop();chosen='growth';openModal();};
-document.getElementById('pclose').onclick=rsClosePop;
-document.getElementById('pdismiss').onclick=rsClosePop;
-pop.addEventListener('click',function(e){if(e.target===pop)rsClosePop();});
-setTimeout(rsShowPop,18000);
-document.addEventListener('mouseout',function(e){if(!e.relatedTarget&&e.clientY<=0)rsShowPop();});
-</script>
+
+
 <script>
 (function(){
   var list=[].slice.call(document.querySelectorAll('.shead,.fcard,.ritem,.step,.wcard,.adata,.pcardwrap,.faq details,.radarpanel,.apanel,.ctapanel,.chips,.moneynote'));

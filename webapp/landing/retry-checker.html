@@ -394,6 +394,7 @@ html{scroll-behavior:smooth}
 .badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;margin-right:8px}
 .b-retry{background:#e4f4e6;color:#1d7a37}.b-wait{background:#fdf1dd;color:#9a6b1f}.b-stop{background:#fbe5e5;color:#b3261e}
 </style></head><body>
+<div id="eaBanner" style="background:#eef0ff;border-bottom:1px solid #dcdcff;color:#3d3d8f;font-size:13px;text-align:center;padding:9px 16px;position:relative;z-index:60">RecurSaathi is in early access &mdash; this page describes the product we&rsquo;re building. <a href="mailto:recursathi@gmail.com?subject=RecurSaathi%20Early%20Access%20Request" style="color:#4f46e5;font-weight:700;text-decoration:underline">Request early access</a></div>
 <div class="aurora" aria-hidden="true"><i class="b1"></i><i class="b2"></i><i class="b3"></i><i class="b4"></i></div>
 <nav class="nav">
   <div class="in">
@@ -403,11 +404,10 @@ html{scroll-behavior:smooth}
       <a href="/#features">Features</a>
       <a href="/#radar">Recovery Radar</a>
       <a href="/#analytics">Analytics</a>
-      <a href="/#pricing">Pricing</a>
+      <a href="/pricing">Pricing</a>
       <a href="/#faq">FAQ</a>
     </div>
-    <a class="nlogin" href="/login">Log in</a>
-    <a class="btn btn-primary btn-sm nbtn" href="/signup">Start free trial</a>
+    <a class="btn btn-primary btn-sm nbtn" href="mailto:recursathi@gmail.com?subject=RecurSaathi%20Early%20Access%20Request">Request early access</a>
   </div>
 </nav>
 <main class="page"><span class="kick2">Free tool</span><h1>UPI AutoPay retry window checker</h1><p class="lead">Enter when the first AutoPay attempt failed and see your next allowed retry windows, spaced the way RBI's e-mandate rules require. Runs in your browser; nothing is stored.</p>
@@ -433,7 +433,7 @@ html{scroll-behavior:smooth}
 </ul>
 <h2>Where a process beats a calendar</h2>
 <p>This checker tells you when you are allowed to retry. RecurSaathi runs the whole loop for you: retries on schedule, nudges between them, and a human-verified "I've paid" path when the customer pays manually.</p>
-<div class="cta2"><a class="btn btn-primary" href="/signup">Start 14-day free trial</a><a class="herosec" href="/upi-autopay-mandate-failed-reasons">Why AutoPay mandates fail</a><a class="herosec" href="/guide">The recovery guide</a></div>
+<div class="cta2"><a class="btn btn-primary" href="mailto:recursathi@gmail.com?subject=RecurSaathi%20Early%20Access%20Request">Request early access</a><a class="herosec" href="/upi-autopay-mandate-failed-reasons">Why AutoPay mandates fail</a><a class="herosec" href="/guide">The recovery guide</a></div>
 </div>
 <section class="calcfaq"><h2>Questions people ask</h2><details><summary>How many times can I retry a failed UPI AutoPay payment?</summary><p>A common pattern is up to 3 attempts in a day per mandate, at least 60 minutes apart. The exact cap depends on your mandate type and gateway, so confirm with yours.</p></details><details><summary>Does the counter reset at midnight?</summary><p>Yes. The daily attempt count is per day, so a mandate that failed 3 times today gets a fresh set tomorrow.</p></details><details><summary>Is a retry the same as a fresh payment request?</summary><p>No. A retry re-presents the same mandate debit. Raising a separate one-time payment link is a different route that does not consume mandate retries, and is often the faster way to get paid.</p></details></section></main><footer>
   <div class="wrap">
@@ -442,7 +442,7 @@ html{scroll-behavior:smooth}
         <a class="logo" href="/#top"><i></i><span><b>Recur</b>Saathi</span></a>
         <p style="margin-top:14px">Revenue recovery for Indian subscription businesses. Failed payments, overdue invoices and dormant customers, managed end to end.</p>
       </div>
-      <div><h4>Product</h4><ul><li><a href="/#how">How it works</a></li><li><a href="/#features">Features</a></li><li><a href="/#radar">Recovery Radar</a></li><li><a href="/#analytics">Analytics</a></li><li><a href="/#pricing">Pricing</a></li></ul></div>
+      <div><h4>Product</h4><ul><li><a href="/#how">How it works</a></li><li><a href="/#features">Features</a></li><li><a href="/#radar">Recovery Radar</a></li><li><a href="/#analytics">Analytics</a></li><li><a href="/pricing">Pricing</a></li></ul></div>
       <div><h4>Company</h4><ul><li><a href="/failed-payment-calculator">Free calculator</a></li><li><a href="/about">About</a></li><li><a href="/upi-autopay-recovery">UPI AutoPay recovery</a></li><li><a href="/guide">Recovery guide</a></li><li><a href="/#faq">FAQ</a></li><li><a href="mailto:recursathi@gmail.com">recursathi@gmail.com</a></li></ul></div>
       <div><h4>Legal</h4><ul><li><a href="/privacy">Privacy Policy</a></li><li><a href="/terms">Terms of Service</a></li></ul></div>
     </div>
