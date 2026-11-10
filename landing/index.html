@@ -54,7 +54,25 @@
       "price": "5999",
       "priceCurrency": "INR",
       "description": "Full platform with AI Recovery Assistant"
-     }
+     },
+    {
+     "@type": "Offer",
+     "name": "Starter (Global)",
+     "price": "12",
+     "priceCurrency": "USD"
+    },
+    {
+     "@type": "Offer",
+     "name": "Growth (Global)",
+     "price": "29",
+     "priceCurrency": "USD"
+    },
+    {
+     "@type": "Offer",
+     "name": "Scale (Global)",
+     "price": "69",
+     "priceCurrency": "USD"
+    }
     ]
    }
   },
@@ -108,13 +126,13 @@
       "@type": "Answer",
       "text": "Yes. Every message carries an opt-out link, and opted-out customers are excluded from all future reminders automatically."
      }
-    }
+    },
     {
      "@type": "Question",
      "name": "What is RecurSaathi?",
      "acceptedAnswer": {
       "@type": "Answer",
-      "text": "RecurSaathi is a revenue-recovery tool for Indian subscription businesses. It monitors failed card and UPI payments, retries inside RBI's allowed windows, follows up with WhatsApp and email nudges plus one-tap UPI payment links, and chases overdue invoices and dormant customers. Plans start at ₹999 a month with a 14-day free trial, no card needed."
+      "text": "RecurSaathi is a revenue-recovery tool for Indian subscription businesses. It monitors failed card and UPI payments, retries inside RBI's allowed windows, follows up with WhatsApp and email nudges plus one-tap UPI payment links, and chases overdue invoices and dormant customers. Plans start at ₹999 a month with a 14-day free trial, no card needed. For customers outside India, plans start at $12 a month."
      }
     },
     {
@@ -123,6 +141,14 @@
      "acceptedAnswer": {
       "@type": "Answer",
       "text": "Read the failure reason from your gateway response, retry soft declines like insufficient balance inside the allowed RBI windows (24 hours, 72 hours and day 7), and send the customer a same-day WhatsApp nudge with a one-tap UPI payment link. RecurSaathi automates this ladder, and the sequence works with any gateway."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Does RecurSaathi work outside India?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "RecurSaathi is built around Indian payment rails: automated retries follow RBI windows and collection runs on UPI and Razorpay AutoPay. Businesses anywhere can use its reminders, invoices and recovery tracking, and global customers can pay in USD, but payment collection itself is India-first today."
      }
     }
    ]
@@ -186,7 +212,9 @@ img{max-width:100%}
 .nlinks{display:flex;gap:24px;font-size:14px;color:var(--mut);font-weight:500}
 .nlinks a{position:relative;padding:4px 0;transition:color .2s}
 .nlinks a:hover{color:var(--ink)}
-.nbtn{margin-left:auto}
+.nlogin{margin-left:auto;font-weight:600;font-size:14.5px;color:var(--ink);text-decoration:none;opacity:.85}
+.nlogin:hover{opacity:1}
+.nbtn{margin-left:0}
 @media(max-width:860px){.nlinks{display:none}}
 
 /* hero */
@@ -291,6 +319,7 @@ h2{font-size:clamp(30px,4.4vw,52px);line-height:1.08;letter-spacing:-.035em;font
 @media(max-width:880px){.pgrid{grid-template-columns:1fr;max-width:440px;margin:0 auto}}
 .pcard{padding:32px 30px;display:flex;flex-direction:column;border-radius:var(--r-lg)}
 .pcard .plan{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.pcard .price .usd{display:block;font-size:14px;font-weight:500;color:#9aa3b8;margin-top:2px}
 .pcard h3{font-size:26px;letter-spacing:-.02em;margin-top:6px}
 .pcard .cap{font-size:14px;color:var(--mut);margin-top:6px}
 .price{font-size:clamp(30px,3.6vw,40px);font-weight:700;letter-spacing:-.03em;margin:20px 0 4px}
@@ -419,6 +448,7 @@ footer a:hover{color:var(--ink)}
       <a href="#pricing">Pricing</a>
       <a href="#faq">FAQ</a>
     </div>
+    <a class="nlogin" href="/login">Log in</a>
     <button class="btn btn-primary btn-sm nbtn" data-form="growth">Start free trial</button>
   </div>
 </nav>
@@ -426,11 +456,11 @@ footer a:hover{color:var(--ink)}
 <header class="hero" id="top">
   <div class="wrap">
     <span class="eyebrow">PAYMENT RECOVERY FOR INDIAN SUBSCRIPTIONS</span>
-    <h1>Failed payments.<br><span class="grad">Recovered.</span></h1>
-    <p class="sub">RecurSaathi chases failed card and UPI payments with RBI-timed retries, WhatsApp nudges and daily AI-agent calls. Set it up once, it runs every day.</p>
+    <h1>Stop Losing Revenue.<br><span class="grad">Recover What Your Business Earns.</span></h1>
+    <p class="sub">RecurSaathi recovers failed card and UPI payments for Indian subscription businesses: RBI-timed retries, WhatsApp nudges and daily AI-agent calls. Set it up once, it runs every day.</p>
     <div class="ctas">
-      <button class="btn btn-primary btn-lg" data-form="growth">Start free</button>
-      <a class="btn btn-ghost btn-lg" href="#how">See how it works</a>
+      <button class="btn btn-primary btn-lg" data-form="growth">Start free trial</button>
+      <a class="btn btn-ghost btn-lg" href="/dashboard">Explore dashboard</a>
     </div>
     <p class="micro">14 days free · no card needed to start</p>
   </div>
@@ -461,12 +491,11 @@ footer a:hover{color:var(--ink)}
             </ul>
           </div>
         </div>
-        <p class="mocknote">Product preview. Your dashboard starts empty and fills with your own numbers.</p>
+        <p class="mocknote">Illustrative preview. Your dashboard starts empty and fills with your own numbers.</p>
       </div>
     </div>
     <div class="whatsnew">
-      <span class="wnchip"><span class="tag new">New</span> Daily AI agent calls — one polite AI call per overdue customer, every day, scripts editable <span class="d">· Nov 9</span></span>
-<span class="wnchip"><span class="tag new">New</span> Manual UPI mode — collect on your own UPI handle with a QR, zero fees, no KYC <span class="d">· Nov 7</span></span>
+      <span class="wnchip"><span class="tag new">New</span> Manual UPI mode — collect on your own UPI handle with a QR, zero fees, no KYC <span class="d">· Nov 7</span></span>
       <span class="wnchip"><span class="tag imp">Improved</span> Segmentation &amp; reactivation reports — dormant-customer lists you can act on <span class="d">· Nov 7</span></span>
     </div>
   </div>
@@ -537,9 +566,9 @@ footer a:hover{color:var(--ink)}
   <div class="wrap">
     <div class="shead reveal"><span class="kick">Pricing</span><h2>Simple pricing that pays for itself.</h2><p>Every plan starts with a 14-day free trial. No card needed, and the features above are ready from day one.</p></div>
     <div class="pgrid">
-      <div class="pcardwrap reveal"><div class="pcard glass"><span class="plan">Starter</span><h3>Starter</h3><p class="cap">Up to ₹1 lakh monthly revenue</p><div class="price">₹2,999<small>/mo</small></div><ul><li>All features from day one</li><li>Manual UPI mode included</li><li>14-day free trial</li></ul><button class="btn btn-ghost" data-form="starter">Start free trial</button></div></div>
-      <div class="pcardwrap reveal"><span class="pop">Most popular</span><div class="pcard glass hot"><span class="plan">Growth</span><h3>Growth</h3><p class="cap">Up to ₹10 lakh monthly revenue</p><div class="price">₹7,999<small>/mo</small></div><ul><li>All features from day one</li><li>Razorpay Autopay retries</li><li>WhatsApp &amp; email automations</li></ul><button class="btn btn-primary" data-form="growth">Start free trial</button></div></div>
-      <div class="pcardwrap reveal"><div class="pcard glass"><span class="plan">Scale</span><h3>Scale</h3><p class="cap">Above ₹10 lakh monthly revenue</p><div class="price">10%<small> of recovered</small></div><ul><li>All features from day one</li><li>Priority support</li><li>Custom onboarding</li></ul><button class="btn btn-ghost" data-form="scale">Start free trial</button></div></div>
+      <div class="pcardwrap reveal"><div class="pcard glass"><span class="plan">Starter</span><h3>Starter</h3><p class="cap">For businesses starting out</p><div class="price">₹999<small>/mo</small><span class="usd">$12/mo global</span></div><ul><li>Customer &amp; invoice management</li><li>Basic Recovery Radar</li><li>Manual UPI collection</li><li>Basic analytics + email notifications</li></ul><button class="btn btn-ghost" data-form="starter">Start free trial</button></div></div>
+      <div class="pcardwrap reveal"><span class="pop">Most popular</span><div class="pcard glass hot"><span class="plan">Growth</span><h3>Growth</h3><p class="cap">Up to ₹10 lakh monthly revenue</p><div class="price">₹2,499<small>/mo</small><span class="usd">$29/mo global</span></div><ul><li>Everything in Starter</li><li>Automated email reminders + WhatsApp integration</li><li>Dormant customer recovery</li><li>Advanced analytics</li></ul><button class="btn btn-primary" data-form="growth">Start free trial</button></div></div>
+      <div class="pcardwrap reveal"><div class="pcard glass"><span class="plan">Scale</span><h3>Scale</h3><p class="cap">Above ₹10 lakh monthly revenue</p><div class="price">₹5,999<small>/mo</small><span class="usd">$69/mo global</span></div><ul><li>Everything in Growth</li><li>AI Recovery Assistant</li><li>Advanced reports &amp; team management</li><li>Priority support</li></ul><button class="btn btn-ghost" data-form="scale">Start free trial</button></div></div><p style="text-align:center;color:#9aa3b8;margin-top:18px;font-size:14px">Annual billing available at 10 months' price: ₹9,990 · ₹24,990 · ₹59,990 a year. All prices exclude 18% GST. For customers outside India: $12, $29 and $69 a month (annual $120, $290 and $690).</p>
     </div>
     <p class="pnote">14 days free · no card needed to start</p>
   </div>
@@ -580,8 +609,9 @@ footer a:hover{color:var(--ink)}
       <details class="glass reveal"><summary>Are retries RBI-compliant?<span class="plus">+</span></summary><p>Yes. UPI Autopay and card retry windows follow RBI rules, including the 24-hour, 72-hour and day-7 windows. We never blind-retry hard declines like invalid cards.</p></details>
       <details class="glass reveal"><summary>Is my data safe?<span class="plus">+</span></summary><p>We store gateway tokens, never card numbers or PANs. Passwords are salted and hashed. Every webhook is signature-verified, and every automation action lands in an audit trail.</p></details>
       <details class="glass reveal"><summary>Can customers opt out of reminders?<span class="plus">+</span></summary><p>Yes. Every message carries an opt-out link, and opted-out customers are excluded from all future reminders automatically.</p></details>
-      <details class="glass reveal"><summary>What is RecurSaathi?<span class="plus">+</span></summary><p>RecurSaathi is a revenue-recovery tool for Indian subscription businesses. It monitors failed card and UPI payments, retries inside RBI’s allowed windows, follows up with WhatsApp and email nudges plus one-tap UPI payment links, and chases overdue invoices and dormant customers. Plans start at ₹999 a month with a 14-day free trial, no card needed.</p></details>
+      <details class="glass reveal"><summary>What is RecurSaathi?<span class="plus">+</span></summary><p>RecurSaathi is a revenue-recovery tool for Indian subscription businesses. It monitors failed card and UPI payments, retries inside RBI’s allowed windows, follows up with WhatsApp and email nudges plus one-tap UPI payment links, and chases overdue invoices and dormant customers. Plans start at ₹999 a month with a 14-day free trial, no card needed. For customers outside India, plans start at $12 a month.</p></details>
       <details class="glass reveal"><summary>How do I recover failed UPI AutoPay payments in India?<span class="plus">+</span></summary><p>Read the failure reason from your gateway response, retry soft declines like insufficient balance inside the allowed RBI windows (24 hours, 72 hours and day 7), and send the customer a same-day WhatsApp nudge with a one-tap UPI payment link. RecurSaathi automates this ladder, and the sequence works with any gateway.</p></details>
+      <details class="glass reveal"><summary>Does RecurSaathi work outside India?<span class="plus">+</span></summary><p>RecurSaathi is built around Indian payment rails: automated retries follow RBI windows and collection runs on UPI and Razorpay AutoPay. Businesses anywhere can use its reminders, invoices and recovery tracking, and global customers can pay in USD, but payment collection itself is India-first today.</p></details>
     </div>
   </div>
 </section>
@@ -611,6 +641,7 @@ footer a:hover{color:var(--ink)}
       <input name="name" placeholder="Your name" autocomplete="name" required>
       <input name="email" type="email" placeholder="Work email" autocomplete="email" required>
       <input name="phone" type="tel" placeholder="Phone (WhatsApp)" autocomplete="tel" required>
+      <input name="password" type="password" placeholder="Choose a password (min 8 characters)" autocomplete="new-password" minlength="8" required>
       <button class="btn btn-primary" type="submit">Create account</button>
       <p class="fmsg" id="formMsg"></p>
     </form>
@@ -646,10 +677,11 @@ document.getElementById('signupForm').addEventListener('submit',async function(e
   var f=e.target, msg=document.getElementById('formMsg'), btn=f.querySelector('button');
   var g=function(n){return ((f.elements[n]||{}).value||'').trim();};
   if(!g('phone')){msg.textContent='Phone number is required to start your free trial.';btn.textContent='Create account';return;}
+  if(g('password').length<8){msg.textContent='Password needs at least 8 characters.';btn.textContent='Create account';return;}
   msg.textContent='';msg.classList.remove('ok');btn.textContent='Creating account…';btn.disabled=true;var slow=null;
   try{
     slow=setTimeout(function(){msg.textContent='Warming up the server — first load can take up to a minute. Staying on it…';},4000);
-    var body=JSON.stringify({name:g('name'),email:g('email'),phone:g('phone'),plan:chosen});
+    var body=JSON.stringify({name:g('name'),email:g('email'),phone:g('phone'),password:g('password'),plan:chosen});
     var r=null,d=null,ct='';
     for(var attempt=1;attempt<=5;attempt++){
       try{
@@ -664,8 +696,8 @@ document.getElementById('signupForm').addEventListener('submit',async function(e
     }
     if(!d){msg.textContent='This demo page has no signup server behind it. Signup works in the full app build, or email recursathi@gmail.com and we\u2019ll set you up.';return;}
     if(!r.ok)throw new Error(d.detail||'Signup failed');
-    msg.textContent='Account created. Taking you to checkout…';msg.classList.add('ok');
-    setTimeout(function(){window.location.href=d.checkout_url;},600);
+    msg.textContent='Account created. Taking you to login…';msg.classList.add('ok');
+    setTimeout(function(){window.location.href='/login?created=1';},600);
   }catch(err){msg.textContent=(err&&err.message&&!/fetch/i.test(err.message))?err.message:'Something went wrong. Tap Create account again, or email recursathi@gmail.com.';}
   finally{clearTimeout(slow);btn.disabled=false;btn.textContent='Create account';}
 });
