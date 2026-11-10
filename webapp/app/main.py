@@ -583,13 +583,21 @@ async def youpi_webhook(request: Request):
 # flushes the moment the channel is connected.
 import threading as _threading
 import time as _time
-from . import automations as _auto, notify as _notify, models as _models, retention as _retention
+from . import automations as _auto, notify as _notify, models as _models, retention as _retention, backup as _backup
 
 def _automation_worker():
     n = 0
+    last_backup = _time.time()
     while True:
         _time.sleep(60)
         n += 1
+        try:
+            if _time.time() - last_backup >= _backup.BACKUP_INTERVAL_S:
+                st = _backup.run_once("sched")
+                print(f"[backup] scheduled: {st}", flush=True)
+                last_backup = _time.time()  # set even on error: retry next interval, not every minute
+        except Exception:
+            pass
         try:
             # Retention agent: chase unpaid signups 5 minutes after they appear.
             try:
@@ -627,8 +635,14 @@ def _automation_worker():
 
 @app.on_event("startup")
 def _start_automation_worker():
+    def _boot_backup():
+        _time.sleep(45)  # let the app finish serving first requests
+        st = _backup.run_once("boot")
+        print(f"[backup] boot: {st}", flush=True)
     t = _threading.Thread(target=_automation_worker, name="automation-worker", daemon=True)
+    tb = _threading.Thread(target=_boot_backup, name="boot-backup", daemon=True)
     t.start()
+    tb.start()
 
 @app.get("/health/channels")
 async def health_channels():
