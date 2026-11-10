@@ -18,3 +18,26 @@
 - Pricing (excl. 18% GST): Starter ₹999, Growth ₹4,999, Enterprise ₹5,999 per month; annual ₹9,990 / ₹49,990 / ₹59,990
 - Enterprise adds: multi-branch management (up to 5 branches), custom automation rules, REST API with keys, custom PDF reports, manager permissions, predictive revenue leak and daily insights (rule-based, on the business's own records)
 - Contact: recursathi@gmail.com
+
+## Tools (free, no signup)
+- /failed-payment-calculator: failed-payment loss calculator (₹ MRR, failure rate → monthly and annual leak).
+- /rbi-retry-window-checker: when you may retry a failed UPI AutoPay debit (per-mandate retry caps, 60-minute spacing).
+- /upi-autopay-failure-decoder: decline-code decoder with plain-English meaning and the right next step.
+
+## Guides
+- /guide: full recovery playbook (RBI e-mandate retry rules, dunning cadence, WhatsApp nudges, manual UPI backups).
+- /upi-autopay-recovery: UPI AutoPay recovery for Indian subscription businesses.
+- /payment-failed-money-deducted: money debited but payment failed (RBI TAT rules, complaint steps, business playbook).
+- /upi-autopay-mandate-failed-reasons: the 8 reasons UPI AutoPay mandates fail and the right recovery move for each.
+- /razorpay-autopay-failed-payment-retry: retrying failed Razorpay AutoPay payments; where gateway tools stop.
+- /ai-invoice-reminder-software: invoice reminder software with a rule-based assistant (no external AI service).
+- /overdue-invoice-recovery: overdue invoice recovery playbook with timing and tone by stage.
+- /customer-reactivation: winning back dormant subscription customers.
+
+## Comparisons and verticals
+- /vs/razorpay-failed-payments-recovery: honest comparison of gateway-native retries vs a dedicated recovery layer.
+- /for/gyms, /for/coaching-institutes, /for/d2c-subscriptions: industry-specific recovery pages.
+
+## Plans and contact
+- /pricing: Starter ₹999/mo, Growth ₹4,999/mo, Enterprise ₹5,999/mo (excl. 18% GST); annual = 10 months; 14-day free trial, no card.
+- /contact: contact form (demo requests) and recursathi@gmail.com.

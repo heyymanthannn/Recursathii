@@ -489,9 +489,61 @@ async def calculator_page():
 async def about_page():
     return FileResponse("landing/about.html")
 
-@app.get("/signup", include_in_schema=False)
-async def signup_page():
-    return FileResponse("landing/index.html")
+@app.get("/rbi-retry-window-checker", include_in_schema=False)
+async def retry_checker_page():
+    return FileResponse("landing/retry-checker.html")
+
+@app.get("/upi-autopay-failure-decoder", include_in_schema=False)
+async def failure_decoder_page():
+    return FileResponse("landing/failure-decoder.html")
+
+@app.get("/payment-failed-money-deducted", include_in_schema=False)
+async def money_deducted_page():
+    return FileResponse("landing/money-deducted.html")
+
+@app.get("/upi-autopay-mandate-failed-reasons", include_in_schema=False)
+async def mandate_failures_page():
+    return FileResponse("landing/mandate-failures.html")
+
+@app.get("/razorpay-autopay-failed-payment-retry", include_in_schema=False)
+async def razorpay_retry_page():
+    return FileResponse("landing/razorpay-retry.html")
+
+@app.get("/ai-invoice-reminder-software", include_in_schema=False)
+async def ai_invoice_reminder_page():
+    return FileResponse("landing/ai-invoice-reminder.html")
+
+@app.get("/overdue-invoice-recovery", include_in_schema=False)
+async def overdue_invoice_page():
+    return FileResponse("landing/overdue-invoice-recovery.html")
+
+@app.get("/customer-reactivation", include_in_schema=False)
+async def customer_reactivation_page():
+    return FileResponse("landing/customer-reactivation.html")
+
+@app.get("/for/gyms", include_in_schema=False)
+async def for_gyms_page():
+    return FileResponse("landing/for-gyms.html")
+
+@app.get("/for/coaching-institutes", include_in_schema=False)
+async def for_coaching_page():
+    return FileResponse("landing/for-coaching.html")
+
+@app.get("/for/d2c-subscriptions", include_in_schema=False)
+async def for_d2c_page():
+    return FileResponse("landing/for-d2c.html")
+
+@app.get("/vs/razorpay-failed-payments-recovery", include_in_schema=False)
+async def vs_razorpay_page():
+    return FileResponse("landing/vs-razorpay.html")
+
+@app.get("/pricing", include_in_schema=False)
+async def pricing_page():
+    return FileResponse("landing/pricing.html")
+
+@app.get("/contact", include_in_schema=False)
+async def contact_page():
+    return FileResponse("landing/contact-page.html")
 
 @app.get("/robots.txt", include_in_schema=False)
 async def robots_txt():

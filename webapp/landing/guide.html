@@ -337,8 +337,8 @@ footer a:hover{color:var(--ink)}
     <h2>Why subscription payments fail</h2>
     <p>Most failed renewals are not fraud or non-payment. They are <strong>involuntary churn</strong>: a card expired, the UPI mandate hit its daily limit, the account was temporarily low on balance, or the bank flagged an unusual charge. The money was never refused; the payment just never went through. Every one of those failures is recoverable if you ask again, politely, at the right time.</p>
 
-    <h2>The RBI retry windows are your friend</h2>
-    <p>For recurring card mandates and UPI Autopay, the RBI defines when you may re-attempt a failed debit: roughly <strong>24 hours, 72 hours and on day 7</strong> after the first failure, with debit amounts above thresholds needing an additional approval step. Retrying before the window opens is not just ineffective, it can get your mandate degraded by the issuing bank.</p>
+    <h2>Retry windows: the rules and the cadence</h2>
+    <p>Under RBI's e-mandate framework, a failed recurring debit may be retried <strong>up to 3 times a day, at least 60 minutes apart</strong>; your gateway enforces the exact cap for your mandate type. Amounts above the no-additional-authentication threshold also need a 24-hour pre-debit notification. Beyond the daily attempts, many teams layer a longer cadence &mdash; one retry the next day, one around 72 hours, one on day 7 &mdash; which is a scheduling convention, not an RBI rule. Retrying before the permitted window wastes an attempt, and repeated early retries can make issuing banks treat your mandates less favourably.</p>
     <p>So the biggest recovery lever in India is not "retry harder", it is <strong>retry on schedule</strong>: one attempt in each RBI window, and never blind-retrying hard declines.</p>
 
     <h2>Payment failed but money deducted? What to do</h2>
@@ -347,7 +347,7 @@ footer a:hover{color:var(--ink)}
     <h2>What a good dunning sequence looks like</h2>
     <ul>
       <li><strong>Day 0, payment fails:</strong> a short, human message the same day. "Your renewal didn't go through — tap here to fix it." No blame, no fine print.</li>
-      <li><strong>Retry in the RBI windows:</strong> 24 hours, 72 hours, day 7, exactly on time.</li>
+      <li><strong>Retry on a schedule:</strong> the day's allowed attempts inside the permitted windows, then one retry each on the next-day, 72-hour and day-7 cadence.</li>
       <li><strong>Between retries:</strong> WhatsApp or email nudges with a one-tap payment link. Two reminders per failed attempt is plenty; more trains customers to ignore you.</li>
       <li><strong>Give an escape hatch:</strong> an easy way to pay manually (a UPI link or QR) and an easy way to opt out of reminders. Customers who feel trapped stop answering entirely.</li>
       <li><strong>Escalate gently:</strong> if day 7 fails, move the account to a slower cadence or pause it — and tell the customer what happens next.</li>
@@ -357,11 +357,11 @@ footer a:hover{color:var(--ink)}
     <p>Many small Indian businesses start without an integrated gateway. That is fine: a generated <strong>payment page with a UPI QR</strong>, sent with the invoice, recovers money while you wait for gateway paperwork. The discipline that matters is marking invoices paid the moment the money lands and keeping the reminder cadence honest.</p>
 
     <h2>How RecurSaathi automates this</h2>
-    <p><a href="/#features">RecurSaathi</a> runs the whole loop for you: it monitors failed card and UPI payments, retries at the RBI-timed 24-hour, 72-hour and day-7 windows, sends WhatsApp and email nudges with one-tap payment links, offers a manual UPI QR mode that works from day one without Razorpay, and shows you exactly how much was recovered in its <a href="/#analytics">analytics</a> and <a href="/#radar">Recovery Radar</a> views.</p>
-    <p>It works for coaching academies, gyms and studios, subscription ecommerce and any business billing customers on a cycle. <a href="/#pricing">Start a 14-day free trial</a> — no card needed.</p>
+    <p><a href="/#features">RecurSaathi</a> runs the whole loop for you: it monitors failed card and UPI payments, retries inside the RBI-permitted windows plus a longer next-day cadence, sends WhatsApp and email nudges with one-tap payment links, offers a manual UPI QR mode that works from day one without Razorpay, and shows you exactly how much was recovered in its <a href="/#analytics">analytics</a> and <a href="/#radar">Recovery Radar</a> views.</p>
+    <p>It works for coaching academies, gyms and studios, subscription ecommerce and any business billing customers on a cycle. <a href="/signup">Start a 14-day free trial</a> — no card needed.</p>
 
     <div class="article-cta">
-      <a class="btn btn-primary" href="/#pricing">See pricing and start free</a>
+      <a class="btn btn-primary" href="/signup">Start a 14-day free trial</a>
       <a class="btn btn-ghost" href="/#faq">Read the FAQ</a>
     </div>
    </article>
@@ -487,6 +487,12 @@ document.getElementById("cbar-ok").addEventListener("click",function(){try{local
 </body>
 </html>
 
+<div class="prose-src" style="max-width:780px;margin:28px auto 0;font-size:14.5px;color:#374151">
+<strong>Sources</strong>
+<ul style="padding-left:20px;margin:8px 0 0">
+<li>Reserve Bank of India circulars on recurring payments and e-mandates: <a href="https://www.rbi.org.in" rel="noopener">rbi.org.in</a></li>
+<li>NPCI NACH product statistics (monthly figures including recurring debit returns): <a href="https://www.npci.org.in/product/nach/product-statistics" rel="noopener">npci.org.in/product/nach/product-statistics</a></li>
+</ul></div>
 <div class="authorbox" style="max-width:780px;margin:36px auto 0;padding:18px 22px;border:1px solid #e5e7eb;border-radius:14px;font-size:14.5px;color:#374151">
-<strong>About the author</strong><br>Written by the RecurSaathi team, which builds payment-recovery tooling for Indian subscription businesses and studies how RBI retry rules play out on real failed payments. Questions? Write to recursathi@gmail.com.
+<strong>About the author</strong><br>Written by Manthan Solapure, founder of RecurSaathi. Manthan builds payment-recovery tooling for Indian subscription businesses and studies how RBI retry rules play out on real failed payments. Questions? Write to recursathi@gmail.com.
 </div>
