@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% block title %}Two-factor authentication · RecurSaathi{% endblock %}{% block content %}
+<h1>Two-factor authentication</h1>
+<p class="sub">Add a second step at sign-in using any authenticator app (Google Authenticator, Authy, 1Password).</p>
+{% if user.totp_enabled %}
+<div class="card"><div class="ok">2FA is currently <b>enabled</b> on this account.</div>
+<form method="post" action="/settings/2fa/disable" style="margin-top:12px"><button class="btn ghost">Turn off 2FA</button></form></div>
+{% else %}
+<div class="card formcard">
+<h2 style="margin-top:0">1. Add RecurSaathi to your authenticator app</h2>
+<p class="muted">Scan this QR code, or enter the secret manually.</p>
+<p class="muted">Setup key: <b style="letter-spacing:2px">{{ user.totp_secret }}</b></p>
+<p class="muted">Or open this link on your phone: <a href="{{ uri }}">add to authenticator</a></p>
+<p class="muted">Account: {{ user.email }} &middot; issuer: RecurSaathi &middot; 6 digits, refreshes every 30s</p>
+<h2>2. Confirm a code to switch it on</h2>
+<form method="post" action="/settings/2fa/enable" class="stack">
+<div><label>6-digit code from your app</label><input name="code" inputmode="numeric" maxlength="6" required></div>
+<button class="btn">Enable 2FA</button>
+</form></div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,23 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Unsubscribe · RecurSaathi</title>
+<style>
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#f6f5fb;color:#241f3d;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
+.box{background:#fff;border:1px solid #e6e3f2;border-radius:18px;padding:34px;max-width:420px;width:92%;box-shadow:0 10px 30px rgba(60,40,140,.08)}
+h1{font-size:20px;margin:0 0 8px}.m{color:#6b6684;font-size:14px;line-height:1.6}
+button{margin-top:14px;padding:11px 18px;border:0;border-radius:10px;background:#6d5df6;color:#fff;font-weight:700;font-size:15px;cursor:pointer}
+.ok{background:#e8f7ee;color:#1c7a3e;border-radius:10px;padding:12px;font-size:14px;margin-top:10px}
+.foot{margin-top:18px;font-size:12px;color:#a09bb8}
+</style></head><body><div class="box">
+{% if done %}
+<h1>You're unsubscribed</h1>
+<p class="m">{{ cu.name if cu else "This customer" }} will no longer receive reminder emails or WhatsApp messages from this business. Invoices and receipts still work normally.</p>
+<div class="ok">Preference saved.</div>
+{% elif cu %}
+<h1>Stop these messages?</h1>
+<p class="m">Hi {{ cu.name }}. This link stops all payment reminders to <b>{{ cu.email or cu.phone }}</b> (emails and WhatsApp) from this business. Your invoices and receipts are unaffected.</p>
+<form method="post" action="/u/{{ token }}"><button>Confirm unsubscribe</button></form>
+{% else %}
+<h1>Link expired</h1><p class="m">This unsubscribe link is not valid anymore. Contact the business directly to update your preferences.</p>
+{% endif %}
+<p class="foot">Sent via RecurSaathi, on behalf of the business you deal with.</p>
+</div></body></html>

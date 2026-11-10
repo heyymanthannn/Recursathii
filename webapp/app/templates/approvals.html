@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% block title %}Approvals · RecurSaathi{% endblock %}{% block content %}
+<h1>Approval queue</h1>
+<p class="sub">Approval Required mode is {{ "on" if mode == "approval" else "off" }}. In this mode nothing reaches a customer until you approve it here.</p>
+{% if items %}
+<div class="card"><table>
+<tr><th>When</th><th>Channel</th><th>To</th><th>Message</th><th>Actions</th></tr>
+{% for o in items %}<tr>
+<td>{{ o.created | datetime }}</td>
+<td><span class="pill pending">{{ o.channel }}</span></td>
+<td>{{ o.dest }}</td>
+<td style="max-width:340px"><b>{{ o.subject }}</b><br><span class="muted">{{ o.body[:140] }}{% if o.body|length > 140 %}&hellip;{% endif %}</span></td>
+<td><form method="post" action="/approvals/{{ o.id }}/approve" class="inline"><button class="btn sm">Approve &amp; send</button></form>
+<form method="post" action="/approvals/{{ o.id }}/discard" class="inline"><button class="btn sm ghost">Discard</button></form></td>
+</tr>{% endfor %}
+</table></div>
+{% else %}
+<div class="card"><div class="empty">Nothing waiting. Messages appear here the moment an automation wants to reach a customer.</div></div>
+{% endif %}
+<p class="muted">Switch modes anytime in Settings &gt; Automation mode.</p>
+{% endblock %}

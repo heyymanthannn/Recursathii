@@ -1,4 +1,6 @@
 import time
+import fastapi
+import hmac, hashlib, secrets, pathlib, csv, io, json
 
 """Owner web app: dashboard, customers, invoices, radar, automations, billing."""
 import csv, io, os, secrets, time
@@ -103,9 +105,56 @@ async def login(request: Request, email: str = Form(""), password: str = Form(""
     u = models.get_user_by_email(email)
     if not u or not auth.check_pw(password, u["pw_hash"]):
         return render("login.html", request, error="Wrong email or password.")
-    resp = RedirectResponse("/dashboard", status_code=303)
+    if u.get("totp_enabled") and u.get("totp_secret"):
+        tok = _sign_challenge(u["email"])
+        return render("login2.html", request, error="", challenge=tok, email=u["email"])
+    resp = RedirectResponse("/dashboard" if u.get("onboarded") else "/onboarding", status_code=303)
     auth.start_session(resp, u["id"])
     models.log_audit(u["id"], "login", u["email"])
+    return resp
+
+def _sign_key():
+    import os as _os
+    k = _os.environ.get("WAJO_SIGN_KEY", "")
+    if k:
+        return k.encode()
+    p = pathlib.Path("data/.sign_key")
+    p.parent.mkdir(exist_ok=True)
+    if not p.exists():
+        p.write_text(secrets.token_hex(32))
+    return p.read_bytes()
+
+def _sign_challenge(email, ttl=300):
+    exp = int(time.time()) + ttl
+    msg = f"{email}|{exp}".encode()
+    sig = hmac.new(_sign_key(), msg, hashlib.sha256).hexdigest()
+    return f"{exp}:{sig}"
+
+def _check_challenge(email, tok):
+    try:
+        exp, sig = (tok or "").split(":", 1)
+        if int(exp) < time.time():
+            return False
+        msg = f"{email}|{exp}".encode()
+        return hmac.compare_digest(hmac.new(_sign_key(), msg, hashlib.sha256).hexdigest(), sig)
+    except Exception:
+        return False
+
+@router.post("/login/2fa")
+async def login_2fa(request: Request, email: str = Form(""), challenge: str = Form(""),
+                    code: str = Form("")):
+    if not _check_challenge(email, challenge):
+        return render("login2.html", request, error="This step expired. Start again from the login page.",
+                      challenge="", email=email)
+    u = models.get_user_by_email(email)
+    if not u or not u.get("totp_enabled"):
+        return RedirectResponse("/login", status_code=303)
+    if not models.verify_totp(u["totp_secret"], code):
+        return render("login2.html", request, error="That code is not right. Codes refresh every 30 seconds.",
+                      challenge=challenge, email=email)
+    resp = RedirectResponse("/dashboard" if u.get("onboarded") else "/onboarding", status_code=303)
+    auth.start_session(resp, u["id"])
+    models.log_audit(u["id"], "login", u["email"] + " (2fa)")
     return resp
 
 @router.get("/signup", response_class=HTMLResponse)
@@ -210,6 +259,8 @@ async def dashboard(request: Request):
     user = guard(request)
     if not user:
         return RedirectResponse("/login", status_code=303)
+    if user.get("role") == "owner" and not user.get("onboarded"):
+        return RedirectResponse("/onboarding", status_code=303)
     _vmsg = None
     if not user.get("verified_at"):
         _vs = request.query_params.get("verify", "")
@@ -235,7 +286,9 @@ async def dashboard(request: Request):
     return render("dashboard.html", request, user=user, tab="dashboard", m=m, chart=chart,
                   acts=acts, pays=pays, fails=fails, ov=ov, inr=inr, trial_left=trial_left, period=period,
                   leak=leak, insights=insights, bstats=bstats,
-                  channel_note=notify.retailer_email_ready(user["id"]) or notify.retailer_whatsapp_ready(user["id"]))
+                  channel_note=notify.retailer_email_ready(user["id"]) or notify.retailer_whatsapp_ready(user["id"]),
+                  alerts=models.owner_alerts(user["id"]), obc=models.outbox_counts(user["id"]),
+                  claims=models.list_claims(user["id"]), mode=models.get_automation_mode(user["id"]))
 
 # ---------- customers ----------
 @router.get("/customers", response_class=HTMLResponse)
@@ -401,13 +454,30 @@ async def invoice_mark_paid(request: Request, iid: str, reference: str = Form(""
         return RedirectResponse("/login", status_code=303)
     inv = models.one("SELECT * FROM invoices WHERE id=? AND owner_id=?", (iid, user["id"]))
     if inv and inv["status"] != "paid":
-        pay = models.mark_invoice_paid(inv, "upi", reference=reference, note=note)
         cu = models.get_customer(inv["customer_id"])
-        models.log_activity(user["id"], "payment", f"Marked invoice {inv['number']} paid ({inr(inv['amount'])}, UPI)")
-        models.log_audit(user["id"], "invoice.paid", inv["number"])
-        if cu:
-            auto.send_confirmation(user, inv, cu, base_url(request))
-    return RedirectResponse("/invoices", status_code=303)
+        creds = payments.owner_creds(user)
+        verified = False
+        ref = (reference or "").strip()
+        # Verify through the connected payment provider before stopping reminders.
+        if creds and ref.startswith("pay_"):
+            r = payments.api(creds, "GET", f"/payments/{ref}")
+            if isinstance(r, dict) and not r.get("error") and (r.get("status") == "captured"):
+                verified = int(r.get("amount") or 0) >= inv["amount"]
+        if verified:
+            pay = models.mark_invoice_paid(inv, "razorpay", reference=ref, note=note)
+            models.log_activity(user["id"], "payment",
+                                f"Invoice {inv['number']} paid ({inr(inv['amount'])}) - verified with Razorpay payment {ref}")
+            models.log_audit(user["id"], "invoice.paid", f"{inv['number']} rzp-verified")
+            if cu:
+                auto.send_confirmation(user, inv, cu, base_url(request))
+        else:
+            # No provider verification available: record the claim, keep the
+            # invoice open and keep reminding until it is verified.
+            pay = models.claim_invoice_payment(inv, "upi", reference=ref, note=note)
+            models.log_activity(user["id"], "payment",
+                                f"Payment reported for invoice {inv['number']} ({inr(inv['amount'])}) - awaiting verification; reminders continue")
+            models.log_audit(user["id"], "invoice.claim", inv["number"])
+    return RedirectResponse("/payments", status_code=303)
 
 
 @router.get("/invoices/{iid}/pdf")
@@ -1135,18 +1205,21 @@ def run_custom_rules(owner_id, base=""):
             wb = auto._render(tpl or ("Hi {{customer_name}}, a gentle reminder about invoice "
                                       "{{invoice_number}} for {{amount}}. Pay here: {{payment_link}}"), **ctx)
             sent = False
-            if r["action"] in ("email", "both") and cu.get("email"):
+            body = body + auto._unsub_footer(base, cu)
+            if r["action"] in ("email", "both") and cu.get("email") and not cu.get("email_opt_out"):
                 dedupe = f"rule:{r['id']}:{row.get('id')}:email"
                 o = models.queue(owner_id, "email", cu["email"], "custom_rule", subject, body, dedupe=dedupe)
                 if o:
-                    notify.deliver(o)
-                    sent = True
+                    if not auto._post_queue(u, o):
+                        notify.deliver(o)
+                        sent = True
             if r["action"] in ("whatsapp", "both") and cu.get("phone") and not cu.get("wa_opt_out"):
                 dedupe = f"rule:{r['id']}:{row.get('id')}:wa"
                 o = models.queue(owner_id, "whatsapp", cu["phone"], "custom_rule", subject, wb, dedupe=dedupe)
                 if o:
-                    notify.deliver(o)
-                    sent = True
+                    if not auto._post_queue(u, o):
+                        notify.deliver(o)
+                        sent = True
             if sent:
                 n += 1
                 models.bump_usage(owner_id, "rules_fires")
@@ -1245,3 +1318,261 @@ async def settings_apikey_revoke(request: Request, kid: str = Form("")):
     models.revoke_api_key(kid, user["id"])
     models.log_audit(user["id"], "apikey.revoke", kid)
     return RedirectResponse("/settings", status_code=303)
+
+
+# ---------- reliability upgrade routes ----------
+
+def _owner_only(user):
+    return user and user.get("role") == "owner"
+
+# ---- onboarding wizard ----
+@router.get("/onboarding", response_class=HTMLResponse)
+async def onboarding_page(request: Request, step: str = "1"):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    if user.get("onboarded"):
+        return RedirectResponse("/dashboard", status_code=303)
+    step = step if step in ("1", "2", "3") else "1"
+    cn = models.get_connect(user["id"]) or {}
+    return render("onboarding.html", request, user=user, tab="", step=step, cn=cn)
+
+@router.post("/onboarding/step1")
+async def onboarding_step1(request: Request, name: str = Form(""), business: str = Form(""),
+                           phone: str = Form(""), upi_vpa: str = Form("")):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    models.update_user(user["id"], name=name, business=business, phone=phone, upi_vpa=upi_vpa)
+    return RedirectResponse("/onboarding?step=2", status_code=303)
+
+@router.post("/onboarding/step2")
+async def onboarding_step2(request: Request, business_name: str = Form(""), smtp_host: str = Form(""),
+                           smtp_port: str = Form("587"), smtp_user: str = Form(""),
+                           smtp_pass: str = Form(""), skip: str = Form("")):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    if not skip:
+        models.save_connect(user["id"], business_name=business_name or user.get("business", ""),
+                            smtp_host=smtp_host.strip(), smtp_port=int(smtp_port or 587),
+                            smtp_user=smtp_user.strip(),
+                            smtp_pass_enc=vault.encrypt(smtp_pass) if smtp_pass else None)
+    return RedirectResponse("/onboarding?step=3", status_code=303)
+
+@router.post("/onboarding/finish")
+async def onboarding_finish(request: Request, mode: str = Form("auto"),
+                            cname: str = Form(""), cemail: str = Form(""), cphone: str = Form(""),
+                            skip: str = Form("")):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    if not skip and cname.strip():
+        models.create_customer(user["id"], cname.strip(), cemail.strip(), cphone.strip())
+    models.set_automation_mode(user["id"], mode)
+    models.update_user(user["id"], onboarded=1)
+    models.log_activity(user["id"], "onboarding", "Setup completed")
+    models.log_audit(user["id"], "onboarding.finish", f"mode={mode}")
+    return RedirectResponse("/dashboard", status_code=303)
+
+# ---- approval queue ----
+@router.get("/approvals", response_class=HTMLResponse)
+async def approvals_page(request: Request):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    items = models.list_outbox_status(user["id"], ["approval"], limit=100)
+    items = [{**o, "wa_link": _wa_link(o)} for o in items]
+    return render("approvals.html", request, user=user, tab="approvals", items=items,
+                  mode=models.get_automation_mode(user["id"]), inr=inr)
+
+@router.post("/approvals/{oid}/approve")
+async def approval_approve(request: Request, oid: str):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    o = models.approve_outbox(user["id"], oid)
+    if o:
+        st = notify.deliver(o)
+        models.log_audit(user["id"], "approval.approve", f"{oid}:{st}")
+    return RedirectResponse("/approvals", status_code=303)
+
+@router.post("/approvals/{oid}/discard")
+async def approval_discard(request: Request, oid: str):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    models.discard_outbox(user["id"], oid)
+    models.log_audit(user["id"], "approval.discard", oid)
+    return RedirectResponse("/approvals", status_code=303)
+
+# ---- automation activity log ----
+@router.get("/activity", response_class=HTMLResponse)
+async def activity_page(request: Request, status: str = "all"):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    flt = status if status in ("all", "sent", "pending", "failed", "approval") else "all"
+    if flt == "all":
+        outbox = models.list_outbox(user["id"], limit=150)
+    elif flt == "sent":
+        outbox = models.list_outbox_status(user["id"], ["sent"])
+    elif flt == "failed":
+        outbox = models.list_outbox_status(user["id"], ["failed", "no_channel"])
+    elif flt == "approval":
+        outbox = models.list_outbox_status(user["id"], ["approval"])
+    else:
+        outbox = models.list_outbox_status(user["id"], ["queued", "pending"])
+    acts = models.list_activities(user["id"], limit=60)
+    outbox = [{**o, "wa_link": _wa_link(o)} for o in outbox]
+    return render("activity.html", request, user=user, tab="activity", outbox=outbox,
+                  acts=acts, flt=flt, obc=models.outbox_counts(user["id"]), inr=inr)
+
+# ---- customer unsubscribe (public) ----
+@router.get("/u/{token}", response_class=HTMLResponse)
+async def unsubscribe_page(request: Request, token: str):
+    cu = models.customer_by_unsub_token(token)
+    return render("unsubscribe.html", request, user=None, cu=cu, token=token, done=False)
+
+@router.post("/u/{token}")
+async def unsubscribe_confirm(request: Request, token: str):
+    cu = models.opt_out_by_token(token)
+    return render("unsubscribe.html", request, user=None, cu=cu, token=token, done=bool(cu))
+
+# ---- settings: automation mode, 2FA, data export, account deletion ----
+@router.post("/settings/mode")
+async def settings_mode(request: Request, mode: str = Form("auto")):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    if _owner_only(user):
+        models.set_automation_mode(user["id"], mode)
+        models.log_audit(user["id"], "settings.mode", mode)
+    return RedirectResponse("/settings", status_code=303)
+
+@router.get("/settings/2fa", response_class=HTMLResponse)
+async def settings_2fa(request: Request):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    if not user.get("totp_secret"):
+        models.set_totp(user["id"], secret=models.gen_totp_secret())
+        user = models.get_user(user["id"])
+    import urllib.parse as _up
+    label = _up.quote(f"RecurSaathi:{user.get('email', '')}")
+    uri = (f"otpauth://totp/{label}?secret={user['totp_secret']}"
+           f"&issuer=RecurSaathi&algorithm=SHA1&digits=6&period=30")
+    return render("twofa.html", request, user=user, tab="settings", uri=uri)
+
+@router.post("/settings/2fa/enable")
+async def settings_2fa_enable(request: Request, code: str = Form("")):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    ok = models.verify_totp(user.get("totp_secret", ""), code)
+    models.set_totp(user["id"], enabled=ok)
+    models.log_audit(user["id"], "settings.2fa", "enabled" if ok else "enable-failed")
+    from urllib.parse import quote
+    msg = "Two-factor authentication is on. Keep your authenticator app safe." if ok else "That code did not match. Try again."
+    return RedirectResponse(f"/settings?ctest={quote(msg)}", status_code=303)
+
+@router.post("/settings/2fa/disable")
+async def settings_2fa_disable(request: Request):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    models.set_totp(user["id"], secret="", enabled=0)
+    models.log_audit(user["id"], "settings.2fa", "disabled")
+    return RedirectResponse("/settings", status_code=303)
+
+@router.get("/settings/export-data")
+async def settings_export_data(request: Request):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    from fastapi.responses import Response
+    data = json.dumps(models.export_owner_data(user["id"]), indent=2, default=str)
+    models.log_audit(user["id"], "data.export", "json")
+    return Response(content=data, media_type="application/json",
+                    headers={"Content-Disposition": 'attachment; filename="recursaathi-data.json"'})
+
+@router.post("/settings/delete-account")
+async def settings_delete_account(request: Request, confirm: str = Form("")):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    if confirm.strip().upper() != "DELETE" or not _owner_only(user):
+        from urllib.parse import quote
+        return RedirectResponse(f"/settings?ctest={quote('Type DELETE exactly to confirm account deletion.')}", status_code=303)
+    oid = user["id"]
+    models.delete_owner_data(oid)
+    resp = RedirectResponse("/", status_code=303)
+    resp.delete_cookie("session")
+    return resp
+
+# ---- customers: CSV import + consent toggles ----
+@router.post("/customers/import")
+async def customers_import(request: Request, file: "fastapi.UploadFile" = None):
+    import fastapi
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    created, skipped = 0, 0
+    if file is not None:
+        raw = (await file.read()).decode("utf-8-sig", errors="replace")
+        for i, row in enumerate(csv.reader(io.StringIO(raw))):
+            if not row or (i == 0 and "name" in [c.strip().lower() for c in row]):
+                continue
+            name = (row[0] if len(row) > 0 else "").strip()
+            email = (row[1] if len(row) > 1 else "").strip()
+            phone = (row[2] if len(row) > 2 else "").strip()
+            if not name:
+                skipped += 1
+                continue
+            try:
+                models.create_customer(user["id"], name, email, phone)
+                created += 1
+            except Exception:
+                skipped += 1
+    models.log_activity(user["id"], "import", f"CSV import: {created} customers added, {skipped} skipped")
+    return RedirectResponse(f"/customers", status_code=303)
+
+@router.post("/customers/{cid}/consent")
+async def customers_consent(request: Request, cid: str, field: str = Form(""), value: str = Form("")):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    val = 1 if value == "1" else 0
+    if field == "email":
+        models.set_customer_optout(user["id"], cid, email_opt=val)
+    elif field == "wa":
+        models.set_customer_optout(user["id"], cid, wa_opt=val)
+    return RedirectResponse(f"/customers/{cid}", status_code=303)
+
+# ---- payment verification ----
+@router.post("/payments/{pid}/confirm")
+async def payments_confirm(request: Request, pid: str):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    pay = models.one("SELECT * FROM payments WHERE id=? AND owner_id=? AND status='claimed'", (pid, user["id"]))
+    if not pay:
+        return RedirectResponse("/payments", status_code=303)
+    inv = models.get_invoice(pay["invoice_id"])
+    cu = models.get_customer(pay["customer_id"])
+    vp = models.verify_claim(pid)
+    if vp:
+        models.log_audit(user["id"], "payment.verified", pid)
+        if inv and cu:
+            auto.send_confirmation(user, inv, cu, base_url(request))
+    return RedirectResponse("/payments", status_code=303)
+
+@router.get("/receipt/{pid}", response_class=HTMLResponse)
+async def receipt_page(request: Request, pid: str):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    pay = models.one("SELECT * FROM plat_pays WHERE id=? AND owner_id=?", (pid, user["id"]))
+    if not pay:
+        return RedirectResponse("/billing", status_code=303)
+    return render("receipt.html", request, user=user, pay=pay, inr=inr)

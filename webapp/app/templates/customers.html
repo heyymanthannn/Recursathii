@@ -19,6 +19,12 @@
 <button class="btn ghost sm">Apply</button>
 </form>
 <a class="btn ghost sm" href="/customers/export" style="margin-top:10px">Export CSV</a>
+<div class="card formcard" style="margin-top:14px"><h3 style="margin-top:0">Import from a spreadsheet</h3>
+<p class="muted">Upload a CSV with columns: name, email, phone (first row can be headers). Existing customers stay untouched.</p>
+<form method="post" action="/customers/import" enctype="multipart/form-data">
+<input type="file" name="file" accept=".csv,text/csv" required>
+<button class="btn sm" style="margin-left:8px">Import CSV</button>
+</form></div>
 </div>
 </div>
 <div class="card">{% if rows %}<table>

@@ -90,7 +90,29 @@ def _stage(invoice, today):
         return "overdue_1"
     return "overdue_7"
 
-def run_dormant_reactivation(owner):
+def _mode_is_approval(owner):
+    return models.get_automation_mode(owner["id"]) == "approval"
+
+def _post_queue(owner, o, counts=None, key="queued"):
+    """Respect Approval Required mode: hold the queued item instead of sending."""
+    if o and _mode_is_approval(owner):
+        models.hold_for_approval(o["id"])
+        if counts is not None:
+            counts["approval_held"] = counts.get("approval_held", 0) + 1
+        return True
+    return False
+
+def _unsub_footer(base_url, cu):
+    """Consent: every customer email carries a working unsubscribe link."""
+    try:
+        if cu and cu.get("email") and base_url:
+            tok = models.ensure_unsub_token(cu["id"])
+            return f"\n\n---\nDon't want these emails? Unsubscribe: {base_url}/u/{tok}"
+    except Exception:
+        pass
+    return ""
+
+def run_dormant_reactivation(owner, base_url=""):
     """Queue reactivation notes for dormant repeat customers. Returns counts."""
     counts = {"queued": 0, "sent": 0, "no_channel": 0, "skipped": 0, "failed": 0}
     today = time.strftime("%Y-%m-%d")
@@ -103,14 +125,17 @@ def run_dormant_reactivation(owner):
         ebody = _render(tpl["body"] if tpl else DEFAULTS["dormant_reactivate"]["email_body"], **ctx)
         wbody = _render(DEFAULTS["dormant_reactivate"]["wa_body"], **ctx)
         outs = []
-        if cu.get("email"):
-            o = models.queue(owner["id"], "email", cu["email"], "dormant_reactivate", sub, ebody,
+        if cu.get("email") and not cu.get("email_opt_out"):
+            o = models.queue(owner["id"], "email", cu["email"], "dormant_reactivate", sub,
+                             ebody + _unsub_footer(base_url, cu),
                              dedupe=f"dormant_reactivate:{cu['id']}:{today}:email")
-            if o: outs.append(o)
+            if o:
+                if not _post_queue(owner, o, counts): outs.append(o)
         if cu.get("phone") and not cu.get("wa_opt_out"):
             o = models.queue(owner["id"], "whatsapp", cu["phone"], "dormant_reactivate", sub, wbody,
                              dedupe=f"dormant_reactivate:{cu['id']}:{today}:wa")
-            if o: outs.append(o)
+            if o:
+                if not _post_queue(owner, o, counts): outs.append(o)
         for o in outs:
             st = notify.deliver(o)
             counts[st if st in counts else "failed"] += 1
@@ -159,6 +184,9 @@ def run_due_calls(owner, base_url):
         o = models.queue(owner["id"], "call", _ret._norm_phone(cu["phone"]), "due_call", "", script,
                          dedupe=dedupe)
         if not o:
+            continue
+        if _post_queue(owner, o, counts):
+            counts["skipped"] += 1
             continue
         if not _ret.voice_ready():
             models.set_outbox_status(o["id"], "no_channel", "daily AI agent call queued - voice provider not connected yet")
@@ -212,14 +240,17 @@ def run_for_owner(owner, base_url):
         wbody = _render(DEFAULTS[stage]["wa_body"], **ctx)
         day = today
         outs = []
-        if cu.get("email"):
-            o = models.queue(owner["id"], "email", cu["email"], stage, sub, ebody,
+        if cu.get("email") and not cu.get("email_opt_out"):
+            o = models.queue(owner["id"], "email", cu["email"], stage, sub,
+                             ebody + _unsub_footer(base_url, cu),
                              dedupe=f"{stage}:{inv['id']}:{day}:email")
-            if o: outs.append(o)
+            if o:
+                if not _post_queue(owner, o, counts): outs.append(o)
         if cu.get("phone") and not cu.get("wa_opt_out"):
             o = models.queue(owner["id"], "whatsapp", cu["phone"], stage, sub, wbody,
                              dedupe=f"{stage}:{inv['id']}:{day}:wa")
-            if o: outs.append(o)
+            if o:
+                if not _post_queue(owner, o, counts): outs.append(o)
         for o in outs:
             st = notify.deliver(o)
             counts[st if st in counts else "failed"] += 1
@@ -235,16 +266,17 @@ def send_confirmation(owner, invoice, customer, base_url):
     ctx = _ctx(owner, invoice, customer, base_url)
     tpl = models.get_template(owner["id"], "payment_confirm")
     outs = []
-    if customer.get("email"):
+    if customer.get("email") and not customer.get("email_opt_out"):
         o = models.queue(owner["id"], "email", customer["email"], "payment_confirm",
                          _render(tpl["subject"] if tpl else DEFAULTS["payment_confirm"]["email_subject"], **ctx),
-                         _render(tpl["body"] if tpl else DEFAULTS["payment_confirm"]["email_body"], **ctx))
-        if o: outs.append(o)
+                         _render(tpl["body"] if tpl else DEFAULTS["payment_confirm"]["email_body"], **ctx)
+                         + _unsub_footer(base_url, customer))
+        if o and not _post_queue(owner, o): outs.append(o)
     if customer.get("phone") and not customer.get("wa_opt_out"):
         o = models.queue(owner["id"], "whatsapp", customer["phone"], "payment_confirm",
                          _render(tpl["subject"] if tpl else DEFAULTS["payment_confirm"]["email_subject"], **ctx),
                          _render(DEFAULTS["payment_confirm"]["wa_body"], **ctx))
-        if o: outs.append(o)
+        if o and not _post_queue(owner, o): outs.append(o)
     results = [notify.deliver(o) for o in outs]
     return results
 
@@ -256,14 +288,15 @@ def send_failed_payment_notice(owner, invoice, customer, reason, base_url):
     ctx["reason"] = reason or "the bank declined the payment"
     tpl = models.get_template(owner["id"], "failed_payment")
     outs = []
-    if customer.get("email"):
+    if customer.get("email") and not customer.get("email_opt_out"):
         o = models.queue(owner["id"], "email", customer["email"], "failed_payment",
                          _render(tpl["subject"] if tpl else DEFAULTS["failed_payment"]["email_subject"], **ctx),
-                         _render(tpl["body"] if tpl else DEFAULTS["failed_payment"]["email_body"], **ctx))
-        if o: outs.append(o)
+                         _render(tpl["body"] if tpl else DEFAULTS["failed_payment"]["email_body"], **ctx)
+                         + _unsub_footer(base_url, customer))
+        if o and not _post_queue(owner, o): outs.append(o)
     if customer.get("phone") and not customer.get("wa_opt_out"):
         o = models.queue(owner["id"], "whatsapp", customer["phone"], "failed_payment",
                          _render(tpl["subject"] if tpl else DEFAULTS["failed_payment"]["email_subject"], **ctx),
                          _render(DEFAULTS["failed_payment"]["wa_body"], **ctx))
-        if o: outs.append(o)
+        if o and not _post_queue(owner, o): outs.append(o)
     return [notify.deliver(o) for o in outs]

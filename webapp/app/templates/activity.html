@@ -1,0 +1,35 @@
+{% extends "base.html" %}{% block title %}Automation activity log · RecurSaathi{% endblock %}{% block content %}
+<h1>Automation activity log</h1>
+<p class="sub">Every automated action and its real outcome: sent, waiting, waiting for approval, or failed.</p>
+<div class="cards">
+<div class="card"><div class="label">Sent</div><div class="kpi green">{{ obc.sent }}</div></div>
+<div class="card"><div class="label">Pending</div><div class="kpi amber">{{ obc.pending + obc.no_channel }}</div></div>
+<div class="card"><div class="label">Awaiting approval</div><div class="kpi blue">{{ obc.approval }}</div></div>
+<div class="card"><div class="label">Failed</div><div class="kpi red">{{ obc.failed }}</div></div>
+</div>
+<p style="margin:14px 0 8px">
+<a class="btn sm {{ '' if flt == 'all' else 'ghost' }}" href="/activity?status=all">All</a>
+<a class="btn sm {{ '' if flt == 'sent' else 'ghost' }}" href="/activity?status=sent">Successful</a>
+<a class="btn sm {{ '' if flt == 'pending' else 'ghost' }}" href="/activity?status=pending">Pending</a>
+<a class="btn sm {{ '' if flt == 'approval' else 'ghost' }}" href="/activity?status=approval">Awaiting approval</a>
+<a class="btn sm {{ '' if flt == 'failed' else 'ghost' }}" href="/activity?status=failed">Failed</a>
+</p>
+<div class="card"><table>
+<tr><th>When</th><th>Channel</th><th>To</th><th>Status</th><th>Detail</th></tr>
+{% for o in outbox %}<tr>
+<td>{{ o.created | datetime }}</td>
+<td>{{ o.channel }}</td>
+<td>{{ o.dest }}</td>
+<td>{% if o.status == 'sent' %}<span class="pill paid">sent</span>
+{% elif o.status == 'failed' %}<span class="pill failed">failed</span>
+{% elif o.status == 'approval' %}<span class="pill pending">awaiting approval</span>
+{% elif o.status == 'no_channel' %}<span class="pill pending">waiting: channel not connected</span>
+{% elif o.status == 'discarded' %}<span class="pill failed">discarded</span>
+{% else %}<span class="pill pending">{{ o.status }}</span>{% endif %}</td>
+<td style="max-width:360px"><b>{{ o.subject or o.tpl }}</b>{% if o.error %}<br><span class="muted">{{ o.error[:160] }}</span>{% endif %}</td>
+</tr>{% endfor %}
+</table>
+{% if not outbox %}<div class="empty">Nothing in this view yet.</div>{% endif %}</div>
+<h2 style="margin-top:24px">System activity</h2>
+<div class="card">{% for a in acts %}<div class="actrow"><span class="muted">{{ a.created | datetime }}</span> &middot; {{ a.message }}</div>{% else %}<div class="empty">No activity yet.</div>{% endfor %}</div>
+{% endblock %}

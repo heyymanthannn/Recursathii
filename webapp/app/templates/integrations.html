@@ -7,6 +7,7 @@
 <tr><td>Razorpay</td><td><span class="pill {{ 'paid' if rzp_connected else 'failed' }}">{{ "Connected" if rzp_connected else "Not connected" }}</span></td><td>Autopay retries in RBI windows, payment webhooks, failed-payment recovery</td></tr>
 <tr><td>Email (SMTP)</td><td><span class="pill {{ 'paid' if email_ready else 'failed' }}">{{ "Connected" if email_ready else "Not connected" }}</span></td><td>Invoice emails, reminders, receipts, reactivation campaigns</td></tr>
 <tr><td>WhatsApp</td><td><span class="pill {{ 'paid' if wa_ready else 'failed' }}">{{ "Connected" if wa_ready else "Not connected" }}</span></td><td>WhatsApp nudges and reactivation messages</td></tr>
+<tr><td>Spreadsheets / CSV import</td><td><span class="pill paid">Available</span></td><td>Import customers straight from your billing sheet or accounting export (Customers page)</td></tr>
 <tr><td>Voice calls</td><td><span class="pill {{ 'paid' if voice_ready else 'failed' }}">{{ "Connected" if voice_ready else "Not connected" }}</span></td><td>AI repayment calls to overdue customers</td></tr>
 </table>
 </div>

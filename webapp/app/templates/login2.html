@@ -1,0 +1,19 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Two-factor check · RecurSaathi</title>
+<style>
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#0e0d1a;color:#e9e7f5;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
+.box{background:#171528;border:1px solid #2c2950;border-radius:18px;padding:34px;max-width:380px;width:92%}
+h1{font-size:20px;margin:0 0 8px}.m{color:#a49fca;font-size:14px;line-height:1.5}
+input{width:100%;box-sizing:border-box;padding:12px 14px;border-radius:10px;border:1px solid #2c2950;background:#0e0d1a;color:#e9e7f5;font-size:18px;letter-spacing:4px;text-align:center;margin:14px 0}
+button{width:100%;padding:12px;border:0;border-radius:10px;background:#6d5df6;color:#fff;font-weight:700;font-size:15px;cursor:pointer}
+.err{background:#3a1d25;color:#ffb4c0;border-radius:10px;padding:10px;font-size:13px;margin-bottom:10px}
+</style></head><body><div class="box">
+<h1>Two-factor check</h1>
+<p class="m">Enter the 6-digit code from your authenticator app for {{ email }}.</p>
+{% if error %}<div class="err">{{ error }}</div>{% endif %}
+<form method="post" action="/login/2fa">
+<input type="hidden" name="email" value="{{ email }}">
+<input type="hidden" name="challenge" value="{{ challenge }}">
+<input name="code" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="000000" autocomplete="one-time-code" autofocus required>
+<button>Verify and sign in</button>
+</form></div></body></html>

@@ -40,7 +40,7 @@ Billing cycle: {{ user.billing_cycle or 'monthly' }} &middot; We never charge au
 <div class="muted" style="margin:12px 0">Subscription payments go to RecurSaathi. Your customers' invoice payments never touch this account: they go straight to your bank via your own UPI ID or your own Razorpay keys.</div>
 <div class="muted">Usage this month: {{ usage.customers }} / {{ plans[user.plan].max_customers }} customers &middot; {{ usage.invoices_month }} / {{ plans[user.plan].max_invoices_month }} invoices &middot; {{ usage.team }} / {{ plans[user.plan].max_team }} team seats &middot; {{ usage.messages_month }} / {{ plans[user.plan].max_emails_month }} automated messages &middot; {{ usage.workflows }} / {{ plans[user.plan].max_workflows }} automation workflows</div>
 <h2>Subscription payment history</h2>
-<div class="card">{% if pays %}<table><tr><th>When</th><th>Plan</th><th>Amount</th><th>Status</th><th>Reference</th></tr>
-{% for p in pays %}<tr><td>{{ p.created | datetime }}</td><td>{{ p.plan }}</td><td>{{ inr(p.amount) if p.amount else "-" }}</td><td>{{ p.status }}</td><td>{{ p.reference or "-" }}</td></tr>{% endfor %}</table>
+<div class="card">{% if pays %}<table><tr><th>When</th><th>Plan</th><th>Amount</th><th>Status</th><th>Reference</th><th>Receipt</th></tr>
+{% for p in pays %}<tr><td>{{ p.created | datetime }}</td><td>{{ p.plan }}</td><td>{{ inr(p.amount) if p.amount else "-" }}</td><td>{{ p.status }}</td><td>{{ p.reference or "-" }}</td><td><a href="/receipt/{{ p.id }}">view</a></td></tr>{% endfor %}</table>
 {% else %}<div class="empty">No subscription payments yet.</div>{% endif %}</div>
 {% endblock %}

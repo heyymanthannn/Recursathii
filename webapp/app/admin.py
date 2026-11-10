@@ -35,8 +35,32 @@ async def admin_home(request: Request):
     support = models.list_support()
     audit = models.q("SELECT a.*, u.email AS email FROM audit a LEFT JOIN users u ON u.id=a.user_id ORDER BY a.created DESC LIMIT 50")
     trial = [o for o in owners if o["plan_status"] == "trialing"]
+    ovr = models.admin_overview() if hasattr(models, "admin_overview") else {}
+    claims = models.q("SELECT p.*, i.number AS inv_number, cu.name AS customer_name FROM payments p "
+                      "LEFT JOIN invoices i ON i.id=p.invoice_id LEFT JOIN customers cu ON cu.id=p.customer_id "
+                      "WHERE p.status='claimed' ORDER BY p.created DESC LIMIT 50") \
+             if "payments" in [r[0] for r in models.q("SELECT name FROM sqlite_master WHERE type='table'")] else []
+    obx = models.q("SELECT o.*, u.business AS business FROM outbox o LEFT JOIN users u ON u.id=o.owner_id "
+                   "ORDER BY o.created DESC LIMIT 40")
     return render("admin.html", request, user=user, owners=owners, subs_active=subs_active,
-                  mrr=mrr, pays=pays, support=support, audit=audit, trial=trial)
+                  mrr=mrr, pays=pays, support=support, audit=audit, trial=trial,
+                  ovr=ovr, claims=claims, obx=obx)
+
+@router.post("/admin/claims/{pid}/confirm")
+async def admin_claim_confirm(request: Request, pid: str):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    p = models.one("SELECT * FROM payments WHERE id=? AND status='claimed'", (pid,))
+    if p:
+        owner = models.get_user(p["owner_id"])
+        inv = models.get_invoice(p["invoice_id"])
+        cu = models.get_customer(p["customer_id"])
+        if models.verify_claim(pid) and owner and inv and cu:
+            from . import automations as auto
+            auto.send_confirmation(owner, inv, cu, "")
+        models.log_audit(user["id"], "admin.claim.verify", pid)
+    return RedirectResponse("/admin", status_code=303)
 
 @router.post("/admin/support/{sid}/resolve")
 async def resolve_support(request: Request, sid: str):

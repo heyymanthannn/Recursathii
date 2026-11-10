@@ -22,6 +22,28 @@
 </div>
 
 
+{% if alerts or obc.approval or claims %}
+<div class="grid2" style="margin-top:14px">
+  <div>
+    {% if alerts %}<h2>Needs your attention</h2>
+    <div class="card">{% for a in alerts %}<div class="actrow"><span class="pill {{ 'failed' if a.kind in ('failed','claim') else 'pending' }}">{{ a.kind }}</span> {{ a.text }}</div>{% endfor %}</div>{% endif %}
+    {% if claims %}<h2 style="margin-top:14px">Payments reported, not yet verified</h2>
+    <div class="card"><table><tr><th>Invoice</th><th>Customer</th><th>Amount</th><th>Verify</th></tr>
+    {% for p in claims %}<tr><td>{{ p.inv_number or "-" }}</td><td>{{ p.customer_name or "-" }}</td><td>{{ inr(p.amount) }}</td>
+    <td><form method="post" action="/payments/{{ p.id }}/confirm"><button class="btn sm">Verify payment</button></form></td></tr>{% endfor %}</table>
+    <p class="muted" style="margin:8px 0 0">Reminders continue until a payment is verified.</p></div>{% endif %}
+  </div>
+  <div>
+    <h2>Automation performance</h2>
+    <div class="card"><table>
+    <tr><th>Sent</th><th>Pending</th><th>Awaiting approval</th><th>Failed</th></tr>
+    <tr><td>{{ obc.sent }}</td><td>{{ obc.pending + obc.no_channel }}</td><td>{{ obc.approval }}</td><td>{{ obc.failed }}</td></tr>
+    </table>
+    <p class="muted" style="margin:8px 0 0">Mode: {{ "Automatic" if mode != "approval" else "Approval Required" }} &middot; <a href="/activity">open the full activity log</a>{% if mode == 'approval' %} &middot; <a href="/approvals">approval queue</a>{% endif %}</p></div>
+  </div>
+</div>
+{% endif %}
+
 {% if leak or insights or bstats %}
 <div class="grid2" style="margin-top:14px">
   <div>

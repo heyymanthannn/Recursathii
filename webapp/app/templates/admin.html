@@ -6,6 +6,9 @@
 <div class="card"><div class="label">Active subscriptions</div><div class="kpi green">{{ subs_active | length }}</div></div>
 <div class="card"><div class="label">Trialing</div><div class="kpi purple">{{ trial | length }}</div></div>
 <div class="card"><div class="label">Estimated MRR</div><div class="kpi lav">₹{{ "{:,.0f}".format(mrr) }}</div></div>
+<div class="card"><div class="label">Confirmed revenue</div><div class="kpi green">₹{{ "{:,.0f}".format(ovr.get("confirmed_revenue", 0) or 0) }}</div></div>
+<div class="card"><div class="label">Automations sent (24h)</div><div class="kpi blue">{{ ovr.get("sent_24h", 0) or 0 }}</div></div>
+<div class="card"><div class="label">Automations failed (24h)</div><div class="kpi red">{{ ovr.get("failed_24h", 0) or 0 }}</div></div>
 </div>
 <h2>Businesses</h2>
 <div class="card"><table>
@@ -18,6 +21,15 @@
 <div class="card">{% if pays %}<table><tr><th>When</th><th>Plan</th><th>Amount</th><th>Status</th></tr>
 {% for p in pays %}<tr><td>{{ p.created | datetime }}</td><td>{{ p.plan }}</td><td>{{ inr(p.amount) if p.amount else "-" }}</td><td>{{ p.status }}</td></tr>{% endfor %}</table>
 {% else %}<div class="empty">No subscription payments yet.</div>{% endif %}</div>
+<h2>Payments reported, not verified</h2>
+<div class="card">{% if claims %}<table><tr><th>Business</th><th>Invoice</th><th>Customer</th><th>Amount</th><th>When</th><th></th></tr>
+{% for p in claims %}<tr><td>{{ p.owner_id[:8] }}</td><td>{{ p.inv_number or "-" }}</td><td>{{ p.customer_name or "-" }}</td><td>{{ inr(p.amount) if p.amount else "-" }}</td><td>{{ p.created | datetime }}</td>
+<td><form method="post" action="/admin/claims/{{ p.id }}/confirm"><button class="btn sm ghost">Verify</button></form></td></tr>{% endfor %}</table>
+{% else %}<div class="empty">None. All reported payments are verified or resolved.</div>{% endif %}</div>
+<h2>Automation monitoring (latest)</h2>
+<div class="card">{% if obx %}<table><tr><th>When</th><th>Business</th><th>Channel</th><th>Status</th><th>Detail</th></tr>
+{% for o in obx %}<tr><td>{{ o.created | datetime }}</td><td>{{ o.business or o.owner_id[:8] }}</td><td>{{ o.channel }}</td><td><span class="pill {{ 'paid' if o.status=='sent' else ('failed' if o.status=='failed' else 'pending') }}">{{ o.status }}</span></td><td>{{ o.subject or o.tpl }}{% if o.error %} &middot; {{ o.error[:80] }}{% endif %}</td></tr>{% endfor %}</table>
+{% else %}<div class="empty">No automation activity yet.</div>{% endif %}</div>
 <h2>Support inbox</h2>
 <div class="card">{% if support %}{% for s in support %}<div style="padding:10px 0;border-bottom:1px solid var(--line2)">
 <b>{{ s.name }}</b> <span class="muted">{{ s.email }}</span> <span class="pill {{ s.status }}">{{ s.status }}</span>

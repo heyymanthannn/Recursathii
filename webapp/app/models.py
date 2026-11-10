@@ -107,6 +107,20 @@ def init():
             c.execute("ALTER TABLE users ADD COLUMN verify_token TEXT")
         if "verified_at" not in cols:
             c.execute("ALTER TABLE users ADD COLUMN verified_at REAL")
+        if "automation_mode" not in cols:
+            c.execute("ALTER TABLE users ADD COLUMN automation_mode TEXT DEFAULT 'auto'")
+        if "totp_secret" not in cols:
+            c.execute("ALTER TABLE users ADD COLUMN totp_secret TEXT DEFAULT ''")
+        if "totp_enabled" not in cols:
+            c.execute("ALTER TABLE users ADD COLUMN totp_enabled INTEGER DEFAULT 0")
+        if "onboarded" not in cols:
+            c.execute("ALTER TABLE users ADD COLUMN onboarded INTEGER DEFAULT 0")
+        ccols = [r["name"] for r in c.execute("PRAGMA table_info(customers)")]
+        if "email_opt_out" not in ccols:
+            c.execute("ALTER TABLE customers ADD COLUMN email_opt_out INTEGER DEFAULT 0")
+        if "unsub_token" not in ccols:
+            c.execute("ALTER TABLE customers ADD COLUMN unsub_token TEXT")
+        c.execute("CREATE UNIQUE INDEX IF NOT EXISTS ix_unsub_token ON customers(unsub_token) WHERE unsub_token IS NOT NULL")
         for tbl, col in (("customers", "branch_id"), ("invoices", "branch_id")):
             cols = [r["name"] for r in c.execute(f"PRAGMA table_info({tbl})")]
             if col not in cols:
@@ -791,3 +805,204 @@ def daily_insights(owner_id):
                     "detail": f"₹{m['recovered']/100:,.0f} recovered so far at a "
                               f"{m['success_rate']}% success rate. Keep the follow-up rhythm."})
     return out[:4]
+
+
+# ---- reliability upgrade: modes, consent, 2FA, verification, export ----
+
+def set_automation_mode(owner_id, mode):
+    mode = "approval" if mode == "approval" else "auto"
+    ex("UPDATE users SET automation_mode=? WHERE id=?", (mode, owner_id))
+
+def get_automation_mode(owner_id):
+    r = one("SELECT automation_mode FROM users WHERE id=?", (owner_id,))
+    return (r or {}).get("automation_mode") or "auto"
+
+# ---- TOTP (RFC 6238, stdlib only) ----
+import base64, hashlib, hmac as _hmac, secrets as _secrets, struct as _struct
+
+def gen_totp_secret():
+    return base64.b32encode(_secrets.token_bytes(20)).decode().rstrip("=")
+
+def totp_code(secret, offset=0):
+    pad = "=" * ((8 - len(secret) % 8) % 8)
+    key = base64.b32decode(secret.upper() + pad)
+    counter = int(time.time() // 30) + offset
+    h = _hmac.new(key, _struct.pack(">Q", counter), hashlib.sha1).digest()
+    o = h[-1] & 0x0F
+    return f"{((_struct.unpack('>I', h[o:o+4])[0] & 0x7FFFFFFF) % 1000000):06d}"
+
+def verify_totp(secret, code):
+    code = (code or "").strip().replace(" ", "")
+    if not secret or not code.isdigit() or len(code) != 6:
+        return False
+    return any(totp_code(secret, off) == code for off in (-1, 0, 1))
+
+def set_totp(owner_id, secret=None, enabled=None):
+    if secret is not None:
+        ex("UPDATE users SET totp_secret=? WHERE id=?", (secret, owner_id))
+    if enabled is not None:
+        ex("UPDATE users SET totp_enabled=? WHERE id=?", (1 if enabled else 0, owner_id))
+
+# ---- consent / unsubscribe ----
+def ensure_unsub_token(customer_id):
+    row = one("SELECT unsub_token FROM customers WHERE id=?", (customer_id,))
+    if row and row["unsub_token"]:
+        return row["unsub_token"]
+    tok = _secrets.token_urlsafe(12)
+    ex("UPDATE customers SET unsub_token=? WHERE id=?", (tok, customer_id))
+    return tok
+
+def customer_by_unsub_token(token):
+    if not token:
+        return None
+    return one("SELECT * FROM customers WHERE unsub_token=?", (token,))
+
+def set_customer_optout(owner_id, customer_id, email_opt=None, wa_opt=None):
+    sets, args = [], []
+    if email_opt is not None:
+        sets.append("email_opt_out=?"); args.append(1 if email_opt else 0)
+    if wa_opt is not None:
+        sets.append("wa_opt_out=?"); args.append(1 if wa_opt else 0)
+    if not sets:
+        return
+    args += [owner_id, customer_id]
+    ex(f"UPDATE customers SET {', '.join(sets)} WHERE owner_id=? AND id=?", args)
+
+def opt_out_by_token(token):
+    """Customer unsubscribes from ALL outreach (their right). Returns customer or None."""
+    cu = customer_by_unsub_token(token)
+    if not cu:
+        return None
+    ex("UPDATE customers SET email_opt_out=1, wa_opt_out=1 WHERE id=?", (cu["id"],))
+    log_activity(cu["owner_id"], "consent",
+                 f"{cu['name']} unsubscribed from all reminders (via unsubscribe link)")
+    return dict(cu)
+
+# ---- outbox helpers ----
+def list_outbox_status(owner_id, statuses, limit=200):
+    marks = ",".join("?" for _ in statuses)
+    return q(f"SELECT * FROM outbox WHERE owner_id=? AND status IN ({marks}) ORDER BY created DESC LIMIT ?",
+             (owner_id, *statuses, limit))
+
+def outbox_counts(owner_id):
+    r = one("""SELECT
+      SUM(CASE WHEN status='sent' THEN 1 ELSE 0 END) AS sent,
+      SUM(CASE WHEN status IN ('queued','pending') THEN 1 ELSE 0 END) AS pending,
+      SUM(CASE WHEN status='approval' THEN 1 ELSE 0 END) AS approval,
+      SUM(CASE WHEN status='failed' THEN 1 ELSE 0 END) AS failed,
+      SUM(CASE WHEN status='no_channel' THEN 1 ELSE 0 END) AS no_channel
+      FROM outbox WHERE owner_id=?""", (owner_id,)) or {}
+    return {k: (r.get(k) or 0) for k in ("sent", "pending", "approval", "failed", "no_channel")}
+
+def hold_for_approval(oid, reason="waiting for your approval (Approval Required mode)"):
+    ex("UPDATE outbox SET status='approval', error=? WHERE id=?", (reason, oid))
+
+def approve_outbox(owner_id, oid):
+    o = one("SELECT * FROM outbox WHERE id=? AND owner_id=?", (oid, owner_id))
+    if not o or o["status"] != "approval":
+        return None
+    ex("UPDATE outbox SET status='queued', error='' WHERE id=?", (oid,))
+    log_activity(owner_id, "automation", f"Approved queued {o['channel']} message to {o['dest']}")
+    return dict(o)
+
+def discard_outbox(owner_id, oid):
+    o = one("SELECT * FROM outbox WHERE id=? AND owner_id=?", (oid, owner_id))
+    if not o or o["status"] != "approval":
+        return None
+    ex("UPDATE outbox SET status='discarded' WHERE id=?", (oid,))
+    log_activity(owner_id, "automation", f"Discarded queued {o['channel']} message to {o['dest']}")
+    return dict(o)
+
+# ---- payment claims (verify before reminders stop) ----
+def claim_invoice_payment(inv, method="upi", reference="", note=""):
+    """Owner reports a payment received; invoice stays unpaid (reminders continue)
+    until the claim is verified."""
+    pay = {"id": uid(), "owner_id": inv["owner_id"], "invoice_id": inv["id"],
+           "customer_id": inv["customer_id"], "amount": inv["amount"], "method": method,
+           "status": "claimed", "reference": reference, "note": note,
+           "created": now(), "confirmed_at": None}
+    ex("INSERT INTO payments(id,owner_id,invoice_id,customer_id,amount,method,status,reference,note,created,confirmed_at) "
+       "VALUES(:id,:owner_id,:invoice_id,:customer_id,:amount,:method,:status,:reference,:note,:created,:confirmed_at)", pay)
+    return dict(pay)
+
+def verify_claim(payment_id):
+    """Verify a claimed payment: only then does the invoice get marked paid and
+    reminders stop."""
+    pay = one("SELECT * FROM payments WHERE id=? AND status='claimed'", (payment_id,))
+    if not pay:
+        return None
+    inv = one("SELECT * FROM invoices WHERE id=?", (pay["invoice_id"],))
+    ex("UPDATE payments SET status='confirmed', confirmed_at=? WHERE id=?", (now(), payment_id))
+    if inv and inv["status"] != "paid":
+        ex("UPDATE invoices SET status='paid', paid_at=? WHERE id=?", (now(), inv["id"]))
+    log_activity(pay["owner_id"], "payment",
+                 f"Payment verified for invoice {inv['number'] if inv else pay['invoice_id']}; reminders stopped")
+    return dict(pay)
+
+def list_claims(owner_id):
+    return q("""SELECT p.*, i.number AS inv_number, cu.name AS customer_name
+      FROM payments p LEFT JOIN invoices i ON i.id=p.invoice_id
+      LEFT JOIN customers cu ON cu.id=p.customer_id
+      WHERE p.owner_id=? AND p.status='claimed' ORDER BY p.created DESC LIMIT 50""", (owner_id,))
+
+# ---- alerts (real states only) ----
+def owner_alerts(owner_id):
+    alerts = []
+    t24 = now() - 86400
+    f = one("SELECT COUNT(*) AS n FROM outbox WHERE owner_id=? AND status='failed' AND created>?", (owner_id, t24))
+    if f and f["n"]:
+        alerts.append({"kind": "failed", "text": f"{f['n']} message{'s' if f['n']>1 else ''} failed to deliver in the last 24h. Check the automation log."})
+    nc = one("SELECT COUNT(*) AS n FROM outbox WHERE owner_id=? AND status='no_channel' AND created>?", (owner_id, t24))
+    if nc and nc["n"]:
+        alerts.append({"kind": "no_channel", "text": f"{nc['n']} message{'s' if nc['n']>1 else ''} are waiting because your email or WhatsApp is not connected (Settings > Your business connection)."})
+    ap = one("SELECT COUNT(*) AS n FROM outbox WHERE owner_id=? AND status='approval'", (owner_id,))
+    if ap and ap["n"]:
+        alerts.append({"kind": "approval", "text": f"{ap['n']} message{'s' if ap['n']>1 else ''} waiting for your approval."})
+    cl = one("SELECT COUNT(*) AS n FROM payments WHERE owner_id=? AND status='claimed'", (owner_id,))
+    if cl and cl["n"]:
+        alerts.append({"kind": "claim", "text": f"{cl['n']} payment{'s' if cl['n']>1 else ''} reported but not verified yet. Reminders continue until you verify them."})
+    if not notify_retailer_email_ready(owner_id):
+        alerts.append({"kind": "setup", "text": "Your business email is not connected. Nothing sends until it is (Settings > Your business connection)."})
+    return alerts
+
+def notify_retailer_email_ready(owner_id):
+    cn = get_connect(owner_id)
+    return bool(cn and cn.get("smtp_host") and cn.get("smtp_user") and not cn.get("paused"))
+
+# ---- export / delete ----
+def export_owner_data(owner_id):
+    u = get_user(owner_id)
+    data = {"exported_at": time.strftime("%Y-%m-%d %H:%M:%S"), "account": {k: u.get(k) for k in ("email","name","business","phone","plan","plan_status","upi_vpa") if u and u.get(k)},
+            "customers": q("SELECT * FROM customers WHERE owner_id=?", (owner_id,)),
+            "invoices": q("SELECT * FROM invoices WHERE owner_id=?", (owner_id,)),
+            "payments": q("SELECT * FROM payments WHERE owner_id=?", (owner_id,)),
+            "pay_events": q("SELECT * FROM pay_events WHERE owner_id=?", (owner_id,)),
+            "automations": q("SELECT * FROM automations WHERE owner_id=?", (owner_id,)),
+            "outbox": q("SELECT * FROM outbox WHERE owner_id=?", (owner_id,)),
+            "activities": q("SELECT * FROM activities WHERE owner_id=?", (owner_id,)),
+            "branches": q("SELECT * FROM branches WHERE owner_id=?", (owner_id,)),
+            "rules": q("SELECT * FROM rules WHERE owner_id=?", (owner_id,)),
+            "platform_payments": q("SELECT * FROM plat_pays WHERE owner_id=?", (owner_id,))}
+    return data
+
+def delete_owner_data(owner_id):
+    for tbl in ("outbox","activities","pay_events","payments","invoices","customers",
+                "automations","etemplates","branches","rules","api_keys","plat_pays","connect","support","audit"):
+        ex(f"DELETE FROM {tbl} WHERE owner_id=?", (owner_id,))
+    ex("DELETE FROM audit WHERE user_id IN (SELECT id FROM users WHERE parent_id=?)", (owner_id,))
+    ex("DELETE FROM users WHERE parent_id=?", (owner_id,))
+    ex("DELETE FROM usage_counters WHERE owner_id=?", (owner_id,))
+    ex("DELETE FROM users WHERE id=?", (owner_id,))
+
+# ---- platform admin overview ----
+def admin_overview():
+    owners = q("SELECT * FROM users WHERE role='owner' ORDER BY created DESC")
+    per_plan = {"starter": 999, "growth": 4999, "enterprise": 5999, "scale": 5999}
+    active = [o for o in owners if o.get("plan_status") == "active"]
+    mrr = sum(per_plan.get(o.get("plan") or "starter", 0) for o in active)
+    rev = one("SELECT COALESCE(SUM(amount),0) AS s FROM plat_pays WHERE status='confirmed'") or {}
+    out_today = one("SELECT COUNT(*) AS n FROM outbox WHERE created>? AND status='sent'", (now()-86400,)) or {}
+    fails_today = one("SELECT COUNT(*) AS n FROM outbox WHERE created>? AND status='failed'", (now()-86400,)) or {}
+    return {"owners": owners, "active_n": len(active), "mrr": mrr,
+            "confirmed_revenue": rev.get("s") or 0, "sent_24h": out_today.get("n") or 0,
+            "failed_24h": fails_today.get("n") or 0}

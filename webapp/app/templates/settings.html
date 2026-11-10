@@ -115,4 +115,27 @@
 <button class="btn">Change password</button>
 </form>
 </div>
+
+<div class="card formcard" style="margin-top:20px">
+<h2>Automation mode</h2>
+<p class="muted">Automatic: approved reminders go out on schedule once your channels are connected. Approval Required: every message waits in your approval queue until you send it. Customers who unsubscribed are never contacted in either mode.</p>
+<form method="post" action="/settings/mode" class="stack">
+<div><label><input type="radio" name="mode" value="auto" {{ 'checked' if (user.automation_mode or 'auto') == 'auto' }}> Automatic</label></div>
+<div><label><input type="radio" name="mode" value="approval" {{ 'checked' if user.automation_mode == 'approval' }}> Approval Required</label></div>
+<button class="btn">Save mode</button>
+</form></div>
+<div class="card formcard" style="margin-top:20px">
+<h2>Two-factor authentication</h2>
+<p class="muted">{{ "Enabled. A code from your authenticator app is required at sign-in." if user.totp_enabled else "Add a second sign-in step with any authenticator app." }}</p>
+<a class="btn ghost sm" href="/settings/2fa">{{ "Manage 2FA" if user.totp_enabled else "Set up 2FA" }}</a>
+</div>
+<div class="card formcard" style="margin-top:20px">
+<h2>Your data</h2>
+<p class="muted">Export everything (customers, invoices, payments, messages, activity) as JSON, or delete your account and all of its data permanently.</p>
+<a class="btn ghost sm" href="/settings/export-data">Export my data (JSON)</a>
+<form method="post" action="/settings/delete-account" class="stack" style="margin-top:12px" onsubmit="return confirm('This permanently deletes your account and all data. Continue?')">
+<div><label>Type DELETE to confirm account deletion</label><input name="confirm" placeholder="DELETE"></div>
+<button class="btn danger">Delete my account</button>
+</form></div>
+
 {% endblock %}

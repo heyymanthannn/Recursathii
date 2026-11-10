@@ -1,0 +1,40 @@
+{% extends "base.html" %}{% block title %}Set up your workspace · RecurSaathi{% endblock %}{% block content %}
+<h1>Let's set up your recovery workspace</h1>
+<p class="sub">Three quick steps. You can skip anything and finish later in Settings.</p>
+<div class="badge-note">Step {{ step }} of 3</div>
+{% if step == "1" %}
+<div class="card formcard" style="margin-top:14px"><h2 style="margin-top:0">Tell us about your business</h2>
+<form method="post" action="/onboarding/step1" class="stack">
+<div><label>Business name</label><input name="business" value="{{ user.business or '' }}" required></div>
+<div><label>Your name</label><input name="name" value="{{ user.name or '' }}"></div>
+<div><label>Contact phone</label><input name="phone" value="{{ user.phone or '' }}"></div>
+<div><label>Your UPI ID (customers pay here)</label><input name="upi_vpa" value="{{ user.upi_vpa or '' }}" placeholder="yourname@bank"></div>
+<button class="btn">Next: connect your channels</button>
+</form>
+<a class="btn ghost sm" href="/onboarding?step=2" style="margin-top:10px">Skip for now</a></div>
+{% elif step == "2" %}
+<div class="card formcard" style="margin-top:14px"><h2 style="margin-top:0">Connect your business email</h2>
+<p class="muted">Reminders go out as <b>your business</b>, from your own email. Nothing sends until this is connected.</p>
+<form method="post" action="/onboarding/step2" class="stack">
+<input type="hidden" name="business_name" value="{{ user.business or '' }}">
+<div><label>SMTP host</label><input name="smtp_host" placeholder="smtp.gmail.com"></div>
+<div><label>SMTP port</label><input name="smtp_port" value="587"></div>
+<div><label>SMTP username (your business email)</label><input name="smtp_user"></div>
+<div><label>SMTP password / app password</label><input name="smtp_pass" type="password"></div>
+<button class="btn">Save and continue</button>
+</form>
+<form method="post" action="/onboarding/step2" style="margin-top:10px"><input type="hidden" name="skip" value="1"><button class="btn ghost sm">I'll connect later</button></form></div>
+{% else %}
+<div class="card formcard" style="margin-top:14px"><h2 style="margin-top:0">How should automations run?</h2>
+<form method="post" action="/onboarding/finish" class="stack">
+<div><label><input type="radio" name="mode" value="auto" checked> Automatic &mdash; approved reminders send on schedule</label></div>
+<div><label><input type="radio" name="mode" value="approval"> Approval Required &mdash; every message waits for your one-tap approval</label></div>
+<div style="margin-top:10px"><label>Add your first customer (optional)</label></div>
+<div><label>Name</label><input name="cname"></div>
+<div><label>Email</label><input name="cemail" type="email"></div>
+<div><label>Phone</label><input name="cphone"></div>
+<button class="btn">Finish setup</button>
+</form>
+<form method="post" action="/onboarding/finish" style="margin-top:10px"><input type="hidden" name="skip" value="1"><button class="btn ghost sm">Skip and open dashboard</button></form></div>
+{% endif %}
+{% endblock %}
