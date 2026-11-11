@@ -985,3 +985,31 @@ async def reactivation_response(request: Request, x_api_key: str | None = Header
     if not r:
         raise HTTPException(status_code=404, detail="campaign not found")
     return {"ok": True, "response": r}
+
+
+# ---- hybrid automation architecture, Phase 4: revenue intelligence (read-only) ----
+from . import intelligence as _intelligence
+
+
+@app.get("/api/intelligence/overview")
+async def intelligence_overview(x_api_key: str | None = Header(default=None)):
+    u = _control_owner(x_api_key)
+    return _intelligence.intelligence_snapshot(u["id"])
+
+
+@app.get("/api/intelligence/report")
+async def intelligence_report(x_api_key: str | None = Header(default=None), kind: str = "daily"):
+    u = _control_owner(x_api_key)
+    if kind == "daily":
+        return {"kind": "daily", "report": _intelligence.daily_report(u["id"])}
+    if kind == "weekly":
+        return {"kind": "weekly", "report": _intelligence.weekly_report(u["id"])}
+    raise HTTPException(status_code=400, detail="kind must be daily or weekly")
+
+
+@app.post("/api/intelligence/assistant")
+async def intelligence_assistant(request: Request, x_api_key: str | None = Header(default=None)):
+    """Read-only business assistant: answers only from this tenant's own records."""
+    u = _control_owner(x_api_key)
+    d = await request.json()
+    return {"answer": _intelligence.assistant_answer(u["id"], str(d.get("question") or "")[:500])}
