@@ -36,9 +36,11 @@ def render(name, request, user=None, **ctx):
     trial_left = ctx.pop("trial_left", None)
     if trial_left is None and user and user.get("plan_status") == "trialing" and user.get("trial_ends"):
         trial_left = max(0, int((user["trial_ends"] - time.time()) / 86400) + 1)
+    code = ctx.pop("code", None)
     t = env.get_template(name)
-    return HTMLResponse(t.render(request=request, user=user, active_tab=ctx.pop("tab", ""),
-                                 trial_left=trial_left, **ctx))
+    body = t.render(request=request, user=user, active_tab=ctx.pop("tab", ""),
+                    trial_left=trial_left, code=code, **ctx)
+    return HTMLResponse(body, status_code=code or 200)
 
 def inr(p): return f"\u20b9{p/100:,.0f}"
 
@@ -992,11 +994,16 @@ async def forgot_send(request: Request, email: str = Form("")):
     if u:
         tok = models.token(32)
         models.set_reset_token(email, tok)
-        link = getattr(config, "APP_BASE_URL", "http://localhost:8000") + "/reset/" + tok
+        base = getattr(config, "APP_BASE_URL", "http://localhost:8000")
+        full = base + "/reset/" + tok
         if notify.smtp_ready():
             notify.send_email(email, "Reset your RecurSaathi password",
-                f"Hi {u['name'] or 'there'},\n\nReset your password with this link (valid for 1 hour):\n{link}\n\nIf you didn't ask for this, you can ignore this email.")
-    return render("forgot_done.html", request, link=("" if notify.smtp_ready() else link))
+                f"Hi {u['name'] or 'there'},\n\nReset your password with this link (valid for 1 hour):\n{full}\n\nIf you didn't ask for this, you can ignore this email.")
+        elif (request.url.hostname or "") in ("localhost", "127.0.0.1"):
+            # local-dev convenience only: a deployed host must never render a
+            # reset link in the page (email enumeration + account takeover)
+            link = full
+    return render("forgot_done.html", request, link=link)
 
 @router.get("/reset/{tok}", response_class=HTMLResponse)
 async def reset_page(request: Request, tok: str):
@@ -1028,7 +1035,9 @@ async def settings_password(request: Request, current_password: str = Form(""),
         return RedirectResponse("/settings?pw=err", status_code=303)
     models.change_password(user["id"], auth.hash_pw(new_password))
     models.log_audit(user["id"], "settings.password", "changed")
-    return RedirectResponse("/settings", status_code=303)
+    r = RedirectResponse("/settings", status_code=303)
+    auth.start_session(r, user["id"])  # re-issue this browser's session; all older sessions are revoked
+    return r
 
 
 # ---------- Enterprise: multi-branch management ----------

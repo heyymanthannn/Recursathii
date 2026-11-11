@@ -138,6 +138,8 @@ def init():
             c.execute("ALTER TABLE users ADD COLUMN totp_enabled INTEGER DEFAULT 0")
         if "onboarded" not in cols:
             c.execute("ALTER TABLE users ADD COLUMN onboarded INTEGER DEFAULT 0")
+        if "session_epoch" not in cols:
+            c.execute("ALTER TABLE users ADD COLUMN session_epoch INTEGER DEFAULT 0")
         ccols = [r["name"] for r in c.execute("PRAGMA table_info(customers)")]
         if "email_opt_out" not in ccols:
             c.execute("ALTER TABLE customers ADD COLUMN email_opt_out INTEGER DEFAULT 0")
@@ -619,7 +621,7 @@ def clear_reset(uid_):
     ex("UPDATE users SET reset_token='', reset_expires=NULL WHERE id=?", (uid_,))
 
 def change_password(uid_, pw_hash):
-    ex("UPDATE users SET pw_hash=? WHERE id=?", (pw_hash, uid_))
+    ex("UPDATE users SET pw_hash=?, session_epoch=COALESCE(session_epoch,0)+1 WHERE id=?", (pw_hash, uid_))
 
 
 # ---- retailer-owned connection (business email + WhatsApp Business) ----

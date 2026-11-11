@@ -22,8 +22,18 @@ def check_pw(pw: str, stored: str) -> bool:
 
 import hmac  # noqa: E402  (used by check_pw)
 
+def _epoch(user_id: str) -> int:
+    u = models.get_user(user_id)
+    try:
+        return int((u or {}).get("session_epoch") or 0)
+    except Exception:
+        return 0
+
 def start_session(response, user_id: str):
-    response.set_cookie(SESSION_COOKIE, _s.dumps(user_id),
+    # session epoch: bumped on every password change, so all cookies issued
+    # before a rotation stop validating (server-side revocation without a
+    # session store; pre-epoch cookies stay valid only for epoch-0 accounts)
+    response.set_cookie(SESSION_COOKIE, _s.dumps({"u": user_id, "e": _epoch(user_id)}),
                         httponly=True, samesite="lax", max_age=SESSION_TTL)
 
 def end_session(response):
@@ -34,7 +44,14 @@ def current_user(request):
     if not cookie:
         return None
     try:
-        user_id = _s.loads(cookie, max_age=SESSION_TTL)
+        payload = _s.loads(cookie, max_age=SESSION_TTL)
     except BadSignature:
         return None
-    return models.get_user(user_id)
+    if isinstance(payload, dict):
+        user_id, cookie_epoch = str(payload.get("u") or ""), int(payload.get("e") or 0)
+    else:
+        user_id, cookie_epoch = str(payload), 0
+    user = models.get_user(user_id)
+    if not user or int(user.get("session_epoch") or 0) != cookie_epoch:
+        return None
+    return user
