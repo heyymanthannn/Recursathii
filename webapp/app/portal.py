@@ -134,7 +134,8 @@ def portal_customer(request):
 
 def _portal_session(response, email: str):
     response.set_cookie(PORTAL_COOKIE, _ps.dumps(email.lower()),
-                        httponly=True, samesite="lax", max_age=PORTAL_TTL)
+                        httponly=True, samesite="lax", max_age=PORTAL_TTL,
+                        secure=(config.BASE_URL or "").startswith("https"))
 
 
 def _customer_invoices(email):

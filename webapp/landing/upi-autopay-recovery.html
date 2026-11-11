@@ -86,7 +86,7 @@
      "name": "How does RecurSaathi recover a failed UPI AutoPay payment?",
      "acceptedAnswer": {
       "@type": "Answer",
-      "text": "RecurSaathi reads the failure reason from the gateway response, retries at the right window for that reason, and sends a WhatsApp and email nudge with a one-tap payment link. If the customer replies with a promise to pay, the follow-up is rescheduled automatically."
+      "text": "RecurSaathi reads the failure reason from the gateway response, retries at the right window for that reason, and queues a WhatsApp and email nudge with a one-tap payment link, delivered once your own email or WhatsApp number is connected. If the customer replies with a promise to pay, the follow-up is rescheduled automatically."
      }
     },
     {
@@ -460,7 +460,7 @@ footer a:hover{color:var(--ink)}
       <div class="step glass reveal"><span class="stepnum">3</span><h3>Retry smart</h3><p>Retries are timed inside RBI's recurring-mandate windows, the 24-hour pre-debit notification respected, spaced for the reason.</p></div>
     </div>
     <div class="steps">
-      <div class="step glass reveal"><span class="stepnum">4</span><h3>Nudge</h3><p>A WhatsApp and email nudge goes out with a one-tap payment link to your own UPI ID or gateway. The customer pays in seconds.</p></div>
+      <div class="step glass reveal"><span class="stepnum">4</span><h3>Nudge</h3><p>A WhatsApp and email nudge is queued with a one-tap payment link, and delivers once you connect your own SMTP email or WhatsApp Business number to your own UPI ID or gateway. The customer pays in seconds.</p></div>
       <div class="step glass reveal"><span class="stepnum">5</span><h3>Track promises</h3><p>Replied "Friday, promise"? The follow-up is rescheduled automatically and tracked to the rupee in your dashboard.</p></div>
       <div class="step glass reveal"><span class="stepnum">&infin;</span><h3>It keeps running</h3><p>Every mandate, every month. Recoveries land in one dashboard, updated as money moves.</p></div>
     </div>
@@ -487,7 +487,7 @@ footer a:hover{color:var(--ink)}
     <div class="faqlist">
       <details class="glass reveal"><summary>How common are failed recurring debits in India?<span class="plus">+</span></summary><p>Large and growing: NPCI's August 2026 data shows 4.82 crore NACH recurring debit returns against 19.36 crore presentations, about one in four recurring debits coming back. The count covers all return reasons and counts a re-presented debit each time it is presented, so it is not a clean first-attempt failure rate &mdash; but the scale is real, and it is why recovery, not prevention, is where the money is (source: NPCI recurring payments statistics, Aug 2026).</p></details>
       <details class="glass reveal"><summary>Why do UPI AutoPay payments fail?<span class="plus">+</span></summary><p>Most failures are routine: the customer's account is short of balance, they paused or deleted the mandate, the bank or UPI rails were down, a daily limit was hit, or the mandate expired. The reason matters because each one needs a different recovery move.</p></details>
-      <details class="glass reveal"><summary>How does RecurSaathi recover a failed AutoPay payment?<span class="plus">+</span></summary><p>The failure reason is read from the gateway response, the retry is timed for that reason, and a WhatsApp and email nudge goes out with a one-tap payment link. If the customer replies with a promise to pay, the follow-up is rescheduled automatically.</p></details>
+      <details class="glass reveal"><summary>How does RecurSaathi recover a failed AutoPay payment?<span class="plus">+</span></summary><p>The failure reason is read from the gateway response, the retry is timed for that reason, and a WhatsApp and email nudge is prepared with a one-tap payment link and delivers once your own email or WhatsApp number is connected. If the customer replies with a promise to pay, the follow-up is rescheduled automatically.</p></details>
       <details class="glass reveal"><summary>Is retrying failed AutoPay debits RBI-compliant?<span class="plus">+</span></summary><p>RBI's recurring mandate rules, including the 24-hour pre-debit notification and the no-additional-authentication limit for smaller mandates, limit brute-force retries. RecurSaathi times retries inside the allowed windows and uses WhatsApp payment links for the rest.</p></details>
       <details class="glass reveal"><summary>Do I need Razorpay to use it?<span class="plus">+</span></summary><p>No. Manual UPI mode works from day one: generate a payment page and QR for your own UPI ID and mark the invoice paid when money lands. Connect Razorpay whenever you want automatic retries.</p></details>
       <details class="glass reveal"><summary>Do you hold my customers' money?<span class="plus">+</span></summary><p>No. Recovered payments land in your own gateway account or your own UPI ID. RecurSaathi automates, tracks and reports; money never flows through us.</p></details>

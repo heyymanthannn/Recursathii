@@ -82,6 +82,13 @@ def mark_paid(merchant_id: str) -> dict:
         mail_state = {"status": st, "detail": err}
         row["welcome_sent"] = 1 if st == "sent" else 0
     db.save_merchant(row)
+    # Keep the accounts table in sync: a confirmed payment must make the owner
+    # 'active' and clear their trial clock, or the trial cron flips them to
+    # 'expired' later even though they paid.
+    from . import models as _models
+    _u = _models.get_user_by_email(m.get("email") or "")
+    if _u:
+        _models.update_user(_u["id"], plan_status="active", trial_ends=None)
     return {"handled": True, "merchant_id": merchant_id, "status": "active",
             "first_payment": first_time,
             "next_month_discount_pct": row.get("next_month_discount", 0),

@@ -12,6 +12,22 @@ from . import engine, billing, playbooks, youpi, config, manual_upi, auth
 from .ratelimit import allow as rl_allow
 from .config import WEBHOOK_SECRET, BILLING_WEBHOOK_SECRET, PLANS
 from fastapi.responses import HTMLResponse, Response
+import html as _html
+import re as _re
+
+def _esc(v) -> str:
+    """HTML-escape anything user-supplied before it lands in a page."""
+    return _html.escape(str(v or ""), quote=True)
+
+def _admin_digest(tok: str) -> str:
+    # Cookie never carries the raw admin token, only its SHA-256 digest.
+    return hashlib.sha256((tok or "").encode()).hexdigest()
+
+_ADMIN_COOKIE = _admin_digest(config.ADMIN_TOKEN)
+
+def _cookie_secure() -> bool:
+    # Secure flag only where we actually serve https (Render), so localhost dev keeps working.
+    return (config.BASE_URL or "").startswith("https")
 
 app = FastAPI(title="payment-recovery-mvp", version="0.2")
 
@@ -68,6 +84,9 @@ async def api_signup(request: Request):
     plan = {"scale": "enterprise"}.get(plan, plan)
     if plan not in PLANS or not email:
         raise HTTPException(status_code=400, detail="plan and email required")
+    email = email.strip().lower()
+    if not _re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]{2,}", email):
+        raise HTTPException(status_code=400, detail="Please enter a valid email address.")
     if not (data.get("phone") or "").strip():
         raise HTTPException(status_code=400, detail="phone number required to start your trial")
     pw = (data.get("password") or "")
@@ -223,11 +242,11 @@ a{{color:#5b4bd6}}
 <p>Scan with Google Pay or any UPI app. The amount is locked to the exact total shown.</p>
 </div>
 <form method="post" action="/checkout/{merchant_id}/coupon">
-<input name="code" placeholder="Coupon code" maxlength="20" {'value=' + chr(34) + (row.get('coupon_code') or '') + chr(34) if row and row.get('coupon_code') else ''} {'disabled' if pct else ''}>
+<input name="code" placeholder="Coupon code" maxlength="20" {'value=' + chr(34) + _esc(row.get('coupon_code') or '') + chr(34) if row and row.get('coupon_code') else ''} {'disabled' if pct else ''}>
 <button class="btn ghost" style="width:auto" {'disabled' if pct else ''}>Apply</button></form>
 <form method="post" action="/checkout/{merchant_id}/paid-claim" style="margin-top:6px">
 <button class="btn">I've paid</button></form>
-<p class="sub" style="margin-top:10px;text-align:center;font-size:13px">Your account goes live the moment payment is confirmed. You'll hear from us on {m.email}.</p>
+<p class="sub" style="margin-top:10px;text-align:center;font-size:13px">Your account goes live the moment payment is confirmed. You'll hear from us on {_esc(m.email)}.</p>
 <p class="fine">Prices exclude 18% GST; payment provider charges may apply. Your customers' invoice payments never come here - they go straight to your own bank via your UPI ID or your own gateway. Subscription payments go to RecurSaathi.</p>
 </div>
 <div class="foot">Already have an account? <a href="/login">Sign in</a> &middot; <a href="/">recursathii.onrender.com</a></div>
@@ -308,7 +327,7 @@ async def pay_qr(merchant_id: str):
 @app.post("/admin/mark-paid")
 async def admin_mark_paid(request: Request, x_admin_token: str = Header(default="")):
     """Owner confirms an incoming UPI payment; activates the merchant account."""
-    if x_admin_token != config.ADMIN_TOKEN:
+    if not hmac.compare_digest(x_admin_token, config.ADMIN_TOKEN):
         raise HTTPException(status_code=401, detail="invalid admin token")
     data = await request.json()
     return manual_upi.mark_paid(data.get("merchant_id", ""))
@@ -316,7 +335,7 @@ async def admin_mark_paid(request: Request, x_admin_token: str = Header(default=
 @app.post("/admin/plat-confirm")
 async def admin_plat_confirm(request: Request, x_admin_token: str = Header(default="")):
     """Confirm a pending subscription payment -> activates that business's plan."""
-    if x_admin_token != config.ADMIN_TOKEN:
+    if not hmac.compare_digest(x_admin_token, config.ADMIN_TOKEN):
         raise HTTPException(status_code=401, detail="invalid admin token")
     from . import models
     data = await request.json()
@@ -333,7 +352,7 @@ async def admin_panel(request: Request):
     """Owner admin panel: token login, pending payments, one-click confirm."""
     from fastapi.responses import HTMLResponse, RedirectResponse
     tok = request.cookies.get("admin_token", "")
-    if tok != config.ADMIN_TOKEN:
+    if not hmac.compare_digest(tok, _ADMIN_COOKIE):
         html = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin - RecurSaathi</title>
 <meta name="robots" content="noindex,nofollow">
@@ -355,9 +374,9 @@ button{width:100%;background:linear-gradient(135deg,#7c6cf8,#5ac8fa);border:0;bo
     for m in rows:
         amt = _pay_amount(m.get("plan", ""), m)
         utr = (m.get("claimed_utr") or "").strip()
-        utr_html = f'<div class="utr">UTR claimed: <b>{utr}</b></div>' if utr else '<div class="utr dim">No UTR claimed yet</div>'
-        cards.append(f"""<div class="card"><div class="row1"><b>{(m.get('name') or m.get('email') or 'Merchant')}</b><span class="plan">{m.get('plan','')}</span></div>
-<div class="meta">{m.get('email','')} · {m.get('phone') or 'no phone'}</div>
+        utr_html = f'<div class="utr">UTR claimed: <b>{_esc(utr)}</b></div>' if utr else '<div class="utr dim">No UTR claimed yet</div>'
+        cards.append(f"""<div class="card"><div class="row1"><b>{_esc(m.get('name') or m.get('email') or 'Merchant')}</b><span class="plan">{_esc(m.get('plan',''))}</span></div>
+<div class="meta">{_esc(m.get('email',''))} · {_esc(m.get('phone') or 'no phone')}</div>
 <div class="amt">&#8377;{amt:,.0f}<span> / {m.get('plan','')} · monthly</span></div>{utr_html}
 <form method="post" action="/admin/confirm"><input type="hidden" name="merchant_id" value="{m.get('id','')}"><button type="submit">Confirm paid &amp; activate</button></form></div>""")
     if not cards:
@@ -384,16 +403,16 @@ button{width:100%;background:linear-gradient(135deg,#00d4a0,#00b389);border:0;bo
 async def admin_login(request: Request):
     from fastapi.responses import RedirectResponse
     form = await request.form()
-    if (form.get("token") or "") != config.ADMIN_TOKEN:
+    if not hmac.compare_digest(form.get("token") or "", config.ADMIN_TOKEN):
         return RedirectResponse("/admin?e=1", status_code=303)
     resp = RedirectResponse("/admin", status_code=303)
-    resp.set_cookie("admin_token", config.ADMIN_TOKEN, max_age=60 * 60 * 24 * 30, httponly=True, samesite="lax")
+    resp.set_cookie("admin_token", _ADMIN_COOKIE, max_age=60 * 60 * 24 * 30, httponly=True, samesite="lax", secure=_cookie_secure())
     return resp
 
 @app.post("/admin/confirm")
 async def admin_confirm(request: Request):
     from fastapi.responses import RedirectResponse
-    if request.cookies.get("admin_token", "") != config.ADMIN_TOKEN:
+    if not hmac.compare_digest(request.cookies.get("admin_token", ""), _ADMIN_COOKIE):
         return RedirectResponse("/admin", status_code=303)
     form = await request.form()
     manual_upi.mark_paid(form.get("merchant_id", ""))
@@ -401,14 +420,17 @@ async def admin_confirm(request: Request):
 
 @app.get("/admin/pending")
 async def admin_pending(x_admin_token: str = Header(default="")):
-    if x_admin_token != config.ADMIN_TOKEN:
+    if not hmac.compare_digest(x_admin_token, config.ADMIN_TOKEN):
         raise HTTPException(status_code=401, detail="invalid admin token")
     return {"pending": manual_upi.pending(), "activations": manual_upi.activations()}
 
 @app.post("/onboard")
 async def onboard(request: Request):
     data = await request.json()
-    m = billing.onboard(data["merchant_id"], data["email"], data["plan"])
+    _em = (data.get("email") or "").strip().lower()
+    if not _re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]{2,}", _em):
+        raise HTTPException(status_code=400, detail="valid email required")
+    m = billing.onboard(data["merchant_id"], _em, data["plan"])
     return {"merchant_id": m.id, "plan": m.plan, "status": m.status}
 
 @app.get("/checkout/{plan}")
@@ -427,7 +449,14 @@ async def dashboard(merchant_id: str):
             "stats": engine.stats(merchant_id)}
 
 @app.post("/scheduler/tick")
-async def scheduler_tick():
+async def scheduler_tick(request: Request, x_scheduler_token: str = Header(default="")):
+    # Security fix: this endpoint mutates account state (trials, outbox). It now
+    # requires the shared secret from SCHEDULER_TICK_TOKEN (header X-Scheduler-Token)
+    # and fails closed when the env var is not set. The Render cron that calls it
+    # must be updated in the same deploy: set SCHEDULER_TICK_TOKEN + send the header.
+    _tick_token = os.environ.get("SCHEDULER_TICK_TOKEN", "")
+    if not _tick_token or not hmac.compare_digest(x_scheduler_token, _tick_token):
+        raise HTTPException(status_code=403, detail="scheduler token required")
     import time
     from . import models
     now = time.time()
