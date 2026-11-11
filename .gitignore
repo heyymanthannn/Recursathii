@@ -1,4 +1,27 @@
 __pycache__/
 *.pyc
-webapp/data/
 webapp/app/__pycache__/
+
+# development databases and synthetic pilot data (never deploy or commit)
+data/
+webapp/data/
+*.db
+*.sqlite
+*.sqlite3
+
+# synthetic pilot backups and restore-test working files
+webapp/backups/
+backups/
+restore_tmp/
+restore-test/
+*.db.enc
+*.backup
+
+# local secrets and keys (credentials come from env vars only)
+.env
+.env.*
+*.pem
+*.key
+*enc_key*
+backup_enc_key*
+credentials*.json
