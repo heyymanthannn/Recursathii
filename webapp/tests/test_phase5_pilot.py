@@ -17,6 +17,8 @@ now = time.time()
 def date(d): return time.strftime("%Y-%m-%d", time.gmtime(now - d * 86400))
 
 OID = models.create_user("pilot@example.com", "x", "Pilot Owner", "Pilot Co", "+919000000400", role="owner")["id"]
+from app.auth import hash_pw as _hp
+models.update_user(OID, pw_hash=_hp("correct horse"))
 key = models.create_api_key(OID, "pilot")
 H = {"X-API-Key": key}
 
@@ -36,8 +38,16 @@ except ValueError:
     record("pilot: wrong confirmation word rejected", True)
 bad = client.post("/api/pilot/activation", headers=H, json={"enabled": True, "confirm": "go"})
 record("pilot: API activation needs ACTIVATE", bad.status_code == 400, str(bad.status_code))
-ok = client.post("/api/pilot/activation", headers=H, json={"enabled": True, "confirm": "ACTIVATE"}).json()
-record("pilot: ACTIVATE turns automations on", ok["activation"]["automations_enabled"] is True, str(ok)[:100])
+no_code = client.post("/api/pilot/activation", headers=H, json={"enabled": True, "confirm": "ACTIVATE"})
+record("pilot: ACTIVATE without reauth code rejected", no_code.status_code == 400, str(no_code.status_code))
+wrong_pw = client.post("/api/pilot/activation/challenge", headers=H, json={"password": "wrong"})
+record("pilot: challenge rejects wrong password", wrong_pw.status_code == 401, str(wrong_pw.status_code))
+ch = client.post("/api/pilot/activation/challenge", headers=H, json={"password": "correct horse"}).json()
+code = ch.get("code", "")
+ok = client.post("/api/pilot/activation", headers=H, json={"enabled": True, "confirm": "ACTIVATE", "code": code}).json()
+record("pilot: ACTIVATE with reauth code turns automations on", ok["activation"]["automations_enabled"] is True, str(ok)[:100])
+reuse = client.post("/api/pilot/activation", headers=H, json={"enabled": True, "confirm": "ACTIVATE", "code": code})
+record("pilot: reauth code single-use", reuse.status_code == 400, str(reuse.status_code))
 permissions.set_config(OID, {"quiet_hours": {"enabled": False},
                               "max_per_customer_per_day": 20, "max_per_customer_week": 100})
 counts = __import__("app.automations", fromlist=["automations"]).run_for_owner(owner, "")
@@ -77,8 +87,11 @@ rate = intelligence.verified_recovery_rate(OID)
 record("pilot: imported payment NOT counted as recovered revenue", rate["verified_recovered"] == 0, str(rate)[:120])
 rj = client.post("/api/pilot/reconcile", headers=H, json={"payment_id": pay["id"], "verified": False}).json()
 record("pilot: reconcile without reference rejected", rj["changed"] is False, str(rj)[:100])
-rr = client.post("/api/pilot/reconcile", headers=H, json={"payment_id": pay["id"], "verified": True, "reference": "UTR-REC-1"}).json()
-record("pilot: reconcile with reference confirms", rr["changed"] is True and rr["payment"]["status"] == "confirmed", str(rr)[:120])
+unknown_ref = client.post("/api/pilot/reconcile", headers=H, json={"payment_id": pay["id"], "reference": "UTR-UNKNOWN-9"}).json()
+record("pilot: unknown reference stays imported", unknown_ref["changed"] is False, str(unknown_ref)[:120])
+pilot.seed_trust_reference("razorpay", "UTR-REC-1", pay["amount"], status="captured")
+rr = client.post("/api/pilot/reconcile", headers=H, json={"payment_id": pay["id"], "reference": "UTR-REC-1"}).json()
+record("pilot: reconcile with verified reference confirms", rr["changed"] is True and rr["payment"]["status"] == "confirmed", str(rr)[:120])
 rate2 = intelligence.verified_recovery_rate(OID)
 record("pilot: reconciled payment counts once recovered", rate2["verified_recovered"] == 1 and rate2["verified_recovered_value"] == 50000, str(rate2)[:140])
 

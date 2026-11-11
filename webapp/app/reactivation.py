@@ -212,7 +212,8 @@ def run_campaign(owner, campaign, counts=None):
                 body = campaign["email_body"] if channel == "email" else campaign["wa_body"]
             sub = campaign["email_subject"] if channel == "email" else ""
             o = models.queue(owner["id"], channel, dest, "reactivation", sub, body,
-                             dedupe=f"react:{campaign['id']}:{m['id']}:{channel}")
+                             dedupe=f"react:{campaign['id']}:{m['id']}:{channel}",
+                             customer_id=m["id"])
             st = "held_for_approval" if res["decision"] == "needs_approval" else "queued"
             if o:
                 if res["decision"] == "needs_approval":

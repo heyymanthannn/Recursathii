@@ -1017,6 +1017,7 @@ async def intelligence_assistant(request: Request, x_api_key: str | None = Heade
 
 # ---- hybrid automation architecture, Phase 5: controlled pilot readiness ----
 from . import pilot as _pilot
+from . import providers as _providers
 
 
 @app.get("/api/pilot/activation")
@@ -1036,7 +1037,7 @@ async def pilot_activation(request: Request, x_api_key: str | None = Header(defa
     d = await request.json()
     try:
         if d.get("enabled"):
-            return {"ok": True, "activation": _pilot.activate(u["id"], str(d.get("confirm") or ""))}
+            return {"ok": True, "activation": _pilot.activate(u["id"], str(d.get("confirm") or ""), str(d.get("code") or ""))}
         return {"ok": True, "activation": _pilot.deactivate(u["id"])}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -1093,6 +1094,7 @@ async def pilot_metrics(x_admin_token: str = Header(default="")):
     only, never a business API key: tenant isolation is not weakened."""
     if not hmac.compare_digest(x_admin_token, config.ADMIN_TOKEN):
         raise HTTPException(status_code=401, detail="invalid admin token")
+    _models.log_audit("platform", "pilot_metrics_access", "restricted pilot monitoring read")
     return _pilot.pilot_metrics()
 
 
@@ -1101,3 +1103,83 @@ async def pilot_backup(x_admin_token: str = Header(default="")):
     if not hmac.compare_digest(x_admin_token, config.ADMIN_TOKEN):
         raise HTTPException(status_code=401, detail="invalid admin token")
     return _pilot.backup_check()
+
+
+# ---- Phase 5.1: pilot safety hardening endpoints ----------------------------
+
+@app.post("/api/pilot/activation/challenge")
+async def pilot_activation_challenge(request: Request, x_api_key: str | None = Header(default=None)):
+    """Owner reauthentication: verify the owner's password, issue a one-time
+    activation code (10 minutes, single use). The activation POST then needs
+    both the code and confirm=ACTIVATE."""
+    u = _control_owner(x_api_key)
+    d = await request.json()
+    code = _pilot.request_activation_code(u["id"], str(d.get("password") or ""))
+    if not code:
+        raise HTTPException(status_code=401, detail="owner password verification failed")
+    return {"ok": True, **code}
+
+
+@app.post("/pilot/trust-source")
+async def pilot_trust_source(request: Request, x_admin_token: str = Header(default="")):
+    """Platform admin only. Seeds the trusted reference source (what a live
+    gateway API export would show). Business API keys can never write here."""
+    if not hmac.compare_digest(x_admin_token, config.ADMIN_TOKEN):
+        raise HTTPException(status_code=403, detail="admin token required")
+    d = await request.json()
+    try:
+        _pilot.seed_trust_reference(str(d.get("provider") or "razorpay"),
+                                    str(d.get("reference") or ""),
+                                    int(d.get("amount") or 0),
+                                    str(d.get("status") or "captured"))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"ok": True}
+
+
+@app.post("/pilot/backup")
+async def pilot_backup_create(request: Request, x_admin_token: str = Header(default="")):
+    if not hmac.compare_digest(x_admin_token, config.ADMIN_TOKEN):
+        raise HTTPException(status_code=403, detail="admin token required")
+    d = await request.json() if request.headers.get("content-length", "0") not in ("0", "") else {}
+    return {"ok": True, "backup": _pilot.create_backup(str((d or {}).get("label") or "pre-rollback"))}
+
+
+@app.get("/pilot/backup")
+async def pilot_backup_verify(x_admin_token: str = Header(default=""), backup_id: str = ""):
+    if not hmac.compare_digest(x_admin_token, config.ADMIN_TOKEN):
+        raise HTTPException(status_code=403, detail="admin token required")
+    if not backup_id:
+        return {"ok": True, "backups": _models.q("SELECT id,label,sha256,created FROM pilot_backups ORDER BY created DESC LIMIT 20")}
+    v = _pilot.verify_backup(backup_id)
+    if v is None:
+        raise HTTPException(status_code=404, detail="backup not found")
+    return {"ok": True, "verification": v}
+
+
+@app.post("/pilot/prepare")
+async def pilot_prepare(request: Request, x_admin_token: str = Header(default="")):
+    if not hmac.compare_digest(x_admin_token, config.ADMIN_TOKEN):
+        raise HTTPException(status_code=403, detail="admin token required")
+    d = await request.json() if request.headers.get("content-length", "0") not in ("0", "") else {}
+    return {"ok": True, **_pilot.prepare_pilots(int((d or {}).get("count") or 3))}
+
+
+@app.get("/api/pilot/compliance")
+async def pilot_compliance(x_api_key: str | None = Header(default=None)):
+    """Consent, owner authorization and channel authorization records for
+    this business, plus its activation audit trail. Tenant-scoped."""
+    u = _control_owner(x_api_key)
+    return _pilot.compliance_export(u["id"])
+
+
+@app.post("/pilot/deliver")
+async def pilot_deliver(request: Request, x_admin_token: str = Header(default="")):
+    """Platform admin only: run the controlled delivery pipeline against the
+    configured providers (SMTP host/port, WhatsApp Cloud API base). Used in
+    the controlled test environment; never contacts real customers."""
+    if not hmac.compare_digest(x_admin_token, config.ADMIN_TOKEN):
+        raise HTTPException(status_code=403, detail="admin token required")
+    d = await request.json()
+    out = _providers.deliver_outbox(str(d.get("owner_id") or ""), d.get("config") or {})
+    return {"ok": True, "delivery": out}

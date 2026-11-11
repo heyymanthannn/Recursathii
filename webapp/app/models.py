@@ -105,7 +105,8 @@ def init():
         ocols = [r["name"] for r in c.execute("PRAGMA table_info(outbox)")]
         for col, ddl in [("provider_message_id", "TEXT"), ("accepted_at", "REAL"),
                          ("delivered_at", "REAL"), ("read_at", "REAL"), ("failed_at", "REAL"),
-                         ("bounced_at", "REAL"), ("approval_binding", "TEXT")]:
+                         ("bounced_at", "REAL"), ("approval_binding", "TEXT"),
+                         ("customer_id", "TEXT")]:
             if col not in ocols:
                 c.execute(f"ALTER TABLE outbox ADD COLUMN {col} {ddl}")
         if "reset_token" not in cols:
@@ -364,7 +365,7 @@ def set_template(owner_id, key, subject, body):
        {"owner_id": owner_id, "key": key, "subject": subject, "body": body, "updated": now()})
 
 # ---- outbox ----
-def queue(owner_id, channel, dest, tpl, subject, body, dedupe=""):
+def queue(owner_id, channel, dest, tpl, subject, body, dedupe="", customer_id=""):
     if dedupe:
         if one("SELECT id FROM outbox WHERE dedupe=?", (dedupe,)):
             return None
@@ -372,9 +373,9 @@ def queue(owner_id, channel, dest, tpl, subject, body, dedupe=""):
         dedupe = None   # UNIQUE index allows many NULLs, not many empty strings
     o = {"id": uid(), "owner_id": owner_id, "channel": channel, "dest": dest,
          "tpl": tpl, "dedupe": dedupe, "subject": subject, "body": body,
-         "status": "queued", "created": now()}
-    ex("INSERT INTO outbox(id,owner_id,channel,dest,tpl,dedupe,subject,body,status,created) "
-       "VALUES(:id,:owner_id,:channel,:dest,:tpl,:dedupe,:subject,:body,:status,:created)", o)
+         "status": "queued", "created": now(), "customer_id": customer_id or None}
+    ex("INSERT INTO outbox(id,owner_id,channel,dest,tpl,dedupe,subject,body,status,created,customer_id) "
+       "VALUES(:id,:owner_id,:channel,:dest,:tpl,:dedupe,:subject,:body,:status,:created,:customer_id)", o)
     return get_outbox(o["id"])
 
 def get_outbox(oid): return one("SELECT * FROM outbox WHERE id=?", (oid,))

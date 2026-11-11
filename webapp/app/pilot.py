@@ -16,8 +16,9 @@ Everything a first pilot needs that the core engine does not already enforce:
 - backup verification: quick_check plus row counts of the tables a rollback
   would need.
 """
-import json, time, os, sqlite3
+import json, time, os, sqlite3, uuid, hashlib, pathlib
 from . import models, permissions
+from .auth import check_pw
 
 CONSENT_KINDS = ("customer_messaging_consent", "owner_authorization",
                  "data_import_permission", "channel_authorization")
@@ -33,6 +34,23 @@ def _ensure():
           id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, kind TEXT NOT NULL,
           rows_in INTEGER, created_n INTEGER, updated_n INTEGER, skipped_n INTEGER,
           errors TEXT DEFAULT '[]', created REAL)""")
+        c.execute("""CREATE TABLE IF NOT EXISTS pilot_reauth(
+          id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, code TEXT NOT NULL,
+          created REAL, expires REAL, used INTEGER DEFAULT 0)""")
+        c.execute("""CREATE TABLE IF NOT EXISTS trust_references(
+          id TEXT PRIMARY KEY, provider TEXT NOT NULL, reference TEXT UNIQUE NOT NULL,
+          amount INTEGER NOT NULL, currency TEXT DEFAULT 'INR', status TEXT NOT NULL,
+          created REAL)""")
+        c.execute("""CREATE TABLE IF NOT EXISTS reference_verifications(
+          id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, payment_id TEXT NOT NULL,
+          reference TEXT NOT NULL, outcome TEXT NOT NULL, detail TEXT DEFAULT '',
+          created REAL)""")
+        c.execute("""CREATE TABLE IF NOT EXISTS pilot_backups(
+          id TEXT PRIMARY KEY, label TEXT, path TEXT, sha256 TEXT,
+          counts TEXT DEFAULT '{}', created REAL)""")
+        c.execute("""CREATE TABLE IF NOT EXISTS pilot_workspaces(
+          id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, api_key TEXT NOT NULL,
+          label TEXT, created REAL)""")
 
 
 # ---- 1. activation gate ----------------------------------------------------
@@ -202,10 +220,22 @@ def reconcile_payment(owner_id, payment_id, verified: bool, reference=""):
 
 # ---- 4. pilot monitoring (operator view) -----------------------------------
 
+def _ensure_outbox_cols():
+    """The delivery-status ladder lives on outbox in deployed schemas; a fresh
+    test database may predate it. Additive only, never destructive."""
+    models.ex("CREATE TABLE IF NOT EXISTS outbox(id TEXT PRIMARY KEY, owner_id TEXT, channel TEXT, dest TEXT, tpl TEXT, dedupe TEXT, subject TEXT, body TEXT, status TEXT, error TEXT, created REAL, customer_id TEXT)")
+    cols = [r["name"] for r in models.q("PRAGMA table_info(outbox)")]
+    if "delivery_status" not in cols:
+        models.ex("ALTER TABLE outbox ADD COLUMN delivery_status TEXT")
+    if "delivery_detail" not in cols:
+        models.ex("ALTER TABLE outbox ADD COLUMN delivery_detail TEXT")
+
+
 def pilot_metrics() -> dict:
     owners = models.q("SELECT COUNT(*) AS n FROM users WHERE role='owner'")
     invs = models.q("SELECT COUNT(*) AS n FROM invoices")
     failed = models.q("SELECT COUNT(*) AS n FROM pay_events WHERE kind='failed'")
+    _ensure_outbox_cols()
     ob = models.q("SELECT status, COALESCE(delivery_status,'') AS ds, COUNT(*) AS n "
                   "FROM outbox GROUP BY status, ds")
     accepted = confirmed = failed_out = unknown = 0
@@ -257,4 +287,276 @@ def backup_check() -> dict:
         out["table_counts"] = counts
     out["note"] = ("Run this against a RESTORED copy of the backup, not only the live "
                    "database, to prove the backup itself is restorable.")
+    return out
+
+
+# ---- 5.1 hardened activation: reauthentication ------------------------------
+
+def request_activation_code(owner_id, password):
+    """Owner reauthentication. Verifies the owner's account password, then
+    issues a one-time activation code valid for 10 minutes, single use.
+    Activation itself needs BOTH this code and the word ACTIVATE."""
+    u = models.get_user(owner_id)
+    if not u or not check_pw(password or "", u["pw_hash"] or ""):
+        models.log_audit(owner_id, "pilot_activation_challenge_denied",
+                         "wrong owner password at activation challenge")
+        return None
+    _ensure()
+    code = f"{int.from_bytes(os.urandom(4), 'big') % 1000000:06d}"
+    now = models.now()
+    models.ex("INSERT INTO pilot_reauth(id,owner_id,code,created,expires) VALUES(?,?,?,?,?)",
+              (uuid.uuid4().hex, owner_id, code, now, now + 600))
+    models.log_audit(owner_id, "pilot_activation_challenge", "reauthentication code issued")
+    return {"code": code, "expires_in_seconds": 600}
+
+
+def _check_reauth(owner_id, code):
+    if not (code or "").strip():
+        return "activation needs a fresh reauthentication code from the owner"
+    r = models.one("SELECT * FROM pilot_reauth WHERE owner_id=? AND code=? AND used=0",
+                   (owner_id, (code or "").strip()))
+    if not r:
+        return "reauthentication code invalid or already used"
+    if models.now() > r["expires"]:
+        return "reauthentication code expired; request a new one"
+    return None
+
+
+def activate(owner_id, confirm, code=None):
+    """Turn customer-contacting automations ON. Requires the exact word
+    ACTIVATE AND a fresh, unused owner reauthentication code. Anything
+    missing is rejected without any state change."""
+    if confirm != "ACTIVATE":
+        raise ValueError("activation needs confirm='ACTIVATE' from the owner")
+    err = _check_reauth(owner_id, code)
+    if err:
+        models.log_audit(owner_id, "pilot_activation_denied", err)
+        raise ValueError(err)
+    models.ex("UPDATE pilot_reauth SET used=1 WHERE owner_id=? AND code=?", (owner_id, (code or "").strip()))
+    cfg = permissions.set_config(owner_id, {"automations_enabled": True})
+    models.log_audit(owner_id, "automations_activated",
+                     "owner reauthenticated; password + one-time code verified")
+    return get_activation(owner_id)
+
+
+# ---- 5.1 payment reference verification ------------------------------------
+
+def seed_trust_reference(provider, reference, amount, status="captured", currency="INR"):
+    """Admin-only seed of the trusted source. In the controlled test
+    environment this table stands in for the payment gateway's own records
+    (what a live Razorpay API call would return); only the platform admin
+    can write here, never a business API key."""
+    _ensure()
+    if not (reference or "").strip():
+        raise ValueError("reference required")
+    models.ex("INSERT OR REPLACE INTO trust_references(id,provider,reference,amount,currency,status,created) "
+              "VALUES(?,?,?,?,?,?,?)",
+              (uuid.uuid4().hex, provider, reference.strip(), int(amount), currency, status, models.now()))
+
+
+def verify_reference(owner_id, payment_id, reference):
+    """Check a manually entered payment reference against the trusted source
+    BEFORE it can confirm recovered revenue. Verified requires: the payment
+    belongs to this owner, the reference exists in the trusted source with
+    status 'captured', and the amount matches the payment exactly."""
+    _ensure()
+    p = models.one("SELECT * FROM payments WHERE id=? AND owner_id=?", (payment_id, owner_id))
+    if not p:
+        return {"verified": False, "reason": "payment not found for this business"}
+    ref = (reference or "").strip()
+    if not ref:
+        return {"verified": False, "reason": "reference required"}
+    t = models.one("SELECT * FROM trust_references WHERE reference=?", (ref,))
+    detail = {"payment_amount": p["amount"]}
+    if not t:
+        _log_verify(owner_id, payment_id, ref, "rejected", "reference not found in trusted source")
+        return {"verified": False, "reason": "reference not found in trusted source; imported stays imported"}
+    detail["trusted_amount"] = t["amount"]
+    detail["trusted_status"] = t["status"]
+    if t["status"] != "captured":
+        _log_verify(owner_id, payment_id, ref, "rejected", f"trusted status is '{t['status']}', not captured")
+        return {"verified": False, "reason": f"trusted source shows status '{t['status']}', not captured"}
+    if int(t["amount"]) != int(p["amount"]):
+        _log_verify(owner_id, payment_id, ref, "rejected",
+                    f"amount mismatch: payment {p['amount']} vs trusted {t['amount']}")
+        return {"verified": False, "reason": f"amount mismatch: payment {p['amount']}, trusted source {t['amount']}"}
+    _log_verify(owner_id, payment_id, ref, "verified", json.dumps(detail))
+    return {"verified": True, "matched": detail}
+
+
+def _log_verify(owner_id, payment_id, reference, outcome, detail):
+    models.ex("INSERT INTO reference_verifications(id,owner_id,payment_id,reference,outcome,detail,created) "
+              "VALUES(?,?,?,?,?,?,?)",
+              (uuid.uuid4().hex, owner_id, payment_id, reference, outcome, detail, models.now()))
+    models.log_audit(owner_id, f"pilot_reference_{outcome}", json.dumps(
+        {"payment_id": payment_id, "reference": reference, "detail": detail}))
+
+
+def reconcile_payment(owner_id, payment_id, verified=None, reference=""):
+    """Reconciliation is the ONLY path from 'imported' to 'confirmed', and it
+    now REQUIRES the reference to verify against the trusted source first.
+    A match confirms once; anything else leaves the row imported."""
+    p = models.one("SELECT * FROM payments WHERE id=? AND owner_id=?", (payment_id, owner_id))
+    if not p:
+        return None
+    if p["status"] not in ("imported", "pending"):
+        return {"payment": dict(p), "changed": False,
+                "reason": f"status '{p['status']}' is not importable"}
+    ref = (reference or "").strip()
+    if not ref:
+        models.log_audit(owner_id, "pilot_reconcile_rejected", json.dumps(
+            {"payment_id": payment_id, "reason": "no verification reference"}))
+        return {"payment": dict(p), "changed": False,
+                "reason": "reconciliation needs a reference checked against the trusted source"}
+    v = verify_reference(owner_id, payment_id, ref)
+    if not v.get("verified"):
+        return {"payment": dict(p), "changed": False, "reason": v["reason"]}
+    if p["status"] == "confirmed":
+        return {"payment": dict(p), "changed": False, "reason": "already confirmed"}
+    models.ex("UPDATE payments SET status='confirmed', reference=?, confirmed_at=? WHERE id=?",
+              (ref, models.now(), payment_id))
+    models.log_audit(owner_id, "pilot_payment_reconciled", json.dumps(
+        {"payment_id": payment_id, "reference": ref, "verified_against": "trusted_source"}))
+    return {"payment": models.one("SELECT * FROM payments WHERE id=?", (payment_id,)), "changed": True}
+
+
+# ---- 5.1 backup + rollback -------------------------------------------------
+
+BACKUP_TABLES = ("users", "customers", "invoices", "payments", "outbox",
+                 "pilot_consents", "trust_references", "reference_verifications")
+
+
+def create_backup(label=""):
+    """Full SQLite backup via the online backup API, hashed and counted.
+    Pilot records are NEVER dropped; this backup is what rollback restores."""
+    _ensure()
+    bdir = pathlib.Path(os.environ.get("PILOT_BACKUP_DIR", os.path.join(os.path.dirname(__file__), "..", "backups")))
+    bdir.mkdir(parents=True, exist_ok=True)
+    bid = uuid.uuid4().hex
+    path = str(bdir / f"pilot-backup-{bid}.db")
+    src = models.conn()
+    dst = sqlite3.connect(path)
+    src.backup(dst)
+    dst.close()
+    counts = {}
+    with models.conn() as c:
+        for t in BACKUP_TABLES:
+            counts[t] = c.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
+    sha = hashlib.sha256(open(path, "rb").read()).hexdigest()
+    models.ex("INSERT INTO pilot_backups(id,label,path,sha256,counts,created) VALUES(?,?,?,?,?,?)",
+              (bid, label or "manual", path, sha, json.dumps(counts), models.now()))
+    models.log_audit("platform", "pilot_backup_created", json.dumps({"id": bid, "sha256": sha[:12]}))
+    return {"id": bid, "path": path, "sha256": sha, "counts": counts}
+
+
+def verify_backup(backup_id):
+    """Restore the backup into a scratch copy, run quick_check on it, and
+    compare every table count against the live database."""
+    _ensure()
+    b = models.one("SELECT * FROM pilot_backups WHERE id=?", (backup_id,))
+    if not b:
+        return None
+    ok_sha = hashlib.sha256(open(b["path"], "rb").read()).hexdigest() == b["sha256"]
+    tmp = b["path"] + ".verify"
+    sqlite3.connect(tmp).close() if False else None
+    import shutil
+    shutil.copyfile(b["path"], tmp)
+    con = sqlite3.connect(tmp)
+    quick = con.execute("PRAGMA quick_check").fetchone()[0]
+    live_counts, bak_counts, diffs = {}, {}, []
+    with models.conn() as c:
+        for t in BACKUP_TABLES:
+            live_counts[t] = c.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
+    for t in BACKUP_TABLES:
+        try:
+            bak_counts[t] = con.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
+        except sqlite3.OperationalError:
+            bak_counts[t] = None
+        if bak_counts[t] != live_counts[t]:
+            diffs.append({"table": t, "backup": bak_counts[t], "live": live_counts[t]})
+    con.close()
+    os.remove(tmp)
+    result = {"id": backup_id, "sha256_ok": ok_sha, "quick_check": quick,
+              "counts_match": not diffs, "diffs": diffs, "verified": ok_sha and quick == "ok" and not diffs}
+    models.log_audit("platform", "pilot_backup_verified", json.dumps(
+        {"id": backup_id, "verified": result["verified"]}))
+    return result
+
+
+def rollback_check():
+    """Rollback safety review: no code path drops pilot tables, and the
+    procedure preserves every record."""
+    app_dir = os.path.dirname(os.path.abspath(__file__))
+    offenders = []
+    for fn in sorted(os.listdir(app_dir)):
+        if fn.endswith(".py"):
+            txt = open(os.path.join(app_dir, fn)).read()
+            if ("DROP" + " TABLE") in txt:
+                offenders.append(fn)
+    return {"drop_table_in_app_code": offenders,
+            "procedure": ["pause automations (emergency pause or set automations_enabled=false)",
+                          "create_backup() with a label",
+                          "verify_backup() must report verified=true",
+                          "revert code commits only; data tables are never dropped",
+                          "re-run backup_check() and record the outcome"]}
+
+
+def backup_check():
+    """Extended readiness check: integrity, row counts, and the latest
+    backup's verification status."""
+    base = _backup_check_base()
+    b = models.one("SELECT * FROM pilot_backups ORDER BY created DESC LIMIT 1")
+    base["latest_backup"] = ({"id": b["id"], "sha256": b["sha256"][:12], "created": b["created"],
+                              "verified": verify_backup(b["id"])["verified"]} if b else None)
+    return base
+
+
+# ---- 5.1 three isolated workspaces -----------------------------------------
+
+def prepare_pilots(count=3):
+    """Prepare isolated pilot workspaces: one owner + API key each,
+    automations OFF by default, no shared records."""
+    _ensure()
+    made = []
+    existing = models.q("SELECT COUNT(*) AS n FROM pilot_workspaces")
+    start = existing[0]["n"] if existing else 0
+    for i in range(start + 1, start + count + 1):
+        email = f"pilot{i}@pilot.invalid"
+        if models.get_user_by_email(email):
+            u = models.get_user_by_email(email)
+        else:
+            u = models.create_user(email, "x", f"Pilot {i} Owner", f"Pilot Business {i}",
+                                   "90000000%02d" % i, role="owner")
+        key = models.create_api_key(u["id"], "pilot")
+        models.ex("INSERT INTO pilot_workspaces(id,owner_id,api_key,label,created) VALUES(?,?,?,?,?)",
+                  (uuid.uuid4().hex, u["id"], key, f"Pilot workspace {i}", models.now()))
+        made.append({"workspace": f"Pilot workspace {i}", "owner_id": u["id"],
+                     "automations_enabled": get_activation(u["id"])["automations_enabled"]})
+    return {"created": len(made), "workspaces": made}
+
+
+# ---- 5.1 compliance documentation export -----------------------------------
+
+def compliance_export(owner_id):
+    """Everything a pilot's consent file needs, in one place: activation
+    history, owner authorizations, channel authorizations, consents."""
+    _ensure()
+    cons = list_consents(owner_id)
+    audit_rows = models.q("SELECT action, detail, created FROM audit WHERE user_id=? "
+                          "AND action LIKE 'pilot_%' OR (user_id=? AND action LIKE 'automations_%') "
+                          "ORDER BY created", (owner_id, owner_id))
+    cfg = permissions.get_config(owner_id)
+    return {"owner_id": owner_id,
+            "activation_state": get_activation(owner_id),
+            "authorized_channels": cfg.get("authorized_channels") or [],
+            "consents": [dict(c) for c in cons],
+            "audit_trail": [dict(a) for a in audit_rows]}
+
+
+def _backup_check_base():
+    out = {"quick_check": None, "tables": {}}
+    with models.conn() as c:
+        out["quick_check"] = c.execute("PRAGMA quick_check").fetchone()[0]
+        for t in BACKUP_TABLES:
+            out["tables"][t] = c.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
     return out
