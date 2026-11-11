@@ -58,6 +58,7 @@ ACTIONS = {
     "change_permissions": LEVEL_C,
     "change_recovery_rules": LEVEL_C,
     "act_on_disputed_transaction": LEVEL_C,
+    "launch_reactivation_campaign": LEVEL_C,
 }
 
 # The AI can never do these on its own, whatever any settings say.

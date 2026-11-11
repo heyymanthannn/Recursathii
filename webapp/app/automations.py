@@ -334,6 +334,13 @@ def run_for_owner(owner, base_url):
             if st == "sent":
                 models.log_activity(owner["id"], "automation",
                                     f"{stage} message sent to {cu['name']} ({o['channel']}) for invoice {inv['number']}")
+    # reactivation campaigns the owner approved run as part of the daily cycle
+    try:
+        from . import reactivation
+        reactivation.run_active(owner["id"], counts)
+    except Exception:
+        pass
+
     return counts
 
 def send_confirmation(owner, invoice, customer, base_url):

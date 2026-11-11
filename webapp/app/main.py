@@ -897,3 +897,91 @@ async def provider_status(request: Request, x_provider_token: str = Header(defau
     _models.log_activity(row["owner_id"], "delivery",
                          f"provider reported message {ref} as {status}")
     return {"ok": True, "outbox_id": row["id"], "delivery_status": status}
+
+
+# ---- hybrid automation architecture, Phase 3: customer reactivation agent ----
+from . import reactivation as _reactivation
+
+
+@app.get("/api/reactivation/dormant")
+async def reactivation_dormant(x_api_key: str | None = Header(default=None),
+                               days_inactive: int = 90):
+    """Level A: internal analysis of the business's own verified history."""
+    u = _control_owner(x_api_key)
+    members = _reactivation.dormant_customers(u["id"], max(7, min(int(days_inactive), 365)))
+    by_seg = {}
+    for m in members:
+        by_seg.setdefault(m["segment"], []).append(m["name"])
+    return {"dormant": members, "segments": {k: len(v) for k, v in by_seg.items()}}
+
+
+@app.post("/api/reactivation/campaigns")
+async def reactivation_create(request: Request, x_api_key: str | None = Header(default=None)):
+    u = _control_owner(x_api_key)
+    d = await request.json()
+    try:
+        c = _reactivation.create_campaign(
+            u, str(d.get("name") or "reactivation campaign")[:80],
+            d.get("segment", "all"), d.get("channels") or [],
+            str(d.get("email_subject") or "")[:200], str(d.get("email_body") or "")[:4000],
+            str(d.get("wa_body") or "")[:2000],
+            max_per_run=int(d.get("max_per_run", 50)),
+            days_inactive=int(d.get("days_inactive", 90)))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"ok": True, "campaign": c}
+
+
+@app.get("/api/reactivation/campaigns")
+async def reactivation_list(x_api_key: str | None = Header(default=None)):
+    u = _control_owner(x_api_key)
+    out = []
+    for c in _reactivation.list_campaigns(u["id"]):
+        s = _reactivation.campaign_summary(u["id"], c["id"])
+        out.append({"campaign": c, "summary": s})
+    return {"campaigns": out}
+
+
+@app.post("/api/reactivation/campaigns/{cid}/approve")
+async def reactivation_approve(cid: str, request: Request,
+                               x_api_key: str | None = Header(default=None)):
+    """Level C gate: the owner's approval launches the campaign."""
+    u = _control_owner(x_api_key)
+    c = _reactivation.approve_campaign(u, cid, approved_by=u.get("email") or "owner")
+    if not c:
+        raise HTTPException(status_code=404, detail="campaign not found")
+    return {"ok": c["status"] == "active", "campaign": c}
+
+
+@app.post("/api/reactivation/campaigns/{cid}/cancel")
+async def reactivation_cancel(cid: str, x_api_key: str | None = Header(default=None)):
+    u = _control_owner(x_api_key)
+    c = _reactivation.cancel_campaign(u["id"], cid)
+    if not c:
+        raise HTTPException(status_code=404, detail="campaign not found")
+    return {"ok": True, "campaign": c}
+
+
+@app.post("/api/reactivation/campaigns/{cid}/run")
+async def reactivation_run(cid: str, x_api_key: str | None = Header(default=None)):
+    u = _control_owner(x_api_key)
+    c = _reactivation.get_campaign(cid)
+    if not c or c["owner_id"] != u["id"]:
+        raise HTTPException(status_code=404, detail="campaign not found")
+    counts = _reactivation.run_campaign(u, c)
+    return {"ok": True, "counts": counts}
+
+
+@app.post("/api/reactivation/response")
+async def reactivation_response(request: Request, x_api_key: str | None = Header(default=None)):
+    u = _control_owner(x_api_key)
+    d = await request.json()
+    try:
+        r = _reactivation.record_response(u["id"], d.get("campaign_id", ""),
+                                          d.get("customer_id", ""), d.get("kind", ""),
+                                          str(d.get("note") or "")[:500])
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    if not r:
+        raise HTTPException(status_code=404, detail="campaign not found")
+    return {"ok": True, "response": r}
