@@ -761,3 +761,139 @@ async def api_v1_summary(request: Request, x_api_key: str | None = _Header(defau
     owner = _api_owner(x_api_key)
     return {"metrics": _models.owner_metrics(owner["id"]), "usage": _models.plan_usage(owner["id"])}
 
+# ---- hybrid automation architecture, Phase 2: automation control centre ----
+from . import permissions as _permissions, sequences as _sequences
+
+def _control_owner(x_api_key: str | None):
+    """Resolve the business owner for control-centre endpoints (X-API-Key,
+    the owner's own key). No plan gate here: every business controls its own
+    automations; the Enterprise gate only applies to the metrics API."""
+    owner = _models.owner_for_api_key(x_api_key or "")
+    if not owner:
+        raise HTTPException(status_code=401, detail="invalid or missing API key")
+    return owner
+
+
+@app.get("/api/automations/control")
+async def automations_control(request: Request, x_api_key: str | None = Header(default=None)):
+    u = _control_owner(x_api_key)
+    cfg = _permissions.get_config(u["id"])
+    cn = _models.get_connect(u["id"]) or {}
+    return {
+        "permissions": cfg,
+        "sequence": _sequences.get_sequence(u["id"]),
+        "mode": _models.get_automation_mode(u["id"]),
+        "paused": bool(cn.get("paused")) or bool(cfg.get("emergency_paused")),
+        "channels": {"email": _notify.retailer_email_ready(u["id"]),
+                     "whatsapp": _notify.retailer_whatsapp_ready(u["id"])},
+        "activity": _models.list_activities(u["id"], 30),
+    }
+
+
+@app.put("/api/automations/config")
+async def automations_config(request: Request, x_api_key: str | None = Header(default=None)):
+    u = _control_owner(x_api_key)
+    data = await request.json()
+    changed = []
+    if isinstance(data.get("permissions"), dict):
+        _permissions.set_config(u["id"], data["permissions"])
+        changed.append("permissions")
+    if isinstance(data.get("sequence"), list):
+        _sequences.set_sequence(u["id"], data["sequence"])
+        changed.append("sequence")
+    if data.get("mode") in ("auto", "approval"):
+        _models.set_automation_mode(u["id"], data["mode"])
+        changed.append("mode")
+    if not changed:
+        raise HTTPException(status_code=400, detail="nothing recognizable to update")
+    return {"ok": True, "updated": changed}
+
+
+@app.post("/api/automations/pause")
+async def automations_pause(request: Request, x_api_key: str | None = Header(default=None)):
+    u = _control_owner(x_api_key)
+    data = await request.json()
+    paused = bool(data.get("paused"))
+    _permissions.set_emergency_pause(u["id"], paused)
+    _models.ex("UPDATE connect SET paused=? WHERE owner_id=?",
+               (1 if paused else 0, u["id"]))
+    _models.log_audit(u["id"], "automation_" + ("paused" if paused else "resumed"), "")
+    return {"ok": True, "paused": paused}
+
+
+@app.get("/api/automations/audit")
+async def automations_audit(request: Request, x_api_key: str | None = Header(default=None),
+                            limit: int = 50):
+    u = _control_owner(x_api_key)
+    limit = max(1, min(int(limit), 200))
+    audit = _models.q("SELECT created, action, detail FROM audit WHERE user_id=? "
+                      "ORDER BY created DESC LIMIT ?", (u["id"], limit))
+    return {"audit": audit, "activity": _models.list_activities(u["id"], limit)}
+
+
+@app.get("/api/automations/approvals")
+async def automations_approvals(request: Request, x_api_key: str | None = Header(default=None)):
+    u = _control_owner(x_api_key)
+    rows = _models.q("SELECT id, channel, dest, tpl, subject, status, created "
+                     "FROM outbox WHERE owner_id=? AND status='approval' "
+                     "ORDER BY created DESC LIMIT 100", (u["id"],))
+    return {"approvals": rows}
+
+
+@app.post("/api/automations/approvals/{oid}")
+async def automations_approval_decide(oid: str, request: Request,
+                                      x_api_key: str | None = Header(default=None)):
+    u = _control_owner(x_api_key)
+    data = await request.json()
+    o = _models.get_outbox(oid)
+    if not o or o["owner_id"] != u["id"]:
+        raise HTTPException(status_code=404, detail="no such pending message")
+    if o["status"] != "approval":
+        raise HTTPException(status_code=409, detail="message is not awaiting approval")
+    decision = (data.get("decision") or "").lower()
+    if decision == "approve":
+        out = _models.approve_outbox(u["id"], oid)
+        if not out:
+            raise HTTPException(status_code=409, detail="message is not awaiting approval")
+        st = _notify.deliver(out)
+        return {"ok": True, "delivery_status": st}
+    if decision == "reject":
+        _models.discard_outbox(u["id"], oid)
+        return {"ok": True, "rejected": True}
+    raise HTTPException(status_code=400, detail="decision must be approve or reject")
+
+
+@app.post("/api/automations/invoices/{iid}/pause")
+async def automations_invoice_pause(iid: str, request: Request,
+                                    x_api_key: str | None = Header(default=None)):
+    u = _control_owner(x_api_key)
+    data = await request.json()
+    ok = _sequences.set_invoice_paused(u["id"], iid, bool(data.get("paused", True)))
+    if not ok:
+        raise HTTPException(status_code=404, detail="no such invoice")
+    return {"ok": True, "paused": bool(data.get("paused", True))}
+
+
+@app.post("/webhooks/provider-status")
+async def provider_status(request: Request, x_provider_token: str = Header(default="")):
+    """Provider delivery confirmations. A provider ACCEPT is never a delivery:
+    only this webhook moves a message to delivered/read/failed/bounced."""
+    import os as _os
+    expected = _os.environ.get("PROVIDER_STATUS_TOKEN", "")
+    if expected and not hmac.compare_digest(x_provider_token, expected):
+        raise HTTPException(status_code=401, detail="invalid provider token")
+    data = await request.json()
+    ref = (data.get("provider_ref") or "").strip()
+    status = (data.get("status") or "").strip().lower()
+    if status not in ("delivered", "read", "failed", "bounced"):
+        raise HTTPException(status_code=400, detail="unknown delivery status")
+    if not ref:
+        raise HTTPException(status_code=400, detail="provider_ref required")
+    row = _models.one("SELECT id, owner_id FROM outbox WHERE provider_ref=?", (ref,))
+    if not row:
+        raise HTTPException(status_code=404, detail="unknown message reference")
+    _models.ex("UPDATE outbox SET delivery_status=?, provider_updated=? WHERE id=?",
+               (status, _models.now(), row["id"]))
+    _models.log_activity(row["owner_id"], "delivery",
+                         f"provider reported message {ref} as {status}")
+    return {"ok": True, "outbox_id": row["id"], "delivery_status": status}

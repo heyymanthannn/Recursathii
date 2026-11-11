@@ -3,7 +3,7 @@ confirmations. Each workflow can be switched on/off per owner. Dedupe keys
 keep every stage from firing twice for the same invoice on the same day."""
 import time
 import httpx
-from . import models, notify, config, permissions
+from . import models, notify, config, permissions, sequences
 
 DEFAULTS = {
     "reminder_due": {
@@ -69,6 +69,18 @@ def _ctx(owner, invoice, customer, base_url):
         "due_date": invoice["due_date"], "pay_link": f"{base_url}/invoice/{invoice['token']}",
         "reason": "bank declined the payment",
     }
+
+def _days_overdue(invoice, today):
+    """Days past due (0 = due today). None when not applicable."""
+    if invoice["status"] == "paid" or not invoice["due_date"]:
+        return None
+    try:
+        y, m, d = (int(x) for x in invoice["due_date"][:10].split("-"))
+        due = time.mktime((y, m, d, 0, 0, 0, 0, 0, -1))
+    except Exception:
+        return None
+    return round((time.mktime(time.strptime(today, "%Y-%m-%d")) - due) / 86400)
+
 
 def _stage(invoice, today):
     if invoice["status"] == "paid":
@@ -243,53 +255,79 @@ def run_for_owner(owner, base_url):
             counts["skipped"] = counts.get("skipped", 0) + 1
             models.log_activity(owner["id"], "permission",
                                 f"reactivation run {pr['decision']}: {pr['reason']}")
+    sequences.ensure_schema()
     for inv in models.list_invoices(owner["id"]):
-        stage = _stage(inv, today)
-        if not stage or not keys.get(stage, True):
+        if inv["status"] in ("cancelled", "disputed"):
+            continue
+        if inv.get("paused"):
+            models.log_activity(owner["id"], "automation",
+                                f"invoice {inv['number']} skipped: owner paused this case")
+            continue
+        days = _days_overdue(inv, today)
+        if days is None or days < 0:
             continue
         cu = models.get_customer(inv["customer_id"])
         if not cu:
             continue
-        ctx = _ctx(owner, inv, cu, base_url)
-        tpl = models.get_template(owner["id"], stage)
-        sub = _render(tpl["subject"] if tpl else DEFAULTS[stage]["email_subject"], **ctx)
-        ebody = _render(tpl["body"] if tpl else DEFAULTS[stage]["email_body"], **ctx)
-        wbody = _render(DEFAULTS[stage]["wa_body"], **ctx)
-        day = today
         outs = []
-        pe = _perm(owner, "send_routine_email_reminder", channel="email", customer=cu)
-        if pe["decision"] in ("auto", "needs_approval"):
-            if cu.get("email") and not cu.get("email_opt_out"):
-                o = models.queue(owner["id"], "email", cu["email"], stage, sub,
-                                 ebody + _unsub_footer(base_url, cu),
-                                 dedupe=f"{stage}:{inv['id']}:{day}:email")
-                if o:
-                    held = _post_queue(owner, o, counts)
-                    if not held and pe["decision"] == "needs_approval":
-                        models.hold_for_approval(o["id"], reason=pe["reason"])
-                        counts["approval_held"] = counts.get("approval_held", 0) + 1
-                        held = True
-                    if not held:
-                        outs.append(o)
-        elif cu.get("email"):
-            models.log_activity(owner["id"], "permission",
-                                f"email reminder for invoice {inv['number']} {pe['decision']}: {pe['reason']}")
-        pw = _perm(owner, "send_routine_whatsapp_reminder", channel="whatsapp", customer=cu)
-        if pw["decision"] in ("auto", "needs_approval"):
-            if cu.get("phone") and not cu.get("wa_opt_out"):
-                o = models.queue(owner["id"], "whatsapp", cu["phone"], stage, sub, wbody,
-                                 dedupe=f"{stage}:{inv['id']}:{day}:wa")
-                if o:
-                    held = _post_queue(owner, o, counts)
-                    if not held and pw["decision"] == "needs_approval":
-                        models.hold_for_approval(o["id"], reason=pw["reason"])
-                        counts["approval_held"] = counts.get("approval_held", 0) + 1
-                        held = True
-                    if not held:
-                        outs.append(o)
-        elif cu.get("phone"):
-            models.log_activity(owner["id"], "permission",
-                                f"whatsapp reminder for invoice {inv['number']} {pw['decision']}: {pw['reason']}")
+        for step in sequences.get_sequence(owner["id"]):
+            if days < step["offset"]:
+                continue
+            if models.one("SELECT id FROM outbox WHERE dedupe LIKE ?",
+                          (f"seq:{step['id']}:{inv['id']}%",)):
+                continue          # this sequence step already fired for this invoice
+            stage = step["template_key"]
+            if not keys.get(stage, True):
+                continue
+            ctx = _ctx(owner, inv, cu, base_url)
+            tpl = models.get_template(owner["id"], stage)
+            sub = _render(tpl["subject"] if tpl else DEFAULTS[stage]["email_subject"], **ctx)
+            ebody = _render(tpl["body"] if tpl else DEFAULTS[stage]["email_body"], **ctx)
+            wbody = _render(DEFAULTS[stage]["wa_body"], **ctx)
+            day = today
+            want_email = "email" in step["channels"]
+            want_wa = "whatsapp" in step["channels"]
+            pe = _perm(owner, "send_routine_email_reminder", channel="email", customer=cu) \
+                if want_email else None
+            if pe and pe["decision"] in ("auto", "needs_approval"):
+                if cu.get("email") and not cu.get("email_opt_out"):
+                    o = models.queue(owner["id"], "email", cu["email"], stage, sub,
+                                     ebody + _unsub_footer(base_url, cu),
+                                     dedupe=f"seq:{step['id']}:{inv['id']}:email")
+                    if o:
+                        held = _post_queue(owner, o, counts)
+                        if not held and (pe["decision"] == "needs_approval" or step.get("escalate")):
+                            reason = pe["reason"] if pe["decision"] == "needs_approval" else \
+                                "sequence escalation: owner approval required before this sends"
+                            models.hold_for_approval(o["id"], reason=reason)
+                            counts["approval_held"] = counts.get("approval_held", 0) + 1
+                            held = True
+                        if not held:
+                            outs.append(o)
+            elif want_email and cu.get("email"):
+                models.log_activity(owner["id"], "permission",
+                                    f"email reminder for invoice {inv['number']} {pe['decision']}: {pe['reason']}")
+            pw = _perm(owner, "send_routine_whatsapp_reminder", channel="whatsapp", customer=cu) \
+                if want_wa else None
+            if pw and pw["decision"] in ("auto", "needs_approval"):
+                if cu.get("phone") and not cu.get("wa_opt_out"):
+                    o = models.queue(owner["id"], "whatsapp", cu["phone"], stage, sub, wbody,
+                                     dedupe=f"seq:{step['id']}:{inv['id']}:wa")
+                    if o:
+                        held = _post_queue(owner, o, counts)
+                        if not held and (pw["decision"] == "needs_approval" or step.get("escalate")):
+                            reason = pw["reason"] if pw["decision"] == "needs_approval" else \
+                                "sequence escalation: owner approval required before this sends"
+                            models.hold_for_approval(o["id"], reason=reason)
+                            counts["approval_held"] = counts.get("approval_held", 0) + 1
+                            held = True
+                        if not held:
+                            outs.append(o)
+            elif want_wa and cu.get("phone"):
+                models.log_activity(owner["id"], "permission",
+                                    f"whatsapp reminder for invoice {inv['number']} {pw['decision']}: {pw['reason']}")
+        if outs:
+            counts["queued"] = counts.get("queued", 0) + len(outs)
         for o in outs:
             st = notify.deliver(o)
             counts[st if st in counts else "failed"] += 1

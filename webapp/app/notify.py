@@ -70,7 +70,12 @@ def _send_email_raw(to, subject, body, owner_id=None):
         return "no_channel", "SMTP not configured"
     return _smtp_send(SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, MAIL_FROM, to, subject, body)
 
+_last_provider_ref = ""   # provider message id from the most recent WhatsApp send
+
+
 def _wa_send(phone_id, token, num, body):
+    global _last_provider_ref
+    _last_provider_ref = ""
     try:
         with httpx.Client(timeout=15) as cl:
             r = cl.post(
@@ -81,6 +86,10 @@ def _wa_send(phone_id, token, num, body):
                       "type": "text", "text": {"preview_url": False, "body": body}})
         if r.status_code >= 400:
             return "failed", r.text[:300]
+        try:
+            _last_provider_ref = ((r.json().get("messages") or [{}])[0].get("id") or "")
+        except Exception:
+            _last_provider_ref = ""
         return "sent", ""
     except Exception as e:
         return "failed", str(e)[:300]
@@ -149,6 +158,8 @@ def deliver(outbox_row):
     owner_id = outbox_row["owner_id"]
     if (outbox_row["tpl"] or "") in SYSTEM_TPLS:
         owner_id = None  # RecurSaathi -> the retailer, not their customer
+    from . import sequences as _seq
+    _seq.ensure_schema()
     if owner_id:
         cn = models.get_connect(owner_id)
         if cn and cn.get("paused"):
@@ -164,5 +175,10 @@ def deliver(outbox_row):
         st, err = send_email(outbox_row["dest"], outbox_row["subject"], outbox_row["body"], owner_id=owner_id)
     models.set_outbox_status(outbox_row["id"], st, err)
     if st == "sent":
-        models.ex("UPDATE outbox SET sent=? WHERE id=?", (models.now(), outbox_row["id"]))
+        # "sent" means the provider ACCEPTED the message. It is never treated
+        # as delivered: delivery_status moves to delivered/read/failed only
+        # when the provider itself reports back via /webhooks/provider-status.
+        models.ex("UPDATE outbox SET sent=?, provider_ref=?, delivery_status='accepted', "
+                  "provider_updated=? WHERE id=?",
+                  (models.now(), _last_provider_ref, models.now(), outbox_row["id"]))
     return st
