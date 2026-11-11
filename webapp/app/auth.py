@@ -35,6 +35,9 @@ def start_session(response, user_id: str):
     # session store; pre-epoch cookies stay valid only for epoch-0 accounts)
     response.set_cookie(SESSION_COOKIE, _s.dumps({"u": user_id, "e": _epoch(user_id)}),
                         httponly=True, samesite="lax", max_age=SESSION_TTL)
+    # Secure flag is added per-request by the security middleware when the
+    # connection is actually https (incl. X-Forwarded-Proto behind Render),
+    # so localhost dev and the http test client keep working.
 
 def end_session(response):
     response.delete_cookie(SESSION_COOKIE)

@@ -43,7 +43,61 @@ app.add_middleware(
     allow_methods=["*"], allow_headers=["*"],
 )
 
+# ---------------- Security headers + CSRF guard (Phase 7.6) ----------------
+_CSP = ("default-src 'self'; script-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com data:; "
+        "img-src 'self' data: https:; connect-src 'self'; "
+        "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'")
+_CSRF_UNSAFE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+
+def _origin_allowed(request: Request) -> bool:
+    """CSRF defense: browsers attach ambient cookies to cross-site
+    state-changing requests. If Origin/Referer names another site, reject.
+    No Origin/Referer means a non-browser client (curl, gateway webhooks,
+    cron, API keys) which cannot carry a CSRF'd browser session, so it stays
+    allowed."""
+    src = request.headers.get("origin") or request.headers.get("referer") or ""
+    if not src:
+        return True
+    from urllib.parse import urlparse
+    host = (urlparse(src).netloc or "").lower()
+    if not host:
+        return True
+    allowed = {(urlparse(config.BASE_URL or "").netloc or "").lower(),
+               (request.headers.get("host") or "").lower()}
+    return (host in allowed
+            or host.startswith("localhost") or host.startswith("127.0.0.1"))
+
+@app.middleware("http")
+async def security_hardening(request: Request, call_next):
+    if (request.method in _CSRF_UNSAFE_METHODS
+            and request.cookies.get(auth.SESSION_COOKIE)
+            and not _origin_allowed(request)):
+        return JSONResponse({"detail": "cross-origin request blocked"}, status_code=403)
+    resp = await call_next(request)
+    _https = (request.url.scheme == "https"
+              or (request.headers.get("x-forwarded-proto") or "").lower() == "https")
+    if _https:
+        _cookies = resp.headers.getlist("set-cookie")
+        if any(auth.SESSION_COOKIE in c and "secure" not in c.lower() for c in _cookies):
+            del resp.headers["set-cookie"]
+            for _c in _cookies:
+                if auth.SESSION_COOKIE in _c and "secure" not in _c.lower():
+                    _c = _c + "; Secure"
+                resp.headers.append("set-cookie", _c)
+    resp.headers.setdefault("X-Content-Type-Options", "nosniff")
+    resp.headers.setdefault("X-Frame-Options", "DENY")
+    resp.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    resp.headers.setdefault("Strict-Transport-Security",
+                            "max-age=31536000; includeSubDomains")
+    resp.headers.setdefault("Content-Security-Policy", _CSP)
+    return resp
+
 def _verify(body: bytes, signature: str | None, secret: bytes):
+    if not secret:
+        # Phase 7.6: no secret configured -> accept nothing, ever.
+        raise HTTPException(status_code=503, detail="webhook secret not configured")
     if not signature or not hmac.compare_digest(
             hmac.new(secret, body, hashlib.sha256).hexdigest(), signature):
         raise HTTPException(status_code=400, detail="bad signature")

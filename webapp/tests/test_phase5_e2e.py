@@ -8,7 +8,7 @@ opt-out -> control-centre audit trail.
 """
 import os, tempfile, time, hmac, hashlib, json
 os.environ["PAYRECOVERY_DB"] = tempfile.mktemp(prefix="test_e2e_", suffix=".sqlite")
-os.environ.pop("RZP_WEBHOOK_SECRET", None)  # keep the test default secret
+os.environ["RZP_WEBHOOK_SECRET"] = "e2e-webhook-secret"  # fail-closed: tests set an explicit secret
 from fastapi.testclient import TestClient
 from app import main as app_main, models, intelligence, permissions, sequences
 
@@ -19,7 +19,7 @@ def record(name, ok, extra=""):
     results.append(ok)
     print(("PASS" if ok else "FAIL"), name, extra if not ok else "")
 
-def signed(path, payload, secret="test-secret"):
+def signed(path, payload, secret="e2e-webhook-secret"):
     body = json.dumps(payload).encode()
     sig = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
     return client.post(path, content=body,

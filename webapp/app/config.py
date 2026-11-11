@@ -1,8 +1,21 @@
 """Settings and SaaS pricing plans. All secrets come from env, never hardcoded."""
 import os
 
-WEBHOOK_SECRET = os.environ.get("RZP_WEBHOOK_SECRET", "test-secret").encode()
-BILLING_WEBHOOK_SECRET = os.environ.get("BILLING_WEBHOOK_SECRET", "billing-secret").encode()
+# Phase 7.6: webhook secrets are REQUIRED. Fail closed when the env var is
+# unset, blank, or set to a known weak/default value: _verify() rejects every
+# request whose secret is empty, so a missing env var can never silently
+# accept unsigned or forged gateway payloads.
+_WEAK_WEBHOOK_SECRETS = {
+    "", "test-secret", "billing-secret", "youpi-test-secret",
+    "changeme", "secret", "changeme-admin",
+}
+
+def _webhook_secret(name: str) -> bytes:
+    value = os.environ.get(name, "")
+    return value.encode() if value.strip() and value not in _WEAK_WEBHOOK_SECRETS else b""
+
+WEBHOOK_SECRET = _webhook_secret("RZP_WEBHOOK_SECRET")
+BILLING_WEBHOOK_SECRET = _webhook_secret("BILLING_WEBHOOK_SECRET")
 RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID", "")
 RAZORPAY_KEY_SECRET = os.environ.get("RAZORPAY_KEY_SECRET", "")
 PAY_LINK_BASE = os.environ.get("PAY_LINK_BASE", "https://recover.example/pay")

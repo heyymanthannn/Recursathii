@@ -13,6 +13,7 @@ Isolated temp DB, synthetic data only, no network, no real providers.
 import os, sys, tempfile, time, hmac, hashlib, json, datetime
 os.environ["PAYRECOVERY_DB"] = tempfile.mktemp(prefix="test_p6_", suffix=".sqlite")
 os.environ.setdefault("MANUAL_UPI_ID", "testpay@upi")
+os.environ["RZP_WEBHOOK_SECRET"] = "pilot-webhook-secret"  # fail-closed: explicit test secret
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 from zoneinfo import ZoneInfo
 from fastapi.testclient import TestClient
