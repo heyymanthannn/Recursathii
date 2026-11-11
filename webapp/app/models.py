@@ -275,12 +275,26 @@ def list_invoices(owner_id, status=""):
     return q("SELECT * FROM invoices WHERE owner_id=? ORDER BY created DESC", (owner_id,))
 
 def mark_invoice_paid(inv, method, reference="", note=""):
-    pay = {"id": uid(), "owner_id": inv["owner_id"], "invoice_id": inv["id"],
-           "customer_id": inv["customer_id"], "amount": inv["amount"], "method": method,
-           "status": "confirmed", "reference": reference, "note": note,
-           "created": now(), "confirmed_at": now()}
-    ex("INSERT INTO payments(id,owner_id,invoice_id,customer_id,amount,method,status,reference,note,created,confirmed_at) "
-       "VALUES(:id,:owner_id,:invoice_id,:customer_id,:amount,:method,:status,:reference,:note,:created,:confirmed_at)", pay)
+    """Confirm payment on an invoice. If a payment attempt was already recorded
+    for this invoice (webhook or manual attempt), confirm THAT row instead of
+    inserting a duplicate confirmed payment (duplicate payment events would
+    double-count recovered revenue)."""
+    existing = one("SELECT * FROM payments WHERE invoice_id=? ORDER BY created DESC LIMIT 1", (inv["id"],))
+    if existing:
+        pay = dict(existing)
+        ex("UPDATE payments SET status='confirmed', method=?, reference=COALESCE(NULLIF(?,''),reference), "
+           "note=CASE WHEN ?!='' THEN ? ELSE note END, "
+           "confirmed_at=COALESCE(confirmed_at, ?) WHERE id=?",
+           (method, reference, note, note, now(), existing["id"]))
+        pay.update(status="confirmed", method=method, reference=reference or existing["reference"],
+                   confirmed_at=existing["confirmed_at"] or now())
+    else:
+        pay = {"id": uid(), "owner_id": inv["owner_id"], "invoice_id": inv["id"],
+               "customer_id": inv["customer_id"], "amount": inv["amount"], "method": method,
+               "status": "confirmed", "reference": reference, "note": note,
+               "created": now(), "confirmed_at": now()}
+        ex("INSERT INTO payments(id,owner_id,invoice_id,customer_id,amount,method,status,reference,note,created,confirmed_at) "
+           "VALUES(:id,:owner_id,:invoice_id,:customer_id,:amount,:method,:status,:reference,:note,:created,:confirmed_at)", pay)
     ex("UPDATE invoices SET status='paid', paid_at=? WHERE id=?", (now(), inv["id"]))
     return pay
 
