@@ -19,7 +19,7 @@
 Billing cycle: {{ user.billing_cycle or 'monthly' }} &middot; We never charge automatically after the trial. Prices exclude 18% GST; payment provider charges may apply.
 </div>
 {% if user.plan_status in ('active', 'trialing') %}
-<form method="post" action="/billing/cancel" style="margin-top:10px" onsubmit="return confirm('Cancel your subscription? Your data stays safe; paid features pause after this period.')"><button class="btn danger sm">Cancel subscription</button></form>
+<form method="post" action="/billing/cancel" style="margin-top:10px" data-confirm="Cancel your subscription? Your data stays safe; paid features pause after this period."><button class="btn danger sm">Cancel subscription</button></form>
 {% endif %}
 </div>
 <div class="cards">
@@ -30,7 +30,7 @@ Billing cycle: {{ user.billing_cycle or 'monthly' }} &middot; We never charge au
 <div style="margin:10px 0">{% for f in p.features %}<div class="muted">&middot; {{ f }}</div>{% endfor %}</div>
 {% if user.plan==key %}
 <span class="pill {{ user.plan_status }}">{{ user.plan_status }}</span>
-{% if user.plan_status=='active' %}<form method="post" action="/billing/cancel" style="margin-top:10px" onsubmit="return confirm('Cancel your subscription? Your data stays safe; paid features pause after this period.')"><button class="btn danger sm">Cancel subscription</button></form>{% endif %}
+{% if user.plan_status=='active' %}<form method="post" action="/billing/cancel" style="margin-top:10px" data-confirm="Cancel your subscription? Your data stays safe; paid features pause after this period."><button class="btn danger sm">Cancel subscription</button></form>{% endif %}
 {% else %}
 <form method="post" action="/billing/change-plan" style="margin-top:10px"><input type="hidden" name="plan" value="{{ key }}"><select name="cycle" style="margin-right:6px;padding:8px"><option value="monthly">Monthly</option><option value="annual">Annual (2 months free)</option></select><button class="btn sm">Switch to {{ p.name }}</button></form>
 {% endif %}

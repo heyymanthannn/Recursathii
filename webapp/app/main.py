@@ -44,7 +44,7 @@ app.add_middleware(
 )
 
 # ---------------- Security headers + CSRF guard (Phase 7.6) ----------------
-_CSP = ("default-src 'self'; script-src 'self' 'unsafe-inline'; "
+_CSP = ("default-src 'self'; script-src 'self'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https:; connect-src 'self'; "

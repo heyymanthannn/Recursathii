@@ -180,6 +180,12 @@ def init():
         c.execute("INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES('0001-phase7.7-baseline', ?)",
                   (time.time(),))
 
+        c.execute("""CREATE TABLE IF NOT EXISTS rate_limits(
+          key TEXT NOT NULL, ts REAL NOT NULL)""")
+        c.execute("CREATE INDEX IF NOT EXISTS idx_rate_limits_key_ts ON rate_limits(key, ts)")
+        c.execute("INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES('0002-phase7.8-ratelimits', ?)",
+                  (time.time(),))
+
 def q(sql, args=()):
     with conn() as c:
         return [dict(r) for r in c.execute(sql, args)]

@@ -133,7 +133,7 @@
 <h2>Your data</h2>
 <p class="muted">Export everything (customers, invoices, payments, messages, activity) as JSON, or delete your account and all of its data permanently.</p>
 <a class="btn ghost sm" href="/settings/export-data">Export my data (JSON)</a>
-<form method="post" action="/settings/delete-account" class="stack" style="margin-top:12px" onsubmit="return confirm('This permanently deletes your account and all data. Continue?')">
+<form method="post" action="/settings/delete-account" class="stack" style="margin-top:12px" data-confirm="This permanently deletes your account and all data. Continue?">
 <div><label>Type DELETE to confirm account deletion</label><input name="confirm" placeholder="DELETE"></div>
 <button class="btn danger">Delete my account</button>
 </form></div>

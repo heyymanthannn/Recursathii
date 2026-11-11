@@ -22,7 +22,7 @@
 <td>{{ p.method or "-" }}</td>
 <td><span class="pill {{ p.status }}">{{ p.status }}</span></td>
 <td class="muted">{{ p.created | datetime }}</td>
-{% if p.status == "confirmed" %}<td><form method="post" action="/payments/{{ p.id }}/refund" onsubmit="return confirm('Record a refund against this payment?')"><button class="btn ghost sm">Refund</button></form></td>{% else %}<td></td>{% endif %}
+{% if p.status == "confirmed" %}<td><form method="post" action="/payments/{{ p.id }}/refund" data-confirm="Record a refund against this payment?"><button class="btn ghost sm">Refund</button></form></td>{% else %}<td></td>{% endif %}
 </tr>{% endfor %}
 </table>{% else %}<div class="empty">No transactions yet. They appear the moment an invoice is paid or an attempt is recorded.</div>{% endif %}</div>
 <h2>Failed payments</h2>
