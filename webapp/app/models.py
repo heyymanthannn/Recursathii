@@ -1,5 +1,8 @@
 """RecurSaathi platform data layer (stdlib sqlite3, swap PAYRECOVERY_DB for Postgres later)."""
-import os, sqlite3, time, uuid
+import os, sqlite3, threading, time, uuid
+
+# serializes cap-check + queue-insert so concurrent jobs cannot bypass frequency caps
+QUEUE_LOCK = threading.Lock()
 
 DB_PATH = os.environ.get("PAYRECOVERY_DB", "data/payrecovery.db")
 
@@ -55,6 +58,10 @@ CREATE TABLE IF NOT EXISTS outbox(
 CREATE TABLE IF NOT EXISTS activities(
   id TEXT PRIMARY KEY, owner_id TEXT, kind TEXT, message TEXT, created REAL
 );
+CREATE TABLE IF NOT EXISTS outbox_history(
+  id TEXT PRIMARY KEY, outbox_id TEXT, owner_id TEXT,
+  status TEXT, detail TEXT, created REAL
+);
 CREATE TABLE IF NOT EXISTS audit(
   id TEXT PRIMARY KEY, user_id TEXT, action TEXT, detail TEXT, created REAL
 );
@@ -95,6 +102,12 @@ def init():
         cols = [r["name"] for r in c.execute("PRAGMA table_info(users)")]
         if "parent_id" not in cols:
             c.execute("ALTER TABLE users ADD COLUMN parent_id TEXT")
+        ocols = [r["name"] for r in c.execute("PRAGMA table_info(outbox)")]
+        for col, ddl in [("provider_message_id", "TEXT"), ("accepted_at", "REAL"),
+                         ("delivered_at", "REAL"), ("read_at", "REAL"), ("failed_at", "REAL"),
+                         ("bounced_at", "REAL"), ("approval_binding", "TEXT")]:
+            if col not in ocols:
+                c.execute(f"ALTER TABLE outbox ADD COLUMN {col} {ddl}")
         if "reset_token" not in cols:
             c.execute("ALTER TABLE users ADD COLUMN reset_token TEXT")
         if "reset_expires" not in cols:
@@ -351,6 +364,16 @@ def queue(owner_id, channel, dest, tpl, subject, body, dedupe=""):
     return get_outbox(o["id"])
 
 def get_outbox(oid): return one("SELECT * FROM outbox WHERE id=?", (oid,))
+def record_delivery_status(oid, status, detail=""):
+    """One row per status transition. Distinct statuses per the founder spec:
+    queued, processing, accepted, delivered, read, failed, bounced, unknown,
+    plus skipped/deferred outcomes. History is the audit trail for delivery."""
+    o = get_outbox(oid)
+    if not o:
+        return
+    ex("INSERT INTO outbox_history(id,outbox_id,owner_id,status,detail,created) VALUES(?,?,?,?,?,?)",
+       (uid(), oid, o["owner_id"], status, detail[:500] if isinstance(detail, str) else "", now()))
+
 def set_outbox_status(oid, status, error=""):
     ex("UPDATE outbox SET status=?, error=? WHERE id=?", (status, error, oid))
 
@@ -896,10 +919,34 @@ def outbox_counts(owner_id):
 
 def hold_for_approval(oid, reason="waiting for your approval (Approval Required mode)"):
     ex("UPDATE outbox SET status='approval', error=? WHERE id=?", (reason, oid))
+    bind_approval(oid)
+
+def approval_binding(o):
+    """The approval is bound to the exact message: channel, recipient, subject,
+    body and dedupe key. Any material change to any of them invalidates it."""
+    import hashlib
+    raw = "|".join([o["channel"] or "", o["dest"] or "", o["subject"] or "",
+                    o["body"] or "", o["dedupe"] or ""])
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+def bind_approval(oid):
+    o = get_outbox(oid)
+    if o:
+        ex("UPDATE outbox SET approval_binding=? WHERE id=?", (approval_binding(o), oid))
+
+def approval_binding_valid(oid):
+    o = get_outbox(oid)
+    if not o:
+        return False
+    return bool(o["approval_binding"]) and o["approval_binding"] == approval_binding(o)
 
 def approve_outbox(owner_id, oid):
     o = one("SELECT * FROM outbox WHERE id=? AND owner_id=?", (oid, owner_id))
     if not o or o["status"] != "approval":
+        return None
+    if not approval_binding_valid(oid):
+        ex("UPDATE outbox SET error='approval invalidated: the message changed after it was held' WHERE id=?", (oid,))
+        log_activity(owner_id, "automation", f"approval invalidated for {oid}: message changed after it was held")
         return None
     ex("UPDATE outbox SET status='queued', error='' WHERE id=?", (oid,))
     log_activity(owner_id, "automation", f"Approved queued {o['channel']} message to {o['dest']}")

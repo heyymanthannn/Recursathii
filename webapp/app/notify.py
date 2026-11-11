@@ -150,35 +150,72 @@ def verify_retailer_whatsapp(owner_id):
         return False, str(e)[:200]
 
 def deliver(outbox_row):
-    """Deliver one queued outbox message. Opt-out is honored for WhatsApp."""
+    """Deliver one queued outbox message.
+
+    Delivery status honesty (founder requirement B): every status transition
+    is recorded in outbox_history, a provider ACCEPT is recorded as accepted
+    (never delivered), and quiet hours are rechecked immediately before the
+    send, not only when the message was scheduled. A provider that cannot be
+    reached leaves the message UNKNOWN - unknown never triggers a retry.
+    """
+    from . import permissions as _perms
+    from . import sequences as _seq
+    _seq.ensure_schema()
+    models.record_delivery_status(outbox_row["id"], outbox_row["status"], "picked up for delivery")
+    models.ex("UPDATE outbox SET status='processing' WHERE id=?", (outbox_row["id"],))
     if outbox_row["channel"] not in ("email", "whatsapp"):
         models.set_outbox_status(outbox_row["id"], "no_channel",
                                  f"{outbox_row['channel']} channel not configured yet")
+        models.record_delivery_status(outbox_row["id"], "no_channel", "channel not configured")
         return "no_channel"
     owner_id = outbox_row["owner_id"]
     if (outbox_row["tpl"] or "") in SYSTEM_TPLS:
         owner_id = None  # RecurSaathi -> the retailer, not their customer
-    from . import sequences as _seq
-    _seq.ensure_schema()
     if owner_id:
         cn = models.get_connect(owner_id)
         if cn and cn.get("paused"):
+            models.ex("UPDATE outbox SET status='queued' WHERE id=?", (outbox_row["id"],))
+            models.record_delivery_status(outbox_row["id"], "queued", "owner paused automations")
             return "skipped"  # stays queued; owner paused automations
+        # quiet hours, checked immediately before the send (not just at schedule time)
+        cfg = _perms.get_config(owner_id)
+        if _perms.in_quiet_hours(cfg):
+            models.ex("UPDATE outbox SET status='queued' WHERE id=?", (outbox_row["id"],))
+            models.record_delivery_status(outbox_row["id"], "queued",
+                                          "deferred to the next permitted sending window (quiet hours)")
+            return "deferred_quiet_hours"
     if outbox_row["channel"] == "whatsapp":
         cu = models.one("SELECT * FROM customers WHERE phone=? ", (outbox_row["dest"],)) \
             if outbox_row["dest"] else None
         if cu and cu.get("wa_opt_out"):
             models.set_outbox_status(outbox_row["id"], "skipped", "customer opted out")
+            models.record_delivery_status(outbox_row["id"], "skipped", "customer opted out")
             return "skipped"
-        st, err = send_whatsapp(outbox_row["dest"], outbox_row["body"], owner_id=owner_id)
+        try:
+            st, err = send_whatsapp(outbox_row["dest"], outbox_row["body"], owner_id=owner_id)
+        except Exception as e:
+            models.set_outbox_status(outbox_row["id"], "unknown",
+                                     f"provider unreachable, no retry until it confirms: {e}")
+            models.record_delivery_status(outbox_row["id"], "unknown", "provider unreachable")
+            return "unknown"
     else:
-        st, err = send_email(outbox_row["dest"], outbox_row["subject"], outbox_row["body"], owner_id=owner_id)
+        try:
+            st, err = send_email(outbox_row["dest"], outbox_row["subject"], outbox_row["body"], owner_id=owner_id)
+        except Exception as e:
+            models.set_outbox_status(outbox_row["id"], "unknown",
+                                     f"provider unreachable, no retry until it confirms: {e}")
+            models.record_delivery_status(outbox_row["id"], "unknown", "provider unreachable")
+            return "unknown"
     models.set_outbox_status(outbox_row["id"], st, err)
+    models.record_delivery_status(outbox_row["id"], st, err or "")
     if st == "sent":
         # "sent" means the provider ACCEPTED the message. It is never treated
         # as delivered: delivery_status moves to delivered/read/failed only
         # when the provider itself reports back via /webhooks/provider-status.
-        models.ex("UPDATE outbox SET sent=?, provider_ref=?, delivery_status='accepted', "
-                  "provider_updated=? WHERE id=?",
-                  (models.now(), _last_provider_ref, models.now(), outbox_row["id"]))
+        models.ex("UPDATE outbox SET sent=?, provider_ref=?, provider_message_id=?, "
+                  "accepted_at=?, delivery_status='accepted', provider_updated=? WHERE id=?",
+                  (models.now(), _last_provider_ref, _last_provider_ref, models.now(),
+                   models.now(), outbox_row["id"]))
+        models.record_delivery_status(outbox_row["id"], "accepted",
+                                      f"provider accepted, ref {_last_provider_ref}")
     return st

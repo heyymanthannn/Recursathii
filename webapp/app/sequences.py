@@ -77,6 +77,16 @@ def _validate(steps):
         step = {"id": sid, "offset": off, "template_key": tk, "channels": sorted(set(chans))}
         if s.get("escalate"):
             step["escalate"] = True
+        if s.get("approval_required"):
+            step["approval_required"] = True   # this step always waits for the owner
+        try:
+            ma = int(s.get("max_attempts", 0))
+        except Exception:
+            raise ValueError("max_attempts must be an integer")
+        if ma:
+            if not (1 <= ma <= 10):
+                raise ValueError("max_attempts must be 1-10")
+            step["max_attempts"] = ma
         out.append(step)
     return out
 

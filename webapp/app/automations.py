@@ -287,45 +287,65 @@ def run_for_owner(owner, base_url):
             day = today
             want_email = "email" in step["channels"]
             want_wa = "whatsapp" in step["channels"]
-            pe = _perm(owner, "send_routine_email_reminder", channel="email", customer=cu) \
-                if want_email else None
-            if pe and pe["decision"] in ("auto", "needs_approval"):
-                if cu.get("email") and not cu.get("email_opt_out"):
-                    o = models.queue(owner["id"], "email", cu["email"], stage, sub,
-                                     ebody + _unsub_footer(base_url, cu),
-                                     dedupe=f"seq:{step['id']}:{inv['id']}:email")
-                    if o:
-                        held = _post_queue(owner, o, counts)
-                        if not held and (pe["decision"] == "needs_approval" or step.get("escalate")):
-                            reason = pe["reason"] if pe["decision"] == "needs_approval" else \
-                                "sequence escalation: owner approval required before this sends"
-                            models.hold_for_approval(o["id"], reason=reason)
-                            counts["approval_held"] = counts.get("approval_held", 0) + 1
-                            held = True
-                        if not held:
-                            outs.append(o)
-            elif want_email and cu.get("email"):
-                models.log_activity(owner["id"], "permission",
-                                    f"email reminder for invoice {inv['number']} {pe['decision']}: {pe['reason']}")
-            pw = _perm(owner, "send_routine_whatsapp_reminder", channel="whatsapp", customer=cu) \
-                if want_wa else None
-            if pw and pw["decision"] in ("auto", "needs_approval"):
-                if cu.get("phone") and not cu.get("wa_opt_out"):
-                    o = models.queue(owner["id"], "whatsapp", cu["phone"], stage, sub, wbody,
-                                     dedupe=f"seq:{step['id']}:{inv['id']}:wa")
-                    if o:
-                        held = _post_queue(owner, o, counts)
-                        if not held and (pw["decision"] == "needs_approval" or step.get("escalate")):
-                            reason = pw["reason"] if pw["decision"] == "needs_approval" else \
-                                "sequence escalation: owner approval required before this sends"
-                            models.hold_for_approval(o["id"], reason=reason)
-                            counts["approval_held"] = counts.get("approval_held", 0) + 1
-                            held = True
-                        if not held:
-                            outs.append(o)
-            elif want_wa and cu.get("phone"):
-                models.log_activity(owner["id"], "permission",
-                                    f"whatsapp reminder for invoice {inv['number']} {pw['decision']}: {pw['reason']}")
+            # per-step max_attempts: count this step's prior attempts for this invoice
+            if step.get("max_attempts"):
+                prior = models.one(
+                    "SELECT COUNT(*) AS n FROM outbox WHERE owner_id=? AND dedupe LIKE ?",
+                    (owner["id"], f"seq:{step['id']}:{inv['id']}%")) or {}
+                if int(prior.get("n", 0) or 0) >= int(step["max_attempts"]):
+                    models.log_activity(owner["id"], "sequence",
+                                        f"step {step['id']} for invoice {inv['number']} stopped: "
+                                        f"max attempts ({step['max_attempts']}) reached")
+                    continue
+            step_force_approval = bool(step.get("approval_required"))
+            # cap check and queue insert stay under one lock so concurrent jobs
+            # cannot bypass frequency caps between counting and inserting
+            with models.QUEUE_LOCK:
+                pe = _perm(owner, "send_routine_email_reminder", channel="email", customer=cu) \
+                    if want_email else None
+                if pe and pe["decision"] in ("auto", "needs_approval"):
+                    if cu.get("email") and not cu.get("email_opt_out"):
+                        o = models.queue(owner["id"], "email", cu["email"], stage, sub,
+                                         ebody + _unsub_footer(base_url, cu),
+                                         dedupe=f"seq:{step['id']}:{inv['id']}:email")
+                        if o:
+                            force = pe["decision"] == "needs_approval" or step.get("escalate") or step_force_approval
+                            held = _post_queue(owner, o, counts)
+                            if not held and force:
+                                reason = ("sequence step requires owner approval before this sends"
+                                          if step_force_approval and pe["decision"] == "auto" and not step.get("escalate")
+                                          else pe["reason"] if pe["decision"] == "needs_approval" else
+                                          "sequence escalation: owner approval required before this sends")
+                                models.hold_for_approval(o["id"], reason=reason)
+                                counts["approval_held"] = counts.get("approval_held", 0) + 1
+                                held = True
+                            if not held:
+                                outs.append(o)
+                elif want_email and cu.get("email"):
+                    models.log_activity(owner["id"], "permission",
+                                        f"email reminder for invoice {inv['number']} {pe['decision']}: {pe['reason']}")
+                pw = _perm(owner, "send_routine_whatsapp_reminder", channel="whatsapp", customer=cu) \
+                    if want_wa else None
+                if pw and pw["decision"] in ("auto", "needs_approval"):
+                    if cu.get("phone") and not cu.get("wa_opt_out"):
+                        o = models.queue(owner["id"], "whatsapp", cu["phone"], stage, sub, wbody,
+                                         dedupe=f"seq:{step['id']}:{inv['id']}:wa")
+                        if o:
+                            force = pw["decision"] == "needs_approval" or step.get("escalate") or step_force_approval
+                            held = _post_queue(owner, o, counts)
+                            if not held and force:
+                                reason = ("sequence step requires owner approval before this sends"
+                                          if step_force_approval and pw["decision"] == "auto" and not step.get("escalate")
+                                          else pw["reason"] if pw["decision"] == "needs_approval" else
+                                          "sequence escalation: owner approval required before this sends")
+                                models.hold_for_approval(o["id"], reason=reason)
+                                counts["approval_held"] = counts.get("approval_held", 0) + 1
+                                held = True
+                            if not held:
+                                outs.append(o)
+                elif want_wa and cu.get("phone"):
+                    models.log_activity(owner["id"], "permission",
+                                        f"whatsapp reminder for invoice {inv['number']} {pw['decision']}: {pw['reason']}")
         if outs:
             counts["queued"] = counts.get("queued", 0) + len(outs)
         for o in outs:

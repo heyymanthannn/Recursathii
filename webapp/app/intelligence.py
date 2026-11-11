@@ -28,6 +28,13 @@ def _overdue_rows(owner_id):
     out = []
     for r in rows:
         i = dict(r)
+        # financial accuracy: an overdue invoice counts for what is still
+        # UNPAID. Partial payments shrink it; once fully paid it is not
+        # overdue at all, whatever its status field still says.
+        i["paid_amount"] = _net_confirmed(i["id"])
+        i["outstanding"] = max(0, (i["amount"] or 0) - i["paid_amount"])
+        if i["outstanding"] <= 0:
+            continue
         try:
             y, m, d = (int(x) for x in i["due_date"][:10].split("-"))
             days = max(0, round((time.mktime(time.strptime(today, "%Y-%m-%d")) -
@@ -37,6 +44,18 @@ def _overdue_rows(owner_id):
         i["days_overdue"] = days
         out.append(i)
     return out
+
+
+def _net_confirmed(invoice_id):
+    """Money actually received and kept for one invoice: sum of CONFIRMED
+    payments only. Refunded payments are excluded (their status changes to
+    refunded, and a refund event is recorded separately). Pending, attempted
+    and promised payments never count. This is what makes partial payments
+    and duplicate charges read correctly."""
+    row = models.one("SELECT COALESCE(SUM(amount),0) AS n FROM payments "
+                     "WHERE invoice_id=? AND status='confirmed' AND confirmed_at IS NOT NULL",
+                     (invoice_id,))
+    return int((row or {}).get("n", 0) or 0)
 
 
 def _bucket(days):
@@ -81,13 +100,13 @@ def overdue_analysis(owner_id):
         b = _bucket(i["days_overdue"])
         buckets.setdefault(b, {"count": 0, "amount": 0})
         buckets[b]["count"] += 1
-        buckets[b]["amount"] += i["amount"]
-        total += i["amount"]
-        score = i["days_overdue"] * 2 + min(i["amount"] / 100000.0, 10)
+        buckets[b]["amount"] += i["outstanding"]
+        total += i["outstanding"]
+        score = i["days_overdue"] * 2 + min(i["outstanding"] / 100000.0, 10)
         pri = "high" if score >= 20 else ("medium" if score >= 8 else "low")
         priority_value.setdefault(pri, {"count": 0, "amount": 0})
         priority_value[pri]["count"] += 1
-        priority_value[pri]["amount"] += i["amount"]
+        priority_value[pri]["amount"] += i["outstanding"]
     return {"total_overdue_invoices": len(rows), "total_overdue_amount": total,
             "aging_buckets": buckets, "by_priority": priority_value}
 
@@ -102,17 +121,25 @@ def verified_recovery_rate(owner_id, days=90):
         (owner_id, since, time.strftime("%Y-%m-%d")))
     recovered = 0
     recovered_value = 0
+    partial = 0
     for c in cases:
-        p = models.one("SELECT id, amount FROM payments WHERE invoice_id=? AND status='confirmed' "
-                       "AND confirmed_at IS NOT NULL LIMIT 1", (c["id"],))
-        if p:
+        net = _net_confirmed(c["id"])
+        if net > 0:
             recovered += 1
-            recovered_value += p["amount"]
+            # never credit more than the invoice was worth, however many
+            # confirmed payments (including duplicates) landed on it
+            recovered_value += min(net, c["amount"])
+            if net < c["amount"]:
+                partial += 1
     failed_events = models.one("SELECT COUNT(*) n FROM pay_events WHERE owner_id=? AND kind='failed' "
                                "AND created>=?", (owner_id, since))
+    disputed = models.one("SELECT COUNT(*) n FROM invoices WHERE owner_id=? AND status='disputed' "
+                          "AND created>=?", (owner_id, since))
     return {"window_days": days, "past_due_cases": len(cases), "verified_recovered": recovered,
             "verified_recovery_rate": round(recovered / len(cases), 3) if cases else None,
             "verified_recovered_value": recovered_value,
+            "partially_recovered_cases": partial,
+            "disputed_cases": disputed["n"],
             "failed_payment_events": failed_events["n"]}
 
 
@@ -220,6 +247,13 @@ def assistant_answer(owner_id, question):
     q = (question or "").strip().lower()
     if not q:
         return "Ask me about overdue invoices, failed payments, recovery rates or forecasts."
+    # read-only guard: this assistant never writes, cancels, refunds, sends or
+    # triggers automations. Write requests are refused here, at the door.
+    if any(w in q for w in ("cancel", "refund", "send ", "send a", "mark ", "delete", "update ",
+                            "write", "create ", "trigger", "run ", "pause ", "approve ", "pay ")):
+        return ("I only read your records and answer questions - I cannot cancel, refund, send, "
+                "or trigger anything. Those actions live in the automation control centre "
+                "and in your hands.")
     if any(w in q for w in ("overdue", "pending", "unpaid")):
         ov = overdue_analysis(owner_id)
         if not ov["total_overdue_invoices"]:

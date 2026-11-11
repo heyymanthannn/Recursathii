@@ -201,11 +201,15 @@ def run_campaign(owner, campaign, counts=None):
             if models.one("SELECT id FROM react_messages WHERE campaign_id=? AND customer_id=? AND channel=?",
                           (campaign["id"], m["id"], channel)):
                 continue   # this campaign already contacted them on this channel
-            res = permissions.resolve(owner["id"], "run_approved_reactivation", channel=channel, customer=m)
-            if res["decision"] not in ("auto", "needs_approval"):
-                deferred += 1
-                continue
-            body = campaign["email_body"] if channel == "email" else campaign["wa_body"]
+            # cap check and queue insert stay under one lock so concurrent
+            # jobs cannot bypass frequency caps between counting and inserting
+            with models.QUEUE_LOCK:
+                res = permissions.resolve(owner["id"], "run_approved_reactivation",
+                                          channel=channel, customer=m)
+                if res["decision"] not in ("auto", "needs_approval"):
+                    deferred += 1
+                    continue
+                body = campaign["email_body"] if channel == "email" else campaign["wa_body"]
             sub = campaign["email_subject"] if channel == "email" else ""
             o = models.queue(owner["id"], channel, dest, "reactivation", sub, body,
                              dedupe=f"react:{campaign['id']}:{m['id']}:{channel}")

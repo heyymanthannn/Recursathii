@@ -24,7 +24,7 @@ Delivery honesty lives in notify.py: a successful API request alone never
 counts as a delivered message.
 """
 import json, time
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from . import models
@@ -73,7 +73,12 @@ DEFAULTS = {
     "quiet_hours": {"enabled": True, "start": "21:00", "end": "08:00",
                     "tz": "Asia/Kolkata"},
     "max_per_customer_per_day": 2,
+    "max_per_customer_week": 10,
     "max_per_owner_per_day": 100,
+    "max_per_owner_week": 500,
+    # defaults sized so the DEFAULT sequence (day 0/2/5/7 on two channels)
+    # fits inside them without tripping; businesses can tighten these
+    "max_per_channel_per_day": {"email": 5, "whatsapp": 5},
     "authorized_channels": [],   # business must connect AND authorize each channel
     "ai_variation": False,       # owner authorized AI wording variations of approved templates
     "reactivation_max_per_run": 25,
@@ -173,6 +178,15 @@ def in_quiet_hours(cfg, ts=None) -> bool:
     return cur >= start or cur < end  # window crosses midnight
 
 
+def _local_week_start(cfg) -> float:
+    """Start of the current local week (Monday 00:00), for weekly caps."""
+    tz = _tz_of(cfg)
+    now = datetime.now(tz)
+    monday = now - timedelta(days=now.weekday())
+    import time as _t
+    return _t.mktime((monday.year, monday.month, monday.day, 0, 0, 0, 0, 0, -1))
+
+
 def _local_day_start(cfg) -> float:
     tz = _tz_of(cfg)
     now = datetime.now(tz)
@@ -189,14 +203,16 @@ def _opted_out(customer, channel) -> bool:
     return False
 
 
-def _count_outbox(owner_id, since, dest=None) -> int:
+def _count_outbox(owner_id, since, dest=None, channel=None) -> int:
+    conds = ["owner_id=?", "created>=?"]
+    args = [owner_id, since]
     if dest:
-        row = models.one("SELECT COUNT(*) AS n FROM outbox "
-                         "WHERE owner_id=? AND dest=? AND created>=?",
-                         (owner_id, dest, since))
-    else:
-        row = models.one("SELECT COUNT(*) AS n FROM outbox "
-                         "WHERE owner_id=? AND created>=?", (owner_id, since))
+        conds.append("dest=?")
+        args.append(dest)
+    if channel:
+        conds.append("channel=?")
+        args.append(channel)
+    row = models.one(f"SELECT COUNT(*) AS n FROM outbox WHERE {' AND '.join(conds)}", args)
     return int((row or {}).get("n", 0) or 0)
 
 
@@ -235,6 +251,20 @@ def resolve(owner_id, action, *, channel="", customer=None, ts=None) -> dict:
             if n >= cfg["max_per_customer_per_day"]:
                 out.update(decision="deferred",
                            reason="per-customer daily message limit reached")
+        if not out["decision"] and channel and isinstance(cfg.get("max_per_channel_per_day"), dict):
+            cap = cfg["max_per_channel_per_day"].get(channel, 0)
+            if cap and _count_outbox(owner_id, _local_day_start(cfg), channel=channel) >= cap:
+                out.update(decision="deferred",
+                           reason=f"per-channel daily limit reached on {channel}")
+        if not out["decision"] and customer is not None and cfg.get("max_per_customer_week", 0) > 0:
+            n = 0
+            for d in filter(None, [customer.get("email") or "", customer.get("phone") or ""]):
+                n += _count_outbox(owner_id, _local_week_start(cfg), dest=d)
+            if n >= cfg["max_per_customer_week"]:
+                out.update(decision="deferred", reason="per-customer weekly message limit reached")
+        if not out["decision"] and cfg.get("max_per_owner_week", 0) > 0:
+            if _count_outbox(owner_id, _local_week_start(cfg)) >= cfg["max_per_owner_week"]:
+                out.update(decision="deferred", reason="business weekly message limit reached")
         if not out["decision"] and cfg.get("max_per_owner_per_day", 0) > 0:
             if _count_outbox(owner_id, _local_day_start(cfg)) >= cfg["max_per_owner_per_day"]:
                 out.update(decision="deferred",
