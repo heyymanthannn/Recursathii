@@ -12,6 +12,14 @@ def conn():
     c.row_factory = sqlite3.Row
     return c
 
+def secret_seed():
+    """Stable platform secret used to derive the provider-credential
+    encryption key (PROVIDER_ENC_KEY overrides). Not a user secret."""
+    import os as _os
+    return _os.environ.get("PROVIDER_ENC_KEY", "") or (
+        "recursaathi::" + (_os.environ.get("ADMIN_TOKEN", "changeme-admin")))
+
+
 def now(): return time.time()
 def uid(): return uuid.uuid4().hex
 def token(n=24): return uuid.uuid4().hex[:n]
@@ -106,7 +114,8 @@ def init():
         for col, ddl in [("provider_message_id", "TEXT"), ("accepted_at", "REAL"),
                          ("delivered_at", "REAL"), ("read_at", "REAL"), ("failed_at", "REAL"),
                          ("bounced_at", "REAL"), ("approval_binding", "TEXT"),
-                         ("customer_id", "TEXT")]:
+                         ("customer_id", "TEXT"), ("provider_ref", "TEXT DEFAULT ''"),
+                         ("delivery_status", "TEXT DEFAULT ''"), ("provider_updated", "REAL")]:
             if col not in ocols:
                 c.execute(f"ALTER TABLE outbox ADD COLUMN {col} {ddl}")
         if "reset_token" not in cols:
@@ -132,6 +141,10 @@ def init():
         ccols = [r["name"] for r in c.execute("PRAGMA table_info(customers)")]
         if "email_opt_out" not in ccols:
             c.execute("ALTER TABLE customers ADD COLUMN email_opt_out INTEGER DEFAULT 0")
+        if "email_bounced" not in ccols:
+            c.execute("ALTER TABLE customers ADD COLUMN email_bounced INTEGER DEFAULT 0")
+        if "wa_bounced" not in ccols:
+            c.execute("ALTER TABLE customers ADD COLUMN wa_bounced INTEGER DEFAULT 0")
         if "unsub_token" not in ccols:
             c.execute("ALTER TABLE customers ADD COLUMN unsub_token TEXT")
         c.execute("CREATE UNIQUE INDEX IF NOT EXISTS ix_unsub_token ON customers(unsub_token) WHERE unsub_token IS NOT NULL")

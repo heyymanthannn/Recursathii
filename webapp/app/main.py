@@ -874,6 +874,113 @@ async def automations_invoice_pause(iid: str, request: Request,
     return {"ok": True, "paused": bool(data.get("paused", True))}
 
 
+# ---- Phase 6.1: sandbox provider credential management + WhatsApp webhook ----
+from . import providers as _providers61
+
+@app.get("/api/provider/config")
+async def provider_config_get(x_api_key: str | None = Header(default=None)):
+    """Masked view of this business's provider configuration. Secrets are
+    never returned: masked values only, sandbox state included."""
+    u = _control_owner(x_api_key)
+    out = {}
+    for ch in ("email", "whatsapp"):
+        m = _providers61.masked_provider_config(u["id"], ch)
+        if m:
+            out[ch] = m
+    return {"ok": True, "providers": out}
+
+
+@app.post("/api/provider/config")
+async def provider_config_set(request: Request,
+                              x_api_key: str | None = Header(default=None)):
+    """Store sandbox provider credentials for this business, encrypted at
+    rest. Live credentials are refused unless the platform-level live flag is
+    explicitly set (separate approval). Secrets never appear in responses."""
+    u = _control_owner(x_api_key)
+    data = await request.json()
+    channel = (data.get("channel") or "").lower()
+    kind = (data.get("kind") or ("email_api" if channel == "email" else "whatsapp_cloud")).lower()
+    cfg = data.get("config") or {}
+    sandbox = data.get("sandbox", True)
+    if channel not in ("email", "whatsapp"):
+        raise HTTPException(status_code=400, detail="channel must be email or whatsapp")
+    if not cfg:
+        raise HTTPException(status_code=400, detail="config required")
+    try:
+        res = _providers61.configure_provider(u["id"], channel, kind, cfg, sandbox=bool(sandbox))
+    except ValueError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    return {"ok": True, **res}
+
+
+@app.post("/api/provider/test")
+async def provider_test(request: Request, x_api_key: str | None = Header(default=None)):
+    """Send a canary through this business's configured sandbox provider and
+    return the real ladder result: accepted / failed / unknown. Never claims
+    delivery: only the provider webhook can move a message to delivered."""
+    u = _control_owner(x_api_key)
+    data = await request.json()
+    channel = (data.get("channel") or "email").lower()
+    to = (data.get("to") or "").strip()
+    if not to:
+        raise HTTPException(status_code=400, detail="test address required")
+    cfg = _providers61.get_provider_config(u["id"], channel)
+    if not cfg:
+        raise HTTPException(status_code=400, detail=f"no provider configured for {channel}")
+    if channel == "email":
+        if cfg.get("_kind") == "email_api":
+            res = _providers61.send_email_api(cfg["base_url"], cfg.get("token", ""),
+                                              cfg.get("from_addr", "pilot@recursaathi.test"),
+                                              to, "RecurSaathi sandbox test", "canary", 10.0)
+        else:
+            res = _providers61.send_email(cfg["smtp_host"], int(cfg.get("smtp_port", 587)),
+                                          cfg.get("from_addr", "pilot@recursaathi.test"), to,
+                                          "RecurSaathi sandbox test", "canary", 10.0,
+                                          smtp_user=cfg.get("smtp_user", ""),
+                                          smtp_password=cfg.get("smtp_password", ""))
+    else:
+        res = _providers61.send_whatsapp(cfg["base_url"], cfg.get("token", ""),
+                                         cfg.get("wa_phone_number_id", ""), to, "canary", 10.0)
+    import json as _pj
+    _models.log_audit(u["id"], "provider_test",
+                      _pj.dumps({"channel": channel, "result": res["status"],
+                                  "provider_id": res.get("provider_id")}))
+    return {"ok": True, "channel": channel, "result": res["status"],
+            "provider_id": res.get("provider_id"), "detail": res["detail"],
+            "note": "accepted is NOT delivery; only the provider webhook confirms delivery"}
+
+
+@app.post("/webhooks/whatsapp")
+async def whatsapp_webhook(request: Request,
+                           x_hub_signature_256: str | None = Header(default=None)):
+    """WhatsApp Cloud API status webhook. Signature verified with the app
+    secret (X-Hub-Signature-256). Maps status events onto the delivery
+    ladder and handles bounces. Never sets delivered from a send result."""
+    body = await request.body()
+    secret = os.environ.get("WHATSAPP_APP_SECRET", "")
+    if secret and not _providers61.verify_hub_signature(body, x_hub_signature_256, secret):
+        raise HTTPException(status_code=401, detail="bad signature")
+    data = await request.json()
+    entry = ((data.get("entry") or [{}])[0].get("changes") or [{}])[0].get("value", {})
+    for st in (entry.get("statuses") or []):
+        ref = st.get("id") or ""
+        state = (st.get("status") or "").lower()
+        if state not in ("delivered", "read", "failed", "bounced"):
+            continue
+        row = _models.one("SELECT id, owner_id, dest, channel FROM outbox WHERE provider_ref=?", (ref,))
+        if not row:
+            continue
+        if state == "bounced":
+            _providers61.handle_bounce(row["owner_id"], row["dest"], row["channel"],
+                                       str((st.get("errors") or [{}])[0].get("title", "bounce")))
+        else:
+            _models.ex("UPDATE outbox SET delivery_status=?, provider_updated=? WHERE id=?",
+                       (state, _models.now(), row["id"]))
+            _models.log_activity(row["owner_id"], "delivery",
+                                 f"WhatsApp provider reported {ref} as {state}")
+    return {"ok": True}
+
+
 @app.post("/webhooks/provider-status")
 async def provider_status(request: Request, x_provider_token: str = Header(default="")):
     """Provider delivery confirmations. A provider ACCEPT is never a delivery:
@@ -892,8 +999,13 @@ async def provider_status(request: Request, x_provider_token: str = Header(defau
     row = _models.one("SELECT id, owner_id FROM outbox WHERE provider_ref=?", (ref,))
     if not row:
         raise HTTPException(status_code=404, detail="unknown message reference")
-    _models.ex("UPDATE outbox SET delivery_status=?, provider_updated=? WHERE id=?",
-               (status, _models.now(), row["id"]))
+    if status == "bounced":
+        rowfull = _models.one("SELECT id, owner_id, dest, channel FROM outbox WHERE provider_ref=?", (ref,))
+        _providers61.handle_bounce(rowfull["owner_id"], rowfull["dest"], rowfull["channel"],
+                                   f"provider reported {ref} bounced")
+    else:
+        _models.ex("UPDATE outbox SET delivery_status=?, provider_updated=? WHERE id=?",
+                   (status, _models.now(), row["id"]))
     _models.log_activity(row["owner_id"], "delivery",
                          f"provider reported message {ref} as {status}")
     return {"ok": True, "outbox_id": row["id"], "delivery_status": status}

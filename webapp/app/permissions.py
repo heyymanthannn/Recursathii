@@ -196,6 +196,18 @@ def _local_day_start(cfg) -> float:
     return now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
 
 
+def _unreachable(customer, channel) -> bool:
+    """A provider-reported bounced address: no further sends on that channel
+    until the customer updates their details."""
+    if not customer:
+        return False
+    if channel == "email":
+        return bool(customer.get("email_bounced"))
+    if channel == "whatsapp":
+        return bool(customer.get("wa_bounced"))
+    return False
+
+
 def _opted_out(customer, channel) -> bool:
     if not customer:
         return False
@@ -243,6 +255,9 @@ def resolve(owner_id, action, *, channel="", customer=None, ts=None) -> dict:
             out.update(decision="paused", reason="owner emergency pause is active")
         elif _opted_out(customer, channel):
             out.update(decision="denied", reason="customer opted out of this channel")
+        elif _unreachable(customer, channel):
+            out.update(decision="denied",
+                       reason="address unreachable: provider reported a bounce")
         elif channel and channel not in cfg["authorized_channels"]:
             out.update(decision="needs_approval",
                        reason="channel '" + (channel or "?") +
