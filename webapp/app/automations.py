@@ -3,7 +3,7 @@ confirmations. Each workflow can be switched on/off per owner. Dedupe keys
 keep every stage from firing twice for the same invoice on the same day."""
 import time
 import httpx
-from . import models, notify, config
+from . import models, notify, config, permissions
 
 DEFAULTS = {
     "reminder_due": {
@@ -101,6 +101,11 @@ def _post_queue(owner, o, counts=None, key="queued"):
             counts["approval_held"] = counts.get("approval_held", 0) + 1
         return True
     return False
+
+def _perm(owner, action, channel="", customer=None):
+    """Resolve one send through the permission engine before touching the queue."""
+    return permissions.resolve(owner["id"], action, channel=channel, customer=customer)
+
 
 def _unsub_footer(base_url, cu):
     """Consent: every customer email carries a working unsubscribe link."""
@@ -219,13 +224,25 @@ def run_for_owner(owner, base_url):
     counts = {"queued": 0, "sent": 0, "no_channel": 0, "skipped": 0, "failed": 0}
     today = time.strftime("%Y-%m-%d")
     if keys.get("due_call", True):
-        d = run_due_calls(owner, base_url)
-        for k, v in d.items():
-            counts[k] = counts.get(k, 0) + v
+        pd = _perm(owner, "execute_approved_sequence", channel="whatsapp")
+        if pd["decision"] == "auto":
+            d = run_due_calls(owner, base_url)
+            for k, v in d.items():
+                counts[k] = counts.get(k, 0) + v
+        else:
+            counts["skipped"] = counts.get("skipped", 0) + 1
+            models.log_activity(owner["id"], "permission",
+                                f"due-call sequence {pd['decision']}: {pd['reason']}")
     if keys.get("dormant_reactivate", True):
-        d = run_dormant_reactivation(owner)
-        for k, v in d.items():
-            counts[k] = counts.get(k, 0) + v
+        pr = _perm(owner, "run_approved_reactivation")
+        if pr["decision"] == "auto":
+            d = run_dormant_reactivation(owner)
+            for k, v in d.items():
+                counts[k] = counts.get(k, 0) + v
+        else:
+            counts["skipped"] = counts.get("skipped", 0) + 1
+            models.log_activity(owner["id"], "permission",
+                                f"reactivation run {pr['decision']}: {pr['reason']}")
     for inv in models.list_invoices(owner["id"]):
         stage = _stage(inv, today)
         if not stage or not keys.get(stage, True):
@@ -240,17 +257,39 @@ def run_for_owner(owner, base_url):
         wbody = _render(DEFAULTS[stage]["wa_body"], **ctx)
         day = today
         outs = []
-        if cu.get("email") and not cu.get("email_opt_out"):
-            o = models.queue(owner["id"], "email", cu["email"], stage, sub,
-                             ebody + _unsub_footer(base_url, cu),
-                             dedupe=f"{stage}:{inv['id']}:{day}:email")
-            if o:
-                if not _post_queue(owner, o, counts): outs.append(o)
-        if cu.get("phone") and not cu.get("wa_opt_out"):
-            o = models.queue(owner["id"], "whatsapp", cu["phone"], stage, sub, wbody,
-                             dedupe=f"{stage}:{inv['id']}:{day}:wa")
-            if o:
-                if not _post_queue(owner, o, counts): outs.append(o)
+        pe = _perm(owner, "send_routine_email_reminder", channel="email", customer=cu)
+        if pe["decision"] in ("auto", "needs_approval"):
+            if cu.get("email") and not cu.get("email_opt_out"):
+                o = models.queue(owner["id"], "email", cu["email"], stage, sub,
+                                 ebody + _unsub_footer(base_url, cu),
+                                 dedupe=f"{stage}:{inv['id']}:{day}:email")
+                if o:
+                    held = _post_queue(owner, o, counts)
+                    if not held and pe["decision"] == "needs_approval":
+                        models.hold_for_approval(o["id"], reason=pe["reason"])
+                        counts["approval_held"] = counts.get("approval_held", 0) + 1
+                        held = True
+                    if not held:
+                        outs.append(o)
+        elif cu.get("email"):
+            models.log_activity(owner["id"], "permission",
+                                f"email reminder for invoice {inv['number']} {pe['decision']}: {pe['reason']}")
+        pw = _perm(owner, "send_routine_whatsapp_reminder", channel="whatsapp", customer=cu)
+        if pw["decision"] in ("auto", "needs_approval"):
+            if cu.get("phone") and not cu.get("wa_opt_out"):
+                o = models.queue(owner["id"], "whatsapp", cu["phone"], stage, sub, wbody,
+                                 dedupe=f"{stage}:{inv['id']}:{day}:wa")
+                if o:
+                    held = _post_queue(owner, o, counts)
+                    if not held and pw["decision"] == "needs_approval":
+                        models.hold_for_approval(o["id"], reason=pw["reason"])
+                        counts["approval_held"] = counts.get("approval_held", 0) + 1
+                        held = True
+                    if not held:
+                        outs.append(o)
+        elif cu.get("phone"):
+            models.log_activity(owner["id"], "permission",
+                                f"whatsapp reminder for invoice {inv['number']} {pw['decision']}: {pw['reason']}")
         for o in outs:
             st = notify.deliver(o)
             counts[st if st in counts else "failed"] += 1

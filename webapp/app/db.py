@@ -54,6 +54,7 @@ def init():
             "ALTER TABLE merchants ADD COLUMN retention_at REAL DEFAULT 0",
             "ALTER TABLE merchants ADD COLUMN claimed_utr TEXT DEFAULT ''",
             "ALTER TABLE merchants ADD COLUMN claimed_at REAL DEFAULT 0",
+            "ALTER TABLE events ADD COLUMN status TEXT DEFAULT 'failed'",
         ):
             try:
                 c.execute(stmt)
@@ -111,9 +112,20 @@ def load_merchants() -> dict:
     with _conn() as c:
         return {r["id"]: dict(r) for r in c.execute("SELECT * FROM merchants")}
 
+def get_event(event_id):
+    with _conn() as c:
+        return c.execute("SELECT * FROM events WHERE id=?", (event_id,)).fetchone()
+
+
+def set_event_status(event_id, status):
+    with _conn() as c:
+        init()
+        c.execute("UPDATE events SET status=? WHERE id=?", (status, event_id))
+
+
 def save_event(e):
     with _conn() as c:
-        c.execute("INSERT OR REPLACE INTO events VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+        c.execute("INSERT OR REPLACE INTO events(id,merchant_id,gateway,customer_name,customer_phone,amount,decline_code,mandate_id,playbook,retries_due,retries_done,recovered) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
                   (e["id"], e["merchant_id"], e["gateway"], e["customer_name"],
                    e["customer_phone"], e["amount"], e["decline_code"], e["mandate_id"],
                    e["playbook"], ",".join(str(t) for t in e.get("retries_due", [])),

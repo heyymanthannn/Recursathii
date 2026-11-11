@@ -21,6 +21,7 @@ class FailureEvent:
     retries_due: list = field(default_factory=list)
     retries_done: int = 0
     recovered: bool = False
+    status: str = "failed"
 
 EVENTS: list[FailureEvent] = []
 SENT_MESSAGES: list[dict] = []   # whatsapp outbox (swap for real provider)
@@ -31,6 +32,8 @@ def ingest_normal(*, event_id: str, merchant_id: str, gateway: str,
     """Shared intake for any gateway, already normalized."""
     if not is_billable(merchant_id):
         return None
+    if db.get_event(event_id):
+        return None  # duplicate webhook event: one recovery case per verified event
     pb = playbooks.playbook_for(decline_code)
     fe = FailureEvent(
         id=event_id, merchant_id=merchant_id, gateway=gateway,
@@ -82,7 +85,8 @@ def hydrate():
             customer_name=row["customer_name"], customer_phone=row["customer_phone"],
             amount=row["amount"], decline_code=row["decline_code"], mandate_id=row["mandate_id"],
             playbook=row["playbook"], retries_due=list(row["retries_due"]),
-            retries_done=row["retries_done"], recovered=row["recovered"]))
+            retries_done=row["retries_done"], recovered=row["recovered"],
+            status=(row["status"] if "status" in row.keys() else "failed") or "failed"))
 
 def run_scheduler(now: float | None = None) -> int:
     """Process retries that are due. In production this is a Redis-backed worker."""
@@ -101,6 +105,36 @@ def run_scheduler(now: float | None = None) -> int:
             send_nudge(fe, link_override=f"https://pay.example/retry/{fe.id}")
             fired += len(due)
     return fired
+
+VERIFIED_STATUSES = {"pending", "failed", "succeeded", "refunded", "disputed",
+                     "expired", "cancelled"}
+
+
+def set_payment_status(event_id: str, status: str, *, verified: bool = False) -> dict:
+    """Record a payment lifecycle status on a recovery case.
+
+    'succeeded' is accepted only when verified (payment.captured webhook,
+    verified checkout signature, or owner confirmation). A pending webhook or
+    a bare API accept never settles a payment. A verified success is final:
+    nothing may override it afterwards, and it stops all follow-ups.
+    """
+    row = db.get_event(event_id)
+    if not row:
+        return {"ok": False, "reason": "unknown event"}
+    if status not in VERIFIED_STATUSES:
+        return {"ok": False, "reason": "unknown status: " + str(status)}
+    if status == "succeeded" and not verified:
+        return {"ok": False, "reason": "unverified: accepted or pending is not a settled payment"}
+    if (row["status"] or "failed") == "succeeded" and status != "succeeded":
+        return {"ok": False, "reason": "verified payment status cannot be overridden"}
+    db.set_event_status(event_id, status)
+    for fe in EVENTS:
+        if fe.id == event_id:
+            fe.status = status
+    if status == "succeeded":
+        mark_recovered(event_id)
+    return {"ok": True, "event_id": event_id, "status": status}
+
 
 def mark_recovered(payment_id: str):
     for fe in EVENTS:
