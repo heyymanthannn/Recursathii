@@ -7,7 +7,12 @@ and uploads to Supabase Storage. Keeps the newest BACKUP_KEEP versions off-box.
 Credentials come only from environment variables and never live in the repo:
 SUPABASE_URL, SUPABASE_SERVICE_KEY, BACKUP_BUCKET, BACKUP_ENC_KEY.
 """
-import gzip, os, sqlite3, tempfile, time
+import gzip, json, os, sqlite3, tempfile, time
+
+try:
+    from app import pgcompat
+except ImportError:
+    import pgcompat
 import httpx
 from . import db
 
@@ -26,6 +31,13 @@ def _fernet():
 
 
 def snapshot_gz() -> bytes:
+    """Consistent snapshot of the live database.
+
+    SQLite: online backup API. PostgreSQL: every table read inside one
+    repeatable-read transaction, dumped as gzipped JSON.
+    """
+    if pgcompat.is_pg():
+        return _snapshot_gz_pg()
     """Consistent snapshot of the live SQLite db via the online backup API."""
     tmp = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
     tmp.close()
@@ -102,3 +114,49 @@ def run_once(tag: str = "sched") -> str:
         return f"ok: {name} ({len(enc)} bytes encrypted, {len(gz)} bytes gzipped, {removed} pruned)"
     except Exception as e:
         return f"error: {type(e).__name__}: {e}"
+
+def _snapshot_gz_pg() -> bytes:
+    c = pgcompat.conn()
+    try:
+        c.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+        tables = [r["table_name"] for r in c.execute(
+            "SELECT table_name FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_type='BASE TABLE' ORDER BY table_name").fetchall()]
+        data = {"format": "recursaathi-pg-dump-1", "tables": {}}
+        for t in tables:
+            data["tables"][t] = [dict(r) for r in c.execute('SELECT * FROM "%s"' % t).fetchall()]
+    finally:
+        c.rollback(); c.close()
+    return gzip.compress(json.dumps(data).encode())
+
+
+def restore_pg(gz_bytes: bytes) -> dict:
+    """Restore a PG snapshot produced by _snapshot_gz_pg into the configured PG database.
+
+    Wipes and reloads every table it contains; caller must target a disposable
+    database. Returns per-table restored row counts.
+    """
+    payload = json.loads(gzip.decompress(gz_bytes))
+    assert payload.get("format") == "recursaathi-pg-dump-1", "unknown snapshot format"
+    from app import models
+    models.init()
+    c = pgcompat.conn()
+    counts = {}
+    try:
+        c.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+        for t, rows in payload["tables"].items():
+            if t == "schema_migrations":
+                continue
+            c.execute('DELETE FROM "%s"' % t)
+            for r in rows:
+                cols = list(r.keys())
+                c.execute('INSERT INTO "%s" (%s) VALUES (%s)' % (
+                    t, ", ".join(cols), ", ".join(["?"] * len(cols))),
+                    [r[k] for k in cols])
+            counts[t] = len(rows)
+        c.commit()
+    except Exception:
+        c.rollback(); raise
+    finally:
+        c.close()
+    return counts

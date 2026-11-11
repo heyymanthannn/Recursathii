@@ -1,5 +1,15 @@
-"""RecurSaathi platform data layer (stdlib sqlite3, swap PAYRECOVERY_DB for Postgres later)."""
+"""RecurSaathi platform data layer.
+
+Dual-driver: PAYRECOVERY_DB holding a postgres:// URL routes every query to
+PostgreSQL through app.pgcompat (TLS enforced, translated SQLite dialect); any
+other value keeps the stdlib SQLite backend for local development.
+"""
 import os, sqlite3, threading, time, uuid
+
+try:
+    from app import pgcompat
+except ImportError:  # script context
+    import pgcompat
 
 # serializes cap-check + queue-insert so concurrent jobs cannot bypass frequency caps
 QUEUE_LOCK = threading.Lock()
@@ -7,6 +17,8 @@ QUEUE_LOCK = threading.Lock()
 DB_PATH = os.environ.get("PAYRECOVERY_DB", "data/payrecovery.db")
 
 def conn():
+    if pgcompat.is_pg():
+        return pgcompat.conn()
     os.makedirs(os.path.dirname(DB_PATH) or ".", exist_ok=True)
     c = sqlite3.connect(DB_PATH)
     c.row_factory = sqlite3.Row
@@ -162,6 +174,11 @@ def init():
           paused INTEGER DEFAULT 0, created REAL
         );
         """)
+
+        c.execute("""CREATE TABLE IF NOT EXISTS schema_migrations(
+          version TEXT PRIMARY KEY, applied_at REAL)""")
+        c.execute("INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES('0001-phase7.7-baseline', ?)",
+                  (time.time(),))
 
 def q(sql, args=()):
     with conn() as c:

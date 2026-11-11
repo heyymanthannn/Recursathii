@@ -7,9 +7,16 @@ touching the engine.
 """
 import os, sqlite3, time
 
+try:
+    from app import pgcompat
+except ImportError:
+    import pgcompat
+
 DB_PATH = os.environ.get("PAYRECOVERY_DB", "data/payrecovery.db")
 
-def _conn() -> sqlite3.Connection:
+def _conn():
+    if pgcompat.is_pg():
+        return pgcompat.conn()
     os.makedirs(os.path.dirname(DB_PATH) or ".", exist_ok=True)
     c = sqlite3.connect(DB_PATH)
     c.row_factory = sqlite3.Row
