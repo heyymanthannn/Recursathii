@@ -20,6 +20,7 @@ def check(name, ok, extra=""):
 
 OID = models.create_user("r3owner@example.com", "x", "R3 Owner", "R3 Co", "+919000000010", role="owner")["id"]
 BID = models.create_user("r3other@example.com", "x", "R3 Other", "Other Co", "+919000000011", role="owner")["id"]
+permissions.set_config(OID, {"automations_enabled": True})
 owner = models.get_user(OID)
 now = time.time()
 
@@ -92,7 +93,7 @@ camp2 = reactivation.create_campaign(owner, "all dormant", "all", ["email"], "hi
 camp2 = reactivation.approve_campaign(owner, camp2["id"], approved_by="owner")
 reactivation.record_response(OID, camp2["id"], cu2["id"], "opt_out")
 check("opt-out response recorded", models.set_customer_optout and models.get_customer(cu2["id"])["email_opt_out"] == 1)
-permissions.set_config(OID, {"max_per_customer_per_day": 50})
+permissions.set_config(OID, {"automations_enabled": True, "max_per_customer_per_day": 50})
 c5 = reactivation.run_campaign(owner, camp2)
 check("opted-out customer got no message", models.one(
     "SELECT id FROM outbox WHERE dedupe=? AND channel='email'", (f"react:{camp2['id']}:{cu2['id']}:email",)) is None)

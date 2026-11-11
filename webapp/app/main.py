@@ -1013,3 +1013,91 @@ async def intelligence_assistant(request: Request, x_api_key: str | None = Heade
     u = _control_owner(x_api_key)
     d = await request.json()
     return {"answer": _intelligence.assistant_answer(u["id"], str(d.get("question") or "")[:500])}
+
+
+# ---- hybrid automation architecture, Phase 5: controlled pilot readiness ----
+from . import pilot as _pilot
+
+
+@app.get("/api/pilot/activation")
+async def pilot_activation_get(x_api_key: str | None = Header(default=None)):
+    """What is on for this business: automation state, authorized channels,
+    quiet hours and caps. This is the 'display permissions and active channels'
+    view the pilot needs."""
+    u = _control_owner(x_api_key)
+    return _pilot.get_activation(u["id"])
+
+
+@app.post("/api/pilot/activation")
+async def pilot_activation(request: Request, x_api_key: str | None = Header(default=None)):
+    """Owner-controlled activation. automations stay OFF for every new
+    business until this is called with confirm='ACTIVATE'."""
+    u = _control_owner(x_api_key)
+    d = await request.json()
+    try:
+        if d.get("enabled"):
+            return {"ok": True, "activation": _pilot.activate(u["id"], str(d.get("confirm") or ""))}
+        return {"ok": True, "activation": _pilot.deactivate(u["id"])}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/api/pilot/consents")
+async def pilot_consent_add(request: Request, x_api_key: str | None = Header(default=None)):
+    u = _control_owner(x_api_key)
+    d = await request.json()
+    try:
+        row = _pilot.record_consent(u["id"], str(d.get("subject") or ""),
+                                    str(d.get("kind") or ""),
+                                    str(d.get("channel") or ""),
+                                    str(d.get("granted_by") or ""),
+                                    str(d.get("evidence") or ""))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"ok": True, "consent": row}
+
+
+@app.get("/api/pilot/consents")
+async def pilot_consents(x_api_key: str | None = Header(default=None)):
+    u = _control_owner(x_api_key)
+    return {"consents": _pilot.list_consents(u["id"])}
+
+
+@app.post("/api/pilot/import")
+async def pilot_import(request: Request, x_api_key: str | None = Header(default=None)):
+    """Validated, deduplicating import. Payments arrive as status 'imported'
+    and NEVER count as recovered revenue until reconciliation confirms them."""
+    u = _control_owner(x_api_key)
+    d = await request.json()
+    try:
+        return {"ok": True, "result": _pilot.import_data(u["id"], str(d.get("kind") or ""),
+                                                         d.get("rows") or [])}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/api/pilot/reconcile")
+async def pilot_reconcile(request: Request, x_api_key: str | None = Header(default=None)):
+    u = _control_owner(x_api_key)
+    d = await request.json()
+    r = _pilot.reconcile_payment(u["id"], str(d.get("payment_id") or ""),
+                                 bool(d.get("verified")), str(d.get("reference") or ""))
+    if not r:
+        raise HTTPException(status_code=404, detail="payment not found")
+    return r
+
+
+@app.get("/pilot/metrics")
+async def pilot_metrics(x_admin_token: str = Header(default="")):
+    """Operator-level pilot monitoring across every business. Admin token
+    only, never a business API key: tenant isolation is not weakened."""
+    if not hmac.compare_digest(x_admin_token, config.ADMIN_TOKEN):
+        raise HTTPException(status_code=401, detail="invalid admin token")
+    return _pilot.pilot_metrics()
+
+
+@app.get("/pilot/backup-check")
+async def pilot_backup(x_admin_token: str = Header(default="")):
+    if not hmac.compare_digest(x_admin_token, config.ADMIN_TOKEN):
+        raise HTTPException(status_code=401, detail="invalid admin token")
+    return _pilot.backup_check()

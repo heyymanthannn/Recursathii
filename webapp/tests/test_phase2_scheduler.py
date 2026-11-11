@@ -26,6 +26,7 @@ def record(name, ok, detail=""):
 u = models.create_user("p2owner@example.com", "x", "P2 Owner", "P2 Gym", "+919000000000", role="owner")
 OID = u["id"]
 KEY = models.create_api_key(OID, "test")
+permissions.set_config(OID, {"automations_enabled": True})
 H = {"X-API-Key": KEY}
 
 # ---- 1. default sequence matches the spec example ----
@@ -75,7 +76,7 @@ record("day2 waits until day 2", int(d2["n"]) == 0)
 
 # ---- 5. a 6-day-overdue invoice gets day0+day2+day5, not day7 ----
 # (tests compress several days into one run, so lift the per-customer daily cap)
-permissions.set_config(OID, {"max_per_customer_per_day": 20, "max_per_customer_week": 100, "max_per_channel_per_day": {"email": 100, "whatsapp": 100}})
+permissions.set_config(OID, {"automations_enabled": True, "max_per_customer_per_day": 20, "max_per_customer_week": 100, "max_per_channel_per_day": {"email": 100, "whatsapp": 100}})
 import datetime
 d6 = (datetime.date.today() - datetime.timedelta(days=6)).isoformat()
 inv6 = models.create_invoice(OID, cu["id"], "INV-6", 250000, "plan", d6)

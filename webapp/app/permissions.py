@@ -83,6 +83,9 @@ DEFAULTS = {
     "ai_variation": False,       # owner authorized AI wording variations of approved templates
     "reactivation_max_per_run": 25,
     "emergency_paused": False,   # global emergency pause: holds every customer send
+    # Phase 5 pilot safety: customer-contacting automations are OFF for every
+    # business until the owner explicitly activates them (pilot.activate).
+    "automations_enabled": False,
 }
 
 
@@ -233,7 +236,10 @@ def resolve(owner_id, action, *, channel="", customer=None, ts=None) -> dict:
         out.update(decision="needs_approval",
                    reason="level C: owner approval required before this runs")
     else:  # LEVEL_B
-        if cfg.get("emergency_paused"):
+        if not cfg.get("automations_enabled"):
+            out.update(decision="paused",
+                       reason="automations are off until the owner activates them")
+        elif cfg.get("emergency_paused"):
             out.update(decision="paused", reason="owner emergency pause is active")
         elif _opted_out(customer, channel):
             out.update(decision="denied", reason="customer opted out of this channel")

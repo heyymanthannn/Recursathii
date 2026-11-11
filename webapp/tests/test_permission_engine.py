@@ -25,6 +25,7 @@ def record(name, ok, detail=""):
 
 _u = models.create_user("permowner@example.com", "x", "Perm Owner", "Perm Coaching", "+919000000000", role="owner")
 OWNER = _u["id"]
+permissions.set_config(OWNER, {"automations_enabled": True})
 
 # ---- 1. Level A is fully automatic ----
 r = permissions.resolve(OWNER, "generate_reminder_draft")
@@ -64,6 +65,7 @@ from datetime import datetime as _dt
 from zoneinfo import ZoneInfo as _ZI
 h = _dt.now(_ZI("Asia/Kolkata")).hour  # a window starting this hour contains 'now' in IST
 window = f"{h:02d}:00"
+permissions.set_config(OWNER, {"automations_enabled": True})
 permissions.set_config(OWNER, {"quiet_hours": {"enabled": True, "start": window,
                                                "end": f"{(h+1)%24:02d}:59", "tz": "Asia/Kolkata"}})
 r = permissions.resolve(OWNER, "send_routine_whatsapp_reminder", channel="whatsapp", customer=cu)

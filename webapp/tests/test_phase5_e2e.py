@@ -54,7 +54,7 @@ bad = client.post("/webhooks/razorpay", content=json.dumps(payload).encode(),
 record("e2e: forged signature rejected", bad.status_code == 400, str(bad.status_code))
 
 # ---------- 3. scheduler runs the sequence (no provider -> no fake send) ----------
-permissions.set_config(OID, {"quiet_hours": {"enabled": False},
+permissions.set_config(OID, {"automations_enabled": True, "quiet_hours": {"enabled": False},
                               "max_per_customer_per_day": 20, "max_per_customer_week": 100,
                               "max_per_channel_per_day": {"email": 100, "whatsapp": 100}})
 owner = models.get_user(OID)
