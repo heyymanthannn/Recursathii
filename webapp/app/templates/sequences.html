@@ -1,0 +1,30 @@
+{% extends "base.html" %}{% block title %}Follow-up Sequences | RecurSaathi{% endblock %}{% block content %}
+<h1>Follow-up Sequences</h1>
+<p class="sub">How reminder follow-ups escalate after a payment fails or an invoice goes overdue. Each step fires on its day offset; steps run in order.</p>
+{% if msg %}<div class="badge-note" style="margin:10px 0">{{ msg }}</div>{% endif %}
+<div class="card">
+<form method="post" action="/sequences/save">
+<input type="hidden" name="n" value="{{ n }}">
+<table>
+<tr><th>Step id</th><th>Day offset</th><th>Email</th><th>WhatsApp</th><th>Escalate</th><th>Owner approval</th><th>Max attempts</th></tr>
+{% for r in rows %}
+<tr>
+  <td><input name="sid_{{ loop.index0 }}" value="{{ r.id }}" maxlength="24" style="width:110px"></td>
+  <td><input name="off_{{ loop.index0 }}" type="number" min="0" max="90" value="{{ r.offset }}" style="width:80px"></td>
+  <td style="text-align:center"><input type="checkbox" name="ch_{{ loop.index0 }}_email" {% if r.email %}checked{% endif %}></td>
+  <td style="text-align:center"><input type="checkbox" name="ch_{{ loop.index0 }}_whatsapp" {% if r.whatsapp %}checked{% endif %}></td>
+  <td style="text-align:center"><input type="checkbox" name="esc_{{ loop.index0 }}" {% if r.escalate %}checked{% endif %}></td>
+  <td style="text-align:center"><input type="checkbox" name="appr_{{ loop.index0 }}" {% if r.approval %}checked{% endif %}></td>
+  <td><input name="ma_{{ loop.index0 }}" type="number" min="0" max="10" value="{{ r.max_attempts }}" style="width:80px"></td>
+</tr>
+{% endfor %}
+</table>
+<div class="badge-note">Day 0 fires the day the failure or due date is detected. Offsets must not decrease. Owner approval holds that step for your one-tap sign-off in the Approval Centre. Max attempts 0 means no cap.</div>
+<div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+  <button class="btn" type="submit">Save sequence</button>
+  <a class="btn secondary" href="/sequences?rows={{ [n+1,10]|min }}">Add step</a>
+  {% if rows|length > 1 %}<a class="btn secondary" href="/sequences?rows={{ rows|length - 1 }}">Remove last</a>{% endif %}
+</div>
+</form>
+</div>
+{% endblock %}

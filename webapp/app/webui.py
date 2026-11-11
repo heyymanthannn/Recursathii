@@ -93,6 +93,8 @@ def guard(request):
 # ---------- auth pages ----------
 @router.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
+    if auth.current_user(request):
+        return RedirectResponse("/dashboard", status_code=303)
     return render("login.html", request, error="")
 
 @router.post("/login")
@@ -182,8 +184,9 @@ async def signup(request: Request, name: str = Form(""), business: str = Form(""
     _t = time.time()
     models.update_user(u["id"], trial_started_at=_t,
                        trial_ends=_t + 14 * 86400)  # trial starts at signup, regardless of plan
+    # Phase 7: new businesses start with every customer-contacting automation OFF
     for k in models.AUTO_KEYS:
-        models.set_automation(u["id"], k, True)
+        models.set_automation(u["id"], k, False)
         d = auto.DEFAULTS[k]
         if "email_subject" in d:  # due_call is calls-only: no email template
             models.set_template(u["id"], k, d["email_subject"], d["email_body"])
@@ -1576,3 +1579,102 @@ async def receipt_page(request: Request, pid: str):
     if not pay:
         return RedirectResponse("/billing", status_code=303)
     return render("receipt.html", request, user=user, pay=pay, inr=inr)
+
+
+# ---------- Phase 7: follow-up sequences module ----------
+@router.get("/sequences", response_class=HTMLResponse)
+async def sequences_page(request: Request, rows: int = 0):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    from . import sequences as _seq
+    steps = _seq.get_sequence(user["id"])
+    n = max(len(steps), rows if 0 < rows <= 10 else 0)
+    rows_out = []
+    for i in range(n):
+        s = steps[i] if i < len(steps) else {}
+        rows_out.append({
+            "id": s.get("id", f"step{i+1}"),
+            "offset": s.get("offset", i * 7),
+            "email": "email" in (s.get("channels") or ["email", "whatsapp"]),
+            "whatsapp": "whatsapp" in (s.get("channels") or ["email", "whatsapp"]),
+            "escalate": bool(s.get("escalate")),
+            "approval": bool(s.get("approval_required")),
+            "max_attempts": s.get("max_attempts", 0),
+        })
+    return render("sequences.html", request, user=user, tab="sequences",
+                  rows=rows_out, n=n, msg=request.query_params.get("msg", ""))
+
+@router.post("/sequences/save")
+async def sequences_save(request: Request):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    from . import sequences as _seq
+    form = await request.form()
+    try:
+        n = int(form.get("n") or "0")
+    except Exception:
+        n = 0
+    n = max(1, min(n, 10))
+    steps = []
+    for i in range(n):
+        sid = (form.get(f"sid_{i}") or "").strip()
+        if not sid:
+            continue
+        try:
+            off = int(form.get(f"off_{i}") or "0")
+        except Exception:
+            off = 0
+        chans = [c for c in ("email", "whatsapp") if form.get(f"ch_{i}_{c}")]
+        step = {"id": sid, "offset": off, "channels": chans or ["email", "whatsapp"]}
+        if form.get(f"esc_{i}"):
+            step["escalate"] = True
+        if form.get(f"appr_{i}"):
+            step["approval_required"] = True
+        try:
+            ma = int(form.get(f"ma_{i}") or "0")
+        except Exception:
+            ma = 0
+        if ma:
+            step["max_attempts"] = ma
+        steps.append(step)
+    if user.get("read_only"):
+        return RedirectResponse("/sequences?msg=Subscription+expired+-+read-only", status_code=303)
+    if user["role"] != "owner":
+        return RedirectResponse("/sequences?msg=Only+the+owner+can+edit+sequences", status_code=303)
+    try:
+        saved = _seq.set_sequence(user["id"], steps)
+        models.log_audit(user["id"], "sequence_saved_ui", f"{len(saved)} steps")
+        return RedirectResponse("/sequences?msg=Sequence+saved", status_code=303)
+    except ValueError as e:
+        steps_now = _seq.get_sequence(user["id"])
+        n2 = max(len(steps_now), n)
+        rows_out = []
+        for i in range(n2):
+            s = steps_now[i] if i < len(steps_now) else {}
+            rows_out.append({
+                "id": s.get("id", f"step{i+1}"),
+                "offset": s.get("offset", i * 7),
+                "email": "email" in (s.get("channels") or ["email", "whatsapp"]),
+                "whatsapp": "whatsapp" in (s.get("channels") or ["email", "whatsapp"]),
+                "escalate": bool(s.get("escalate")),
+                "approval": bool(s.get("approval_required")),
+                "max_attempts": s.get("max_attempts", 0),
+            })
+        return render("sequences.html", request, user=user, tab="sequences",
+                      rows=rows_out, n=n2, msg=f"Could not save: {e}")
+
+# ---------- Phase 7: help & support module ----------
+@router.get("/help", response_class=HTMLResponse)
+async def help_page(request: Request):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    from . import providers as _providers
+    channels = []
+    for ch in ("email", "whatsapp"):
+        cfg = _providers.masked_provider_config(user["id"], ch)
+        channels.append({"channel": ch, "connected": bool(cfg)})
+    return render("help.html", request, user=user, tab="help", channels=channels,
+                  msg=request.query_params.get("msg", ""))

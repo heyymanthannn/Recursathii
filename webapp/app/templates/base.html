@@ -22,22 +22,24 @@
   <nav class="snav">
     <a href="/dashboard" class="{{ 'on' if active_tab=='dashboard' }}"><span class="msym">dashboard</span><span class="navtext">Dashboard</span></a>
     <a href="/assistant" class="{{ 'on' if active_tab=='assistant' }}"><span class="msym">auto_awesome</span><span class="navtext">AI Assistant</span></a>
-    <a href="/radar" class="{{ 'on' if active_tab=='radar' }}"><span class="msym">radar</span><span class="navtext">Recovery Radar</span></a>
+    <a href="/radar" class="{{ 'on' if active_tab=='radar' }}"><span class="msym">radar</span><span class="navtext">Payment Recovery</span></a>
     <a href="/customers" class="{{ 'on' if active_tab=='customers' }}"><span class="msym">group</span><span class="navtext">Customers</span></a>
     <a href="/invoices" class="{{ 'on' if active_tab=='invoices' }}"><span class="msym">receipt_long</span><span class="navtext">Invoices</span></a>
     <a href="/automations" class="{{ 'on' if active_tab=='automations' }}"><span class="msym">bolt</span><span class="navtext">Automations</span></a>
+    <a href="/sequences" class="{{ 'on' if active_tab=='sequences' }}"><span class="msym">format_list_numbered</span><span class="navtext">Follow-up Sequences</span></a>
     <a href="/activity" class="{{ 'on' if active_tab=='activity' }}"><span class="msym">history</span><span class="navtext">Activity</span></a>
-    {% if user and user.get('automation_mode') == 'approval' %}<a href="/approvals" class="{{ 'on' if active_tab=='approvals' }}"><span class="msym">how_to_reg</span><span class="navtext">Approvals</span></a>{% endif %}
+    {% if user and user.get('automation_mode') == 'approval' %}<a href="/approvals" class="{{ 'on' if active_tab=='approvals' }}"><span class="msym">how_to_reg</span><span class="navtext">Approval Centre</span></a>{% endif %}
     <a href="/payments" class="{{ 'on' if active_tab=='payments' }}"><span class="msym">payments</span><span class="navtext">Payments</span></a>
-    <a href="/campaigns" class="{{ 'on' if active_tab=='campaigns' }}"><span class="msym">campaign</span><span class="navtext">Campaigns</span></a>
-    <a href="/analytics" class="{{ 'on' if active_tab=='analytics' }}"><span class="msym">analytics</span><span class="navtext">Analytics</span></a>
+    <a href="/campaigns" class="{{ 'on' if active_tab=='campaigns' }}"><span class="msym">campaign</span><span class="navtext">AI Customer Reactivation</span></a>
+    <a href="/analytics" class="{{ 'on' if active_tab=='analytics' }}"><span class="msym">analytics</span><span class="navtext">Revenue Intelligence</span></a>
     {% if user and 'multi_branch' in user.get('features', []) %}<a href="/branches" class="{{ 'on' if active_tab=='branches' }}"><span class="msym">account_tree</span><span class="navtext">Branches</span></a>{% endif %}
     {% if user and 'custom_rules' in user.get('features', []) %}<a href="/rules" class="{{ 'on' if active_tab=='rules' }}"><span class="msym">tune</span><span class="navtext">Custom Rules</span></a>{% endif %}
-    {% if user and 'custom_reports' in user.get('features', []) %}<a href="/reports" class="{{ 'on' if active_tab=='reports' }}"><span class="msym">description</span><span class="navtext">Reports</span></a>{% endif %}
+    {% if user and 'custom_reports' in user.get('features', []) %}<a href="/reports" class="{{ 'on' if active_tab=='reports' }}"><span class="msym">description</span><span class="navtext">Reports &amp; Analytics</span></a>{% endif %}
     <a href="/integrations" class="{{ 'on' if active_tab=='integrations' }}"><span class="msym">extension</span><span class="navtext">Integrations</span></a>
-    <a href="/billing" class="{{ 'on' if active_tab=='subscription' }}"><span class="msym">card_membership</span><span class="navtext">Subscription</span></a>
-    <a href="/settings" class="{{ 'on' if active_tab=='settings' }}"><span class="msym">settings</span><span class="navtext">Settings</span></a>
-    {% if user and user.role == 'owner' %}<a href="/team" class="{{ 'on' if active_tab=='team' }}"><span class="msym">groups</span><span class="navtext">Team</span></a>{% endif %}
+    <a href="/billing" class="{{ 'on' if active_tab=='subscription' }}"><span class="msym">card_membership</span><span class="navtext">Subscription &amp; Billing</span></a>
+    <a href="/settings" class="{{ 'on' if active_tab=='settings' }}"><span class="msym">settings</span><span class="navtext">Business Settings</span></a>
+    <a href="/help" class="{{ 'on' if active_tab=='help' }}"><span class="msym">help</span><span class="navtext">Help &amp; Support</span></a>
+    {% if user and user.role == 'owner' %}<a href="/team" class="{{ 'on' if active_tab=='team' }}"><span class="msym">groups</span><span class="navtext">Team &amp; Staff</span></a>{% endif %}
   </nav>
   <div class="sfoot">
     <div class="avatar">{{ user.business[:1]|upper }}</div>

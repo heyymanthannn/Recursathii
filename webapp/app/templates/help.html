@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% block title %}Help & Support | RecurSaathi{% endblock %}{% block content %}
+<h1>Help &amp; Support</h1>
+<p class="sub">Guides, channel status and a direct line to the team.</p>
+<div class="card">
+<h2 style="margin-top:0">Getting started</h2>
+<ul>
+<li><a href="/guide" target="_blank">Product guide</a> — how recovery, reactivation and automations work.</li>
+<li><a href="/automations">Automation Centre</a> — control what runs automatically and what waits for your approval.</li>
+<li><a href="/integrations">Integrations</a> — connect Razorpay, email and WhatsApp channels.</li>
+<li><a href="/settings">Business Settings</a> — profile, sending channels, API keys and data export.</li>
+</ul>
+<h2>Channel status</h2>
+<table>
+<tr><th>Channel</th><th>Status</th></tr>
+{% for c in channels %}<tr><td style="text-transform:capitalize">{{ c.channel }}</td><td><span class="pill {{ 'sent' if c.connected else 'skipped' }}">{{ 'connected' if c.connected else 'not connected' }}</span></td></tr>{% endfor %}
+</table>
+<h2>Message support</h2>
+<form method="post" action="/support" class="stack">
+  <input name="name" placeholder="Your name" value="{{ user.name or '' }}" required>
+  <input name="email" type="email" placeholder="Your email" value="{{ user.email or '' }}" required>
+  <textarea name="message" rows="4" placeholder="What can we help with?" required></textarea>
+  <button class="btn" type="submit">Send to support</button>
+</form>
+</div>
+{% endblock %}
