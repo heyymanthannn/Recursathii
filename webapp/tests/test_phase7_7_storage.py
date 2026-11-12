@@ -225,5 +225,27 @@ try:
 except Exception as e:
     check("app on PG: boots and serves", False, f"{type(e).__name__}: {e}")
 
+
+# ---- I. float precision on every connection (phase 7.8.1 regression guard) ----
+# Through a transaction pooler the extra_float_digits startup parameter is
+# dropped, so float8 timestamps came back shortest-15-digit and row digests
+# mismatched. The driver must restore full precision per session.
+try:
+    from app import pgcompat as _pg
+    _cc = _pg.conn()
+    _efd = _cc.execute("SHOW extra_float_digits").fetchone()
+    check("pg driver: connection forces full float precision",
+          _efd is not None and str(_efd[0]) == "3", f"extra_float_digits={_efd}")
+    _stamp = 1794505235.7981179  # the exact value that first mismatched
+    _cc.execute('INSERT INTO activities(id, owner_id, kind, message, created) '
+                'VALUES(%s,%s,%s,%s,%s)', ("float-precision-guard", "x", "test", "guard row", _stamp))
+    _back = _cc.execute('SELECT created FROM activities WHERE id=%s', ("float-precision-guard",)).fetchone()[0]
+    check("pg driver: float8 survives the round trip bit-exact",
+          _back == _stamp and _back.hex() == _stamp.hex(), f"{_stamp!r} came back {_back!r}")
+    _cc.execute('DELETE FROM activities WHERE id=%s', ("float-precision-guard",))
+    _cc.commit(); _cc.close()
+except Exception as e:
+    check("pg driver: float precision guard ran", False, f"{type(e).__name__}: {e}")
+
 print(f"SUMMARY: {len(PASS)}/{len(PASS) + len(FAIL)} passed")
 sys.exit(1 if FAIL else 0)

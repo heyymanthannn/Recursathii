@@ -125,7 +125,15 @@ def _connect():
     last = None
     for attempt in range(4):
         try:
-            return psycopg.connect(url, autocommit=False, connect_timeout=10)
+            c = psycopg.connect(url, autocommit=False, connect_timeout=10)
+            # Startup parameters like extra_float_digits do not survive a
+            # transaction pooler (Supavisor/PgBouncer) unless it is configured
+            # to forward them, so float8 values come back as shortest-15-digit
+            # text and lose the last digits of fractional-second timestamps.
+            # Setting it here, per session, restores full round-trip precision.
+            with c.cursor() as cur:
+                cur.execute("SET extra_float_digits = 3")
+            return c
         except Exception as e:
             last = e
             time.sleep(0.4 * (attempt + 1))

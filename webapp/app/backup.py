@@ -138,8 +138,9 @@ def restore_pg(gz_bytes: bytes) -> dict:
     """
     payload = json.loads(gzip.decompress(gz_bytes))
     assert payload.get("format") == "recursaathi-pg-dump-1", "unknown snapshot format"
-    from app import models
+    from app import db, models
     models.init()
+    db.init()  # db.py tables (merchants, events, coupons, messages) are outside models.init()
     c = pgcompat.conn()
     counts = {}
     try:
