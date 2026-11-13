@@ -9,6 +9,9 @@ and no owner can touch another owner's campaigns.
 """
 import os, tempfile, time
 os.environ["PAYRECOVERY_DB"] = tempfile.mktemp(prefix="test_phase3_", suffix=".sqlite")
+import sys as _sys_clk  # noqa: E402
+_sys_clk.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import clock as _rsclock  # noqa: E402  deterministic suite clock (12:30 IST default)
 from fastapi.testclient import TestClient
 from app import main as app_main, models, permissions, reactivation
 

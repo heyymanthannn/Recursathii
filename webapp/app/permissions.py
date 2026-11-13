@@ -184,7 +184,7 @@ def in_quiet_hours(cfg, ts=None) -> bool:
 def _local_week_start(cfg) -> float:
     """Start of the current local week (Monday 00:00), for weekly caps."""
     tz = _tz_of(cfg)
-    now = datetime.now(tz)
+    now = datetime.fromtimestamp(time.time(), tz)
     monday = now - timedelta(days=now.weekday())
     import time as _t
     return _t.mktime((monday.year, monday.month, monday.day, 0, 0, 0, 0, 0, -1))
@@ -192,7 +192,7 @@ def _local_week_start(cfg) -> float:
 
 def _local_day_start(cfg) -> float:
     tz = _tz_of(cfg)
-    now = datetime.now(tz)
+    now = datetime.fromtimestamp(time.time(), tz)
     return now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
 
 

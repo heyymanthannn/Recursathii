@@ -10,6 +10,8 @@ os.environ["MANUAL_UPI_ID"] = "testpay@upi"
 os.environ.pop("RAZORPAY_KEY_ID", None)
 os.environ.pop("RAZORPAY_KEY_SECRET", None)
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+import clock as _rsclock  # deterministic suite clock (12:30 IST default; see tests/clock.py)
 
 from types import SimpleNamespace
 from app import models, engine, permissions, billing  # noqa: E402
@@ -63,7 +65,7 @@ models.ex("UPDATE customers SET email_opt_out=0 WHERE id=?", (cu["id"],))
 # ---- 6. Quiet hours defer sends ----
 from datetime import datetime as _dt
 from zoneinfo import ZoneInfo as _ZI
-h = _dt.now(_ZI("Asia/Kolkata")).hour  # a window starting this hour contains 'now' in IST
+h = _dt.fromtimestamp(time.time(), _ZI("Asia/Kolkata")).hour  # window built from the SAME clock the engine reads (deterministic)
 window = f"{h:02d}:00"
 permissions.set_config(OWNER, {"automations_enabled": True})
 permissions.set_config(OWNER, {"quiet_hours": {"enabled": True, "start": window,
@@ -73,6 +75,17 @@ record("quiet hours deferred", r["decision"] == "deferred", r["reason"])
 permissions.set_config(OWNER, {"quiet_hours": {"enabled": False}})
 r = permissions.resolve(OWNER, "send_routine_whatsapp_reminder", channel="whatsapp", customer=cu)
 record("quiet hours disabled auto", r["decision"] == "auto", r["reason"])
+
+# ---- 6b. Both clock states, deterministically (suite clock, never the wall clock) ----
+permissions.set_config(OWNER, {"quiet_hours": {"enabled": True, "start": "21:00",
+                                               "end": "08:00", "tz": "Asia/Kolkata"}})
+_rsclock.set(23, 30)
+r = permissions.resolve(OWNER, "send_routine_whatsapp_reminder", channel="whatsapp", customer=cu)
+record("quiet hours: night clock defers", r["decision"] == "deferred", r["reason"])
+_rsclock.reset()
+r = permissions.resolve(OWNER, "send_routine_whatsapp_reminder", channel="whatsapp", customer=cu)
+record("quiet hours: day clock auto", r["decision"] == "auto", r["reason"])
+permissions.set_config(OWNER, {"quiet_hours": {"enabled": False}})
 
 # ---- 7. Per-customer daily cap defers ----
 cu = models.get_customer(cu["id"])

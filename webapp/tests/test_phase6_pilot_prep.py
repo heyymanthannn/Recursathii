@@ -15,6 +15,8 @@ os.environ["PAYRECOVERY_DB"] = tempfile.mktemp(prefix="test_p6_", suffix=".sqlit
 os.environ.setdefault("MANUAL_UPI_ID", "testpay@upi")
 os.environ["RZP_WEBHOOK_SECRET"] = "pilot-webhook-secret"  # fail-closed: explicit test secret
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+import clock as _rsclock  # deterministic suite clock (12:30 IST default; see tests/clock.py)
 from zoneinfo import ZoneInfo
 from fastapi.testclient import TestClient
 from app import main as app_main, models, pilot, permissions, intelligence, sequences, automations

@@ -11,6 +11,8 @@ os.environ.pop("PROVIDER_STATUS_TOKEN", None)
 os.environ.pop("RAZORPAY_KEY_ID", None)
 os.environ.pop("RAZORPAY_KEY_SECRET", None)
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+import clock as _rsclock  # deterministic suite clock (12:30 IST default; see tests/clock.py)
 
 from fastapi.testclient import TestClient  # noqa: E402
 from app import main as app_main, models, sequences, permissions, automations  # noqa: E402
