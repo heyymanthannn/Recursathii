@@ -135,6 +135,17 @@ PLAN_FEATURES = {
                    "priority_support", "onboarding"],
 }
 
+# ---- Checkout provider priority (prepared, NOT activated) -----------------
+# New signups try providers in this order; the first one that is configured
+# wins. The default reproduces the legacy behaviour exactly: manual UPI first,
+# then Razorpay, then the YouPI sandbox. MANUAL_UPI_ID itself is untouched;
+# reordering to put Razorpay first happens only after the sandbox verification
+# battery passes, by setting CHECKOUT_PROVIDER_ORDER in the environment.
+CHECKOUT_PROVIDER_ORDER = [p.strip() for p in
+                           os.environ.get("CHECKOUT_PROVIDER_ORDER",
+                                          "manual_upi,razorpay,youpi").split(",")
+                           if p.strip()]
+
 def has_feature(plan, key):
     """Backend entitlement check: is this feature part of the plan?"""
     return key in PLAN_FEATURES.get(plan_key(plan), [])

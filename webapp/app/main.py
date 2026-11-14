@@ -173,24 +173,30 @@ async def api_signup(request: Request):
     m.name = data.get("name") or ""
     m.phone = (data.get("phone") or "").lstrip("+")
     billing._persist(m)
+    # Provider priority comes from config.CHECKOUT_PROVIDER_ORDER; the default
+    # ("manual_upi,razorpay,youpi") reproduces the legacy behaviour exactly.
     provider, url = "stub", ""
-    if config.MANUAL_UPI_ID:
-        provider, url = "manual", f"/checkout/{mid}"
-    elif _os.environ.get("RAZORPAY_KEY_ID"):
-        provider = "razorpay"
-        try:
-            url = billing.subscription_link(plan, mid)
-        except Exception:
-            provider, url = "error", ""
-    elif _os.environ.get("YOUPI_API_URL") and _os.environ.get("YOUPI_MERCHANT_ID"):
-        provider = "youpi"
-        try:
-            pay = youpi.create_payment(_os.environ["YOUPI_API_URL"], _os.environ["YOUPI_MERCHANT_ID"],
-                                       f"SAAS-{mid}", f"{PLANS[plan]['amount'] / 100:.2f}",
-                                       _os.environ.get("APP_BASE_URL", "http://localhost:8000/thanks"))
-            url = pay.get("checkoutUrl", "")
-        except Exception:
-            provider, url = "error", ""
+    for _prov in config.CHECKOUT_PROVIDER_ORDER:
+        if _prov == "manual_upi" and config.MANUAL_UPI_ID:
+            provider, url = "manual", f"/checkout/{mid}"
+            break
+        if _prov == "razorpay" and _os.environ.get("RAZORPAY_KEY_ID"):
+            provider = "razorpay"
+            try:
+                url = billing.subscription_link(plan, mid)
+            except Exception:
+                provider, url = "error", ""
+            break
+        if _prov == "youpi" and _os.environ.get("YOUPI_API_URL") and _os.environ.get("YOUPI_MERCHANT_ID"):
+            provider = "youpi"
+            try:
+                pay = youpi.create_payment(_os.environ["YOUPI_API_URL"], _os.environ["YOUPI_MERCHANT_ID"],
+                                           f"SAAS-{mid}", f"{PLANS[plan]['amount'] / 100:.2f}",
+                                           _os.environ.get("APP_BASE_URL", "http://localhost:8000/thanks"))
+                url = pay.get("checkoutUrl", "")
+            except Exception:
+                provider, url = "error", ""
+            break
     if provider in ("stub", "error"):
         url = f"/checkout/{plan}?merchant_id={mid}"
     return {"merchant_id": mid, "status": m.status, "plan": plan,
@@ -336,6 +342,50 @@ async def checkout_coupon(merchant_id: str, code: str = Form("")):
     if res.get("ok"):
         return RedirectResponse(f"/checkout/{merchant_id}?applied=1", status_code=303)
     return RedirectResponse(f"/checkout/{merchant_id}?error=invalid", status_code=303)
+
+
+@app.post("/checkout/{merchant_id}/razorpay-order")
+async def checkout_razorpay_order(merchant_id: str):
+    """Create the Razorpay order backing this merchant's subscription checkout.
+
+    The order is created and stored server-side BEFORE Checkout.js ever loads,
+    so later verification can only settle this exact binding. Money for
+    RecurSaathi subscriptions flows through the platform account only."""
+    from . import checkout as _chk, payments as _pay
+    m = billing.MERCHANTS.get(merchant_id)
+    if not m or m.status == "active":
+        raise HTTPException(status_code=404, detail="checkout not found")
+    creds = _pay.platform_creds()
+    if not creds:
+        raise HTTPException(status_code=503, detail="razorpay is not configured")
+    row = _merchant_row(merchant_id)
+    amount = int(round(_pay_amount(m.plan, row) * 100))
+    out = _chk.create_order(creds, purpose="subscription", ref=merchant_id,
+                            amount=amount, merchant_id=merchant_id,
+                            notes={"merchant_id": merchant_id, "plan": m.plan})
+    if not out.get("ok"):
+        raise HTTPException(status_code=502, detail=out.get("error") or "order creation failed")
+    return out
+
+
+@app.post("/checkout/verify")
+async def checkout_verify(request: Request):
+    """Server-side checkout verification.
+
+    Authentication here is cryptographic, not session-based: only a payment
+    Razorpay signed with our key secret over order_id|payment_id verifies, and
+    only against the server-stored order binding. The frontend success callback
+    is never trusted alone. Idempotent: replaying the same verified triple
+    returns the same verdict with no side effects."""
+    from . import checkout as _chk
+    _ip = (request.headers.get("x-forwarded-for") or request.client.host or "?").split(",")[0].strip()
+    if not rl_allow("checkout_verify:" + _ip, 30, 3600):
+        raise HTTPException(status_code=429, detail="Too many verification attempts. Try again in an hour.")
+    data = await request.json()
+    out = _chk.verify(str(data.get("order_id") or ""), str(data.get("payment_id") or ""),
+                      str(data.get("signature") or ""))
+    code = 200 if out.get("ok") else (404 if out.get("outcome") == "unknown_order" else 400)
+    return JSONResponse(status_code=code, content=out)
 
 
 @app.post("/retention/call-outcome")

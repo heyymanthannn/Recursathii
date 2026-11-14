@@ -1,7 +1,7 @@
 """Customer payment portal: public pages where customers view and pay their
 outstanding invoices without any business-owner account."""
 import time
-from fastapi import APIRouter, Request, Form
+from fastapi import APIRouter, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from . import models, payments, notify, automations as auto, config
 from .ratelimit import allow as rl_allow
@@ -61,6 +61,29 @@ async def portal_qr(request: Request, tok: str):
     buf = _io.BytesIO()
     img.save(buf, format="PNG")
     return Response(content=buf.getvalue(), media_type="image/png")
+
+@router.post("/invoice/{tok}/razorpay-order")
+async def invoice_razorpay_order(tok: str):
+    """Create the Razorpay order for paying this invoice. Money settles to the
+    invoice owner's OWN Razorpay account (never the platform's), and the
+    server-side binding is stored before Checkout.js ever loads."""
+    from . import checkout as _chk
+    inv = models.get_invoice_by_token(tok)
+    if not inv:
+        raise HTTPException(status_code=404, detail="invoice not found")
+    if inv["status"] == "paid":
+        raise HTTPException(status_code=409, detail="invoice already paid")
+    owner = models.get_user(inv["owner_id"])
+    creds = payments.owner_creds(owner) if owner else None
+    if not creds:
+        raise HTTPException(status_code=503, detail="razorpay is not configured for this business")
+    out = _chk.create_order(creds, purpose="invoice", ref=inv["token"], amount=inv["amount"],
+                            owner_id=inv["owner_id"], receipt=inv["number"],
+                            notes={"invoice_id": inv["id"]})
+    if not out.get("ok"):
+        raise HTTPException(status_code=502, detail=out.get("error") or "order creation failed")
+    return out
+
 
 @router.post("/invoice/{tok}/sent")
 async def pay_sent(request: Request, tok: str, reference: str = Form("")):

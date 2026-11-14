@@ -38,23 +38,69 @@ def _persist(m: Merchant):
                       "status": m.status, "subscription_id": m.subscription_id,
                       "created": getattr(m, "created", 0)})
 
-def subscription_link(plan: str, sub_id: str = "sub_placeholder") -> str:
-    """Real flow: create the subscription with the Razorpay SDK and return its
-    short_url checkout link. With no keys set we return a placeholder so the
-    flow can be tested end to end without live credentials."""
+_PLAN_ID_RE = __import__("re").compile(r"^plan_[A-Za-z0-9]{8,20}$")
+
+def _plan_id(plan: str) -> str:
+    """Read and validate the plan-id env var for this plan. A missing or
+    malformed id fails loudly instead of creating an unnamed subscription."""
     import os
+    env_key = PLANS[plan]["plan_id_env"]
+    pid = os.environ.get(env_key, "").strip()
+    if not pid:
+        raise ValueError(f"{env_key} is not set: create the plan in the Razorpay dashboard first")
+    if not _PLAN_ID_RE.fullmatch(pid):
+        raise ValueError(f"{env_key} does not look like a Razorpay plan id (expected plan_xxxxxxxxxx)")
+    return pid
+
+def subscription_link(plan: str, merchant_id: str = "sub_placeholder") -> str:
+    """Create (or reuse) the Razorpay subscription for a merchant and return its
+    short_url checkout link. With no keys configured we return a placeholder so
+    the sandbox flow keeps running end to end without live credentials.
+
+    With keys configured everything validates loudly: unknown plan, missing or
+    malformed plan id, or a merchant that is not onboarded and billable all
+    raise. An existing usable subscription is reused (idempotent: no duplicate
+    subscriptions per merchant); an expired or cancelled one gets a fresh
+    creation. The merchant row keeps the subscription id for that reuse."""
+    import os
+    if plan not in PLANS:
+        raise ValueError(f"unknown plan {plan}")
     key_id = os.environ.get("RAZORPAY_KEY_ID", "")
-    if key_id:
-        import razorpay  # type: ignore
-        client = razorpay.Client(auth=(key_id, os.environ["RAZORPAY_KEY_SECRET"]))
-        import os as _os
-        plan_id = _os.environ.get(PLANS[plan]["plan_id_env"], "")
-        sub = client.subscription.create({
-            "plan_id": plan_id, "total_count": 12, "customer_notify": 1,
-            "notes": {"product": "payment-recovery"},
-        })
-        return sub.get("short_url", "")
-    return f"https://rzp.io/i/checkout-{plan}-{sub_id}"
+    key_secret = os.environ.get("RAZORPAY_KEY_SECRET", "")
+    if not (key_id and key_secret):
+        return f"https://rzp.io/i/checkout-{plan}-{merchant_id}"
+    import razorpay  # type: ignore
+    if merchant_id:
+        m = MERCHANTS.get(merchant_id)
+        if m is None:
+            raise ValueError(f"unknown merchant {merchant_id}")
+        if not is_billable(merchant_id):
+            raise ValueError(f"merchant {merchant_id} is not billable (status {m.status})")
+        if m.subscription_id:
+            try:
+                client = razorpay.Client(auth=(key_id, key_secret))
+                sub = client.subscription.fetch(m.subscription_id)
+                if sub.get("status") in ("created", "authenticated", "pending", "active"):
+                    url = sub.get("short_url", "")
+                    if url:
+                        return url
+            except Exception:
+                pass  # fetch failed or subscription expired -> create fresh below
+    plan_id = _plan_id(plan)
+    client = razorpay.Client(auth=(key_id, key_secret))
+    sub = client.subscription.create({
+        "plan_id": plan_id, "total_count": 12, "customer_notify": 1,
+        "notes": {"product": "payment-recovery", "merchant_id": merchant_id},
+    })
+    url = sub.get("short_url", "")
+    if not url:
+        raise ValueError("razorpay returned no checkout short_url for the subscription")
+    if merchant_id:
+        m = MERCHANTS.get(merchant_id)
+        if m is not None and sub.get("id"):
+            m.subscription_id = sub["id"]
+            _persist(m)
+    return url
 
 def handle_billing_event(event: str, sub_entity: dict) -> dict:
     sid = sub_entity.get("id", "")
