@@ -327,6 +327,15 @@ async def customers_add(request: Request, name: str = Form(""), email: str = For
         models.log_audit(user["id"], "customer.create", name)
     return RedirectResponse("/customers", status_code=303)
 
+def _csv_safe(v):
+    """Neutralize spreadsheet formula injection: a cell a person controls that
+    starts with =, +, - or @ must not evaluate when opened in Excel/Sheets."""
+    s = str(v)
+    if s[:1] in ("=", "+", "-", "@"):
+        return "'" + s
+    return s
+
+
 @router.get("/customers/export")
 async def customers_export(request: Request):
     user = guard(request)
@@ -336,7 +345,8 @@ async def customers_export(request: Request):
     w = csv.writer(buf)
     w.writerow(["name", "email", "phone", "outstanding_paise", "paid_total_paise", "invoices", "whatsapp_opt_out", "created_at"])
     for r in models.customer_balances(user["id"]):
-        w.writerow([r["name"], r["email"], r["phone"], r["outstanding"], r["paid_total"],
+        w.writerow([_csv_safe(r["name"]), _csv_safe(r["email"]), _csv_safe(r["phone"]),
+                    r["outstanding"], r["paid_total"],
                     r["invoices"], r["wa_opt_out"], time.strftime("%Y-%m-%d %H:%M", time.localtime(r["created"]))])
     return Response(content=buf.getvalue(), media_type="text/csv",
                     headers={"Content-Disposition": "attachment; filename=customers.csv"})
@@ -721,7 +731,7 @@ async def analytics_export(request: Request, report: str = "recovery"):
             v = d.get(h, "")
             if h == "when" and v:
                 v = time.strftime("%Y-%m-%d %H:%M", time.localtime(v))
-            vals.append(str(v).replace(",", " "))
+            vals.append(_csv_safe(str(v).replace(",", " ")))
         lines.append(",".join(vals))
     if request.query_params.get("format") == "pdf":
         from . import pdfgen

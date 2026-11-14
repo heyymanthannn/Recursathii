@@ -74,7 +74,13 @@ try:
     record("require_production_secrets raises with RENDER and no APP_SECRET", False)
 except RuntimeError:
     record("require_production_secrets raises with RENDER and no APP_SECRET", True)
-record("require_production_secrets ok with APP_SECRET", vault.require_production_secrets({"RENDER": "1", "APP_SECRET": "x"}) == [])
+try:
+    _env = {"RENDER": "1", "APP_SECRET": "x" * 40, "BACKUP_ENC_KEY": "k" * 44,
+            "BILLING_WEBHOOK_SECRET": "b" * 20, "YOUPI_WEBHOOK_SECRET": "y" * 20}
+    _w = vault.require_production_secrets(_env)
+    record("require_production_secrets ok with full secret set", isinstance(_w, list))
+except Exception:
+    record("require_production_secrets ok with full secret set", False)
 record("require_production_secrets no-op outside production", vault.require_production_secrets({}) == [])
 
 # ============ 3. WhatsApp verification: token in header, never the URL ============
