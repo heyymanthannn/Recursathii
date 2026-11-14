@@ -32,6 +32,26 @@ if not getattr(_time.time, "_rs_pinned", False):
     _pinned._rs_pinned = True
     _time.time = _pinned
 
+# time.strftime/localtime read the OS clock directly, bypassing time.time.
+# Pin them to the same instant so date strings ("today") in app code agree
+# with datetime.date.today() inside tests (found Nov 14: the phase2 day-7
+# check failed one day after the pin date because strftime saw the real date).
+_real_localtime = _time.localtime
+def _pinned_localtime(secs=None):
+    return _real_localtime(_pinned() if secs is None else secs)
+if not getattr(_time.localtime, "_rs_pinned", False):
+    _pinned_localtime._rs_pinned = True
+    _time.localtime = _pinned_localtime
+
+# time.strftime() with no struct argument reads the OS clock at C level, so it
+# bypasses both time.time and time.localtime patches; wrap it too.
+_real_strftime = _time.strftime
+def _pinned_strftime(fmt, t=None):
+    return _real_strftime(fmt, _pinned_localtime() if t is None else t)
+if not getattr(_time.strftime, "_rs_pinned", False):
+    _pinned_strftime._rs_pinned = True
+    _time.strftime = _pinned_strftime
+
 
 def set(hour_ist, minute_ist=0):
     """Shift the pinned clock to the given IST time of day (rate unchanged)."""
