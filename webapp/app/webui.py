@@ -1044,6 +1044,10 @@ async def terms(request: Request):
 async def contact(request: Request):
     return render("contact.html", request)
 
+@router.get("/refund", response_class=HTMLResponse)
+async def refund_policy(request: Request):
+    return render("refund.html", request)
+
 @router.post("/contact-send")
 async def contact_send(request: Request, name: str = Form(""), email: str = Form(""), message: str = Form("")):
     if name and email and message:
