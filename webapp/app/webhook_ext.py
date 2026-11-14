@@ -1,10 +1,29 @@
 """Extends the Razorpay webhook: beyond failure ingestion, it settles invoices
-confirmed by payment links / checkout and records failure events per owner."""
+confirmed by payment links / checkout and records failure events per owner.
+
+Phase 8.3.1: captured / authorized / failed / refunded webhooks for a
+server-bound checkout order are dispatched to checkout.reconcile() first,
+which can safely complete a verification that stalled on API unavailability.
+A matched checkout order settles ONLY through that reconciliation (binding,
+amount and single-consumption enforced); the invoice-token path below keeps
+handling payments that never went through a bound checkout order."""
 from . import models, automations as auto
+from . import checkout as _checkout
+
+_CAPTURED_EVENTS = ("payment.captured", "payment_link.paid", "order.paid")
 
 def handle(payload: dict, base_url: str):
     event = payload.get("event", "")
     pay_entity = ((payload.get("payload") or {}).get("payment") or {}).get("entity") or {}
+    # Checkout-order reconciliation first: the signed webhook is a trusted
+    # server-side confirmation, but only checkout.reconcile may settle an
+    # order-bound invoice, and only on the stored binding.
+    if event in _CAPTURED_EVENTS + ("payment.failed", "payment.refunded"):
+        rc = _checkout.reconcile(pay_entity, event)
+        if rc.get("matched") and event in _CAPTURED_EVENTS:
+            # Bound order: it settles (or stays pending/failed) here and only
+            # here; the token path below would settle without the binding.
+            return {"ok": True, **rc, "via": "checkout"}
     notes = pay_entity.get("notes") or {}
     tok = notes.get("token")
     inv = models.get_invoice_by_token(tok) if tok else None

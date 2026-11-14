@@ -152,8 +152,9 @@ r = checkout.verify(out["order_id"], "pay_1", "deadbeef")
 check("wrong signature rejected", r["outcome"] == "bad_signature")
 r = checkout.verify(out["order_id"], "pay_1", _sig(out["order_id"], "pay_1", "phase83-platform-secret"))
 check("invoice order refuses platform secret (creds resolved server-side)", r["outcome"] == "bad_signature")
+_get_payment_response = {"id": "pay_1", "order_id": out["order_id"], "amount": 99900, "status": "captured"}
 r = checkout.verify(out["order_id"], "pay_1", _sig(out["order_id"], "pay_1", "owner83-secret"))
-check("valid signature verifies invoice", r["ok"] and r["outcome"] == "verified" and r["invoice"] == "INV-83A")
+check("valid signature + API confirms captured -> invoice verified", r["ok"] and r["outcome"] == "verified" and r["invoice"] == "INV-83A")
 check("invoice marked paid exactly once",
       models.get_invoice(inv["id"])["status"] == "paid"
       and len(models.q("SELECT * FROM payments WHERE invoice_id=?", (inv["id"],))) == 1)
@@ -173,8 +174,15 @@ r = checkout.verify(out2["order_id"], "pay_x", _sig(out2["order_id"], "pay_x", "
 check("reachable API contradicting payload -> mismatch", r["outcome"] == "mismatch")
 _get_payment_response = {"error": True, "status": 500, "detail": "down"}
 r = checkout.verify(out2["order_id"], "pay_x", _sig(out2["order_id"], "pay_x", "owner83-secret"))
-check("API unavailable falls back to signature verdict", r["ok"] and r["outcome"] == "verified")
-_get_payment_response = {"error": True, "status": 0, "detail": "no GET configured"}  # rest of suite: signature-only
+check("API unavailable -> pending, nothing settles (8.3.1 gate)",
+      not r["ok"] and r["outcome"] == "pending"
+      and models.get_invoice(inv_b["id"])["status"] == "pending")
+_get_payment_response = {"id": "pay_x", "order_id": out2["order_id"], "amount": 49900, "status": "captured"}
+r = checkout.verify(out2["order_id"], "pay_x", _sig(out2["order_id"], "pay_x", "owner83-secret"))
+check("pending verification completes when the API returns captured",
+      r["ok"] and r["outcome"] == "verified"
+      and models.get_invoice(inv_b["id"])["status"] == "paid")
+_get_payment_response = {"error": True, "status": 0, "detail": "no GET configured"}
 
 # credential separation + tenant isolation
 inv_c = models.create_invoice(u["id"], c1["id"], "INV-83C", 25000, "test C", "2026-11-21")
@@ -182,8 +190,9 @@ out3 = checkout.create_order({"key_id": "rzp_test_OWNER83", "key_secret": "owner
                              purpose="invoice", ref=inv_c["token"], amount=25000, owner_id=u["id"])
 r = checkout.verify(out3["order_id"], "pay_c", _sig(out3["order_id"], "pay_c", "phase83-platform-secret"))
 check("invoice order refuses platform secret", r["outcome"] == "bad_signature")
+_get_payment_response = {"id": "pay_c", "order_id": out3["order_id"], "amount": 25000, "status": "captured"}
 r = checkout.verify(out3["order_id"], "pay_c", _sig(out3["order_id"], "pay_c", "owner83-secret"))
-check("invoice order verifies with the OWNER's own secret", r["ok"] and r["outcome"] == "verified")
+check("invoice order verifies with the OWNER's own secret (API captured)", r["ok"] and r["outcome"] == "verified")
 check("isolation: only the bound invoice settled (B paid by its own order)",
       models.get_invoice(inv_b["id"])["status"] == "paid")
 inv_d = models.create_invoice(u["id"], c1["id"], "INV-83D", 15000, "test D", "2026-11-21")
@@ -204,6 +213,7 @@ out5 = checkout.create_order({"key_id": "rzp_test_PHASE8DOT3", "key_secret": "ph
                              purpose="subscription", ref="m_sub", amount=499900, merchant_id="m_sub")
 r = checkout.verify(out5["order_id"], "pay_s", _sig(out5["order_id"], "pay_s", "owner83-secret"))
 check("subscription order refuses owner secret", r["outcome"] == "bad_signature")
+_get_payment_response = {"id": "pay_s", "order_id": out5["order_id"], "amount": 499900, "status": "captured"}
 r = checkout.verify(out5["order_id"], "pay_s", _sig(out5["order_id"], "pay_s", "phase83-platform-secret"))
 audit_before = len(models.q("SELECT * FROM audit WHERE action='checkout_verified'"))
 check("subscription verify -> verified + audited", r["ok"] and r["outcome"] == "verified" and audit_before >= 1)
@@ -226,6 +236,8 @@ r2 = tc.post(f"/checkout/m_ok/razorpay-order")
 oid = r2.json()["order_id"]
 r = tc.post("/checkout/verify", json={"order_id": oid, "payment_id": "pay_e2", "signature": "bad"})
 check("verify endpoint 400 on bad signature", r.status_code == 400)
+_amt = models.one("SELECT amount FROM checkout_orders WHERE order_id=?", (oid,))["amount"]
+_get_payment_response = {"id": "pay_e2", "order_id": oid, "amount": _amt, "status": "captured"}
 r = tc.post("/checkout/verify", json={"order_id": oid, "payment_id": "pay_e2",
                                       "signature": _sig(oid, "pay_e2", "phase83-platform-secret")})
 check("verify endpoint 200 on valid signature", r.status_code == 200 and r.json()["outcome"] == "verified")
