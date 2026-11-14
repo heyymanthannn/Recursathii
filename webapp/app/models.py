@@ -600,9 +600,10 @@ def radar(owner_id):
         JOIN customers cu ON cu.id=i.customer_id
         WHERE i.owner_id=? AND i.status IN ('pending','overdue') AND i.due_date < ?
         ORDER BY i.due_date ASC""", (owner_id, today))
-    for i in overdue:
-        if i["status"] == "pending":
-            ex("UPDATE invoices SET status='overdue' WHERE id=?", (i["id"],))
+    # single batched flip: per-row UPDATEs made /radar take ~12s at 1000
+    # invoices (one connection + write per row). Same semantics, one write.
+    ex("UPDATE invoices SET status='overdue' WHERE owner_id=? AND status='pending' AND due_date < ?",
+       (owner_id, today))
     overdue = [dict(i) for i in overdue]
     for i in overdue:
         try:
