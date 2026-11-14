@@ -63,12 +63,40 @@ def _render(text, **ctx):
     return text.format_map(_D(**ctx))
 
 def _ctx(owner, invoice, customer, base_url):
+    cn = models.get_connect(owner["id"]) or {}
+    bank = ", ".join(x for x in ((cn.get("bank_name") or "").strip(),
+                                 (cn.get("bank_account_note") or "").strip()) if x)
     return {
         "customer_name": customer["name"], "business": owner["business"],
         "number": invoice["number"], "amount": f"{invoice['amount']/100:,.0f}",
         "due_date": invoice["due_date"], "pay_link": f"{base_url}/invoice/{invoice['token']}",
         "reason": "bank declined the payment",
+        "bank_details": bank,
+        "business_pay_link": (cn.get("payment_link_url") or "").strip(),
+        "promised_date": invoice.get("promised_date") or "",
     }
+
+def _anchor_date(invoice):
+    """Reminders follow the date the customer promised to pay when the
+    business recorded one, so a kept promise pauses overdue nagging instead
+    of fighting it. Falls back to the invoice due date."""
+    return (invoice.get("promised_date") or invoice.get("due_date") or "")
+
+
+def _days_to_anchor(invoice, today):
+    """Days since the anchor date (negative = before it). None when n/a."""
+    if invoice["status"] == "paid":
+        return None
+    d = _anchor_date(invoice)
+    if not d:
+        return None
+    try:
+        y, m, dd = (int(x) for x in d[:10].split("-"))
+        t0 = time.mktime((y, m, dd, 0, 0, 0, 0, 0, -1))
+    except Exception:
+        return None
+    return round((time.mktime(time.strptime(today, "%Y-%m-%d")) - t0) / 86400)
+
 
 def _days_overdue(invoice, today):
     """Days past due (0 = due today). None when not applicable."""
@@ -263,8 +291,8 @@ def run_for_owner(owner, base_url):
             models.log_activity(owner["id"], "automation",
                                 f"invoice {inv['number']} skipped: owner paused this case")
             continue
-        days = _days_overdue(inv, today)
-        if days is None or days < 0:
+        days = _days_to_anchor(inv, today)
+        if days is None:
             continue
         cu = models.get_customer(inv["customer_id"])
         if not cu:
@@ -329,7 +357,9 @@ def run_for_owner(owner, base_url):
                 if pw and pw["decision"] in ("auto", "needs_approval"):
                     if cu.get("phone") and not cu.get("wa_opt_out"):
                         o = models.queue(owner["id"], "whatsapp", cu["phone"], stage, sub, wbody,
-                                         dedupe=f"seq:{step['id']}:{inv['id']}:wa")
+                                         dedupe=f"seq:{step['id']}:{inv['id']}:wa",
+                                         params=[ctx["customer_name"], str(inv["number"]),
+                                                 ctx["amount"], ctx["pay_link"], ctx["business"]])
                         if o:
                             force = pw["decision"] == "needs_approval" or step.get("escalate") or step_force_approval
                             held = _post_queue(owner, o, counts)
@@ -354,6 +384,13 @@ def run_for_owner(owner, base_url):
             if st == "sent":
                 models.log_activity(owner["id"], "automation",
                                     f"{stage} message sent to {cu['name']} ({o['channel']}) for invoice {inv['number']}")
+    # day-14 owner review: cases the engine cannot resolve get the owner's
+    # eyes. Platform-side only (activity log, audit, platform email to the
+    # owner); never a customer message.
+    try:
+        _day14_owner_review(owner)
+    except Exception:
+        pass
     # reactivation campaigns the owner approved run as part of the daily cycle
     try:
         from . import reactivation
@@ -362,6 +399,38 @@ def run_for_owner(owner, base_url):
         pass
 
     return counts
+
+
+def _day14_owner_review(owner):
+    """Notify the business owner once per day when invoices sit 14+ days past
+    due. Reminders stop mattering at that point; only a human (a call, a new
+    promised date, or a write-off) moves them."""
+    today = time.strftime("%Y-%m-%d")
+    if models.one("SELECT id FROM audit WHERE user_id=? AND action='day14_review' AND detail=?",
+                  (owner["id"], today)):
+        return 0
+    stale = []
+    for inv in models.list_invoices(owner["id"]):
+        if inv["status"] in ("paid", "cancelled", "disputed") or inv.get("paused"):
+            continue
+        if (_days_overdue(inv, today) or -1) >= 14:
+            stale.append(inv)
+    if not stale:
+        return 0
+    models.log_audit(owner["id"], "day14_review", today)
+    names = ", ".join(i["number"] for i in stale[:10])
+    models.log_activity(owner["id"], "automation",
+                        f"{len(stale)} invoice(s) overdue 14+ days need your review: {names}")
+    u = models.get_user(owner["id"])
+    if u and u.get("email"):
+        notify.send_email(
+            u["email"], f"{len(stale)} invoice(s) overdue 14+ days: your review",
+            "These invoices are at least two weeks overdue and every automatic "
+            "reminder has already gone out. They need a human decision: a call, "
+            "a promised date, or a write-off.\n\n" + "\n".join(
+                f"- {i['number']}: Rs {i['amount']/100:,.0f} (due {i['due_date']})"
+                for i in stale[:20]), owner_id=None)
+    return len(stale)
 
 def send_confirmation(owner, invoice, customer, base_url):
     keys = models.get_automations(owner["id"])

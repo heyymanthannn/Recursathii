@@ -47,6 +47,9 @@
 <div><label>SMTP port</label><input name="smtp_port" value="{{ cn.smtp_port or 587 }}"></div>
 <div><label>SMTP username (your business email)</label><input name="smtp_user" value="{{ cn.smtp_user or '' }}"></div>
 <div><label>SMTP password / app password</label><input name="smtp_pass" type="password" placeholder="{{ 'saved, leave blank to keep' if cn.smtp_pass_enc else '' }}"></div>
+<div><label>Bank name (shown to customers who pay by transfer)</label><input name="bank_name" value="{{ cn.bank_name or '' }}" placeholder="e.g. HDFC Bank"></div>
+<div><label>Account note (never full account numbers)</label><input name="bank_account_note" value="{{ cn.bank_account_note or '' }}" placeholder="e.g. A/c ending 4821, IFSC HDFC0000123"></div>
+<div><label>Your own payment link (optional)</label><input name="payment_link_url" value="{{ cn.payment_link_url or '' }}" placeholder="https://..."></div>
 <button class="btn">Save email connection</button>
 </form>
 <form method="post" action="/settings/connect/test" class="stack" style="margin-top:10px">
@@ -60,7 +63,11 @@
 <form method="post" action="/settings/connect/wa" class="stack">
 <div><label>WhatsApp phone number ID</label><input name="wa_phone_id" value="{{ cn.wa_phone_id or '' }}" placeholder="123456789012345"></div>
 <div><label>Access token</label><input name="wa_token" type="password" placeholder="{{ 'saved, leave blank to keep' if cn.wa_token_enc else '' }}"></div>
+<div><label>App secret (for verified inbound replies)</label><input name="wa_app_secret" type="password" placeholder="{{ 'saved, leave blank to keep' if cn.wa_app_secret_enc else '' }}"></div>
 <button class="btn">Save WhatsApp connection</button>
+</form>
+<form method="post" action="/settings/connect/wa/disconnect" style="display:inline;margin-top:6px">
+<button class="btn ghost">Disconnect WhatsApp</button>
 </form>
 <form method="post" action="/settings/connect/test" class="stack" style="margin-top:10px">
 <input type="hidden" name="channel" value="whatsapp">

@@ -29,3 +29,18 @@ def decrypt(b64: str) -> str:
     raw = base64.b64decode(b64)
     nonce, ct = raw[:16], raw[16:]
     return bytes(a ^ b for a, b in zip(ct, _keystream(nonce, len(ct)))).decode()
+
+
+def require_production_secrets(env=None):
+    """Fail fast when a production-like process would boot without the secrets
+    the platform relies on. Dev and test runs are unaffected: the check only
+    engages when a production marker is present, and it never touches the
+    existing dev fallback used by the test suites."""
+    env = env if env is not None else os.environ
+    if not (env.get("RENDER") or env.get("RENDER_EXTERNAL_URL")):
+        return []
+    missing = [k for k in ("APP_SECRET",) if not (env.get(k) or "").strip()]
+    if missing:
+        raise RuntimeError("missing required secrets in production: " + ", ".join(missing)
+                           + " (set them in the Render environment before deploying)")
+    return []

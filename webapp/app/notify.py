@@ -6,7 +6,7 @@ retailer connects their channels in Settings, messages queue instead of
 pretending to send. Platform messages TO the retailer (password reset, welcome
 mail) may use the platform SMTP when it is configured.
 """
-import smtplib, os
+import smtplib, os, json
 from email.message import EmailMessage
 import httpx
 from . import models, config, vault
@@ -70,12 +70,10 @@ def _send_email_raw(to, subject, body, owner_id=None):
         return "no_channel", "SMTP not configured"
     return _smtp_send(SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, MAIL_FROM, to, subject, body)
 
-_last_provider_ref = ""   # provider message id from the most recent WhatsApp send
-
-
 def _wa_send(phone_id, token, num, body):
-    global _last_provider_ref
-    _last_provider_ref = ""
+    """Free-form WhatsApp text. Returns (status, err, provider_ref): the ref is
+    captured per send, never in a shared global (no cross-send races)."""
+    ref = ""
     try:
         with httpx.Client(timeout=15) as cl:
             r = cl.post(
@@ -85,14 +83,42 @@ def _wa_send(phone_id, token, num, body):
                       "to": num.lstrip("+"),
                       "type": "text", "text": {"preview_url": False, "body": body}})
         if r.status_code >= 400:
-            return "failed", r.text[:300]
+            return "failed", r.text[:300], ref
         try:
-            _last_provider_ref = ((r.json().get("messages") or [{}])[0].get("id") or "")
+            ref = ((r.json().get("messages") or [{}])[0].get("id") or "")
         except Exception:
-            _last_provider_ref = ""
-        return "sent", ""
+            ref = ""
+        return "sent", "", ref
     except Exception as e:
-        return "failed", str(e)[:300]
+        return "failed", str(e)[:300], ref
+
+
+def _wa_send_template(phone_id, token, num, meta_name, lang, params):
+    """Approved Meta template send (business-initiated messages outside the
+    24h window REQUIRE an approved template; free-form text is rejected).
+    Returns (status, err, provider_ref) like _wa_send."""
+    ref = ""
+    try:
+        payload = {"messaging_product": "whatsapp", "to": num.lstrip("+"),
+                   "type": "template",
+                   "template": {"name": meta_name, "language": {"code": lang or "en"},
+                                "components": [{"type": "body",
+                                                "parameters": [{"type": "text",
+                                                                "text": str(p)[:800]}
+                                                               for p in (params or [])]}]}}
+        with httpx.Client(timeout=15) as cl:
+            r = cl.post(f"https://graph.facebook.com/v20.0/{phone_id}/messages",
+                        headers={"Authorization": f"Bearer {token}"}, json=payload)
+        if r.status_code >= 400:
+            return "failed", r.text[:300], ref
+        try:
+            ref = ((r.json().get("messages") or [{}])[0].get("id") or "")
+        except Exception:
+            ref = ""
+        return "sent", "", ref
+    except Exception as e:
+        return "failed", str(e)[:300], ref
+
 
 def _send_whatsapp_raw(phone_e164, body, owner_id=None):
     num = (phone_e164 or "").replace(" ", "")
@@ -101,12 +127,12 @@ def _send_whatsapp_raw(phone_e164, body, owner_id=None):
     if owner_id:
         cn, err = _retailer(owner_id)
         if not cn:
-            return "no_channel", err
+            return "no_channel", err, ""
         if not (cn.get("wa_phone_id") and cn.get("wa_token_enc")):
-            return "no_channel", "your WhatsApp Business number is not connected yet (Settings > Your business connection)"
+            return "no_channel", "your WhatsApp Business number is not connected yet (Settings > Your business connection)", ""
         return _wa_send(cn["wa_phone_id"], vault.decrypt(cn.get("wa_token_enc") or ""), num, body)
     if not whatsapp_ready():
-        return "no_channel", "WhatsApp not configured"
+        return "no_channel", "WhatsApp not configured", ""
     return _wa_send(WHATSAPP_PHONE_ID, WHATSAPP_TOKEN, num, body)
 
 
@@ -133,7 +159,25 @@ def send_whatsapp(phone_e164, body, owner_id=None):
     res = _send_whatsapp_raw(phone_e164, body, owner_id)
     if owner_id and res[0] == "sent":
         models.bump_usage(owner_id, "messages")
-    return res
+    return res[0], res[1], res[2]
+
+
+def send_whatsapp_template(phone_e164, meta_name, lang, params, owner_id=None):
+    """Send through an APPROVED Meta template. Returns (status, err, ref)."""
+    num = (phone_e164 or "").replace(" ", "")
+    if not num.startswith("+"):
+        num = "+91" + num.lstrip("0")
+    if owner_id:
+        cn, err = _retailer(owner_id)
+        if not cn:
+            return "no_channel", err, ""
+        if not (cn.get("wa_phone_id") and cn.get("wa_token_enc")):
+            return "no_channel", "your WhatsApp Business number is not connected yet", ""
+        return _wa_send_template(cn["wa_phone_id"], vault.decrypt(cn.get("wa_token_enc") or ""),
+                                 num, meta_name, lang, params)
+    if not whatsapp_ready():
+        return "no_channel", "WhatsApp not configured", ""
+    return _wa_send_template(WHATSAPP_PHONE_ID, WHATSAPP_TOKEN, num, meta_name, lang, params)
 
 
 def verify_retailer_whatsapp(owner_id):
@@ -144,7 +188,7 @@ def verify_retailer_whatsapp(owner_id):
     try:
         with httpx.Client(timeout=15) as cl:
             r = cl.get(f"https://graph.facebook.com/v20.0/{cn['wa_phone_id']}",
-                       params={"access_token": vault.decrypt(cn["wa_token_enc"])})
+                       headers={"Authorization": "Bearer " + vault.decrypt(cn["wa_token_enc"])})
         return r.status_code < 400, "" if r.status_code < 400 else r.text[:200]
     except Exception as e:
         return False, str(e)[:200]
@@ -191,8 +235,21 @@ def deliver(outbox_row):
             models.set_outbox_status(outbox_row["id"], "skipped", "customer opted out")
             models.record_delivery_status(outbox_row["id"], "skipped", "customer opted out")
             return "skipped"
+        tmap = models.get_wa_template_map(owner_id, outbox_row["tpl"] or "") if owner_id else None
+        params = []
+        if tmap:
+            try:
+                params = [str(p) for p in json.loads(outbox_row.get("tpl_params") or "[]")]
+            except Exception:
+                params = []
         try:
-            st, err = send_whatsapp(outbox_row["dest"], outbox_row["body"], owner_id=owner_id)
+            if tmap and params:
+                st, err, ref = send_whatsapp_template(outbox_row["dest"], tmap["meta_name"],
+                                                      tmap.get("lang") or "en", params,
+                                                      owner_id=owner_id)
+            else:
+                st, err, ref = send_whatsapp(outbox_row["dest"], outbox_row["body"], owner_id=owner_id)
+                ref = ref if isinstance(ref, str) else ""
         except Exception as e:
             models.set_outbox_status(outbox_row["id"], "unknown",
                                      f"provider unreachable, no retry until it confirms: {e}")
@@ -214,8 +271,8 @@ def deliver(outbox_row):
         # when the provider itself reports back via /webhooks/provider-status.
         models.ex("UPDATE outbox SET sent=?, provider_ref=?, provider_message_id=?, "
                   "accepted_at=?, delivery_status='accepted', provider_updated=? WHERE id=?",
-                  (models.now(), _last_provider_ref, _last_provider_ref, models.now(),
+                  (models.now(), ref, ref, models.now(),
                    models.now(), outbox_row["id"]))
         models.record_delivery_status(outbox_row["id"], "accepted",
-                                      f"provider accepted, ref {_last_provider_ref}")
+                                      f"provider accepted, ref {ref}")
     return st

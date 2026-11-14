@@ -7,7 +7,8 @@ Recovery dashboard           -> /dashboard/{merchant_id} (JSON + /dashboard.html
 """
 import hmac, hashlib, os
 from fastapi import FastAPI, Request, HTTPException, Header, Form
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
+
 from . import engine, billing, playbooks, youpi, config, manual_upi, auth
 from .ratelimit import allow as rl_allow
 from .config import WEBHOOK_SECRET, BILLING_WEBHOOK_SECRET, PLANS
@@ -776,6 +777,7 @@ def _automation_worker():
 
 @app.on_event("startup")
 def _start_automation_worker():
+    _vault_p9.require_production_secrets()  # fail fast in production; dev unaffected
     def _boot_backup():
         _time.sleep(45)  # let the app finish serving first requests
         st = _backup.run_once("boot")
@@ -980,6 +982,8 @@ async def automations_invoice_pause(iid: str, request: Request,
 
 # ---- Phase 6.1: sandbox provider credential management + WhatsApp webhook ----
 from . import providers as _providers61
+from . import inbound as _inbound9
+from . import vault as _vault_p9
 
 @app.get("/api/provider/config")
 async def provider_config_get(x_api_key: str | None = Header(default=None)):
@@ -1054,6 +1058,18 @@ async def provider_test(request: Request, x_api_key: str | None = Header(default
             "note": "accepted is NOT delivery; only the provider webhook confirms delivery"}
 
 
+@app.get("/webhooks/whatsapp")
+async def whatsapp_webhook_verify(request: Request):
+    """Meta's one-time webhook verification handshake (hub.challenge)."""
+    q = request.query_params
+    if q.get("hub.mode") != "subscribe":
+        raise HTTPException(status_code=400, detail="hub.mode must be subscribe")
+    expected = os.environ.get("WHATSAPP_VERIFY_TOKEN", "")
+    if not expected or q.get("hub.verify_token") != expected:
+        raise HTTPException(status_code=403, detail="verification token mismatch")
+    return PlainTextResponse(q.get("hub.challenge") or "")
+
+
 @app.post("/webhooks/whatsapp")
 async def whatsapp_webhook(request: Request,
                            x_hub_signature_256: str | None = Header(default=None)):
@@ -1062,7 +1078,12 @@ async def whatsapp_webhook(request: Request,
     ladder and handles bounces. Never sets delivered from a send result."""
     body = await request.body()
     secret = os.environ.get("WHATSAPP_APP_SECRET", "")
-    if secret and not _providers61.verify_hub_signature(body, x_hub_signature_256, secret):
+    # fail closed: no app secret configured means no way to verify the
+    # payload, so nothing is processed (statuses or inbound messages).
+    if not secret:
+        raise HTTPException(status_code=503,
+                            detail="WhatsApp webhook app secret not configured; refusing to process")
+    if not _providers61.verify_hub_signature(body, x_hub_signature_256, secret):
         raise HTTPException(status_code=401, detail="bad signature")
     data = await request.json()
     entry = ((data.get("entry") or [{}])[0].get("changes") or [{}])[0].get("value", {})
@@ -1082,6 +1103,9 @@ async def whatsapp_webhook(request: Request,
                        (state, _models.now(), row["id"]))
             _models.log_activity(row["owner_id"], "delivery",
                                  f"WhatsApp provider reported {ref} as {state}")
+    inbound_result = _inbound9.handle_inbound(data)
+    if inbound_result.get("recorded") or inbound_result.get("duplicates"):
+        return {"ok": True, "inbound": inbound_result}
     return {"ok": True}
 
 
@@ -1091,7 +1115,12 @@ async def provider_status(request: Request, x_provider_token: str = Header(defau
     only this webhook moves a message to delivered/read/failed/bounced."""
     import os as _os
     expected = _os.environ.get("PROVIDER_STATUS_TOKEN", "")
-    if expected and not hmac.compare_digest(x_provider_token, expected):
+    if not expected:
+        # fail closed: an unauthenticated status endpoint would let anyone who
+        # learned a provider_ref flip messages to delivered/read/failed.
+        raise HTTPException(status_code=503,
+                            detail="provider status webhook is not configured; refusing unauthenticated status updates")
+    if not hmac.compare_digest(x_provider_token, expected):
         raise HTTPException(status_code=401, detail="invalid provider token")
     data = await request.json()
     ref = (data.get("provider_ref") or "").strip()
@@ -1114,6 +1143,177 @@ async def provider_status(request: Request, x_provider_token: str = Header(defau
                          f"provider reported message {ref} as {status}")
     return {"ok": True, "outbox_id": row["id"], "delivery_status": status}
 
+
+
+# ---- Phase 9: communication-first endpoints (dev branch; no live providers) ----
+import json as _json9
+import re as _re9
+
+@app.post("/api/connect/whatsapp/disconnect")
+async def whatsapp_disconnect(x_api_key: str | None = Header(default=None)):
+    """Remove this business's WhatsApp connection: credentials are cleared,
+    the action is audited, and message history is kept."""
+    u = _control_owner(x_api_key)
+    cn = _models.get_connect(u["id"])
+    if not cn or not (cn.get("wa_phone_id") or cn.get("wa_token_enc")):
+        return {"ok": True, "disconnected": False, "note": "WhatsApp was not connected"}
+    _models.ex("UPDATE connect SET wa_phone_id='', wa_token_enc='', wa_app_secret_enc='' WHERE owner_id=?",
+               (u["id"],))
+    _models.log_audit(u["id"], "whatsapp_disconnected",
+                      _json9.dumps({"phone_id_prefix": (cn.get("wa_phone_id") or "")[:6]}))
+    _models.log_activity(u["id"], "automation",
+                         "WhatsApp Business connection removed; queued messages keep their history")
+    return {"ok": True, "disconnected": True}
+
+
+@app.post("/api/wa-templates")
+async def wa_template_set(request: Request, x_api_key: str | None = Header(default=None)):
+    """Map a RecurSaathi template key to an APPROVED Meta template name.
+    Once mapped, that template's WhatsApp sends go through the approved
+    template path (required outside the 24-hour customer-service window)."""
+    u = _control_owner(x_api_key)
+    d = await request.json()
+    key = (d.get("template_key") or "").strip()
+    meta = (d.get("meta_name") or "").strip()
+    if not key or not meta:
+        raise HTTPException(status_code=400, detail="template_key and meta_name required")
+    if not _re9.match(r"^[a-z0-9_]{1,64}$", key):
+        raise HTTPException(status_code=400, detail="template_key must be lowercase letters, digits, underscores")
+    m = _models.save_wa_template_map(u["id"], key, meta[:64], (d.get("lang") or "en")[:10])
+    _models.log_audit(u["id"], "wa_template_mapped", _json9.dumps({"template_key": key, "meta_name": meta[:64]}))
+    return {"ok": True, "mapping": dict(m)}
+
+
+@app.get("/api/wa-templates")
+async def wa_template_list(x_api_key: str | None = Header(default=None)):
+    u = _control_owner(x_api_key)
+    return {"ok": True, "mappings": [dict(r) for r in _models.list_wa_template_maps(u["id"])]}
+
+
+@app.get("/api/inbox")
+async def api_inbox(x_api_key: str | None = Header(default=None), limit: int = 100):
+    """The owner's conversation inbox: inbound replies (with rule-based
+    intent tags) plus open customer requests. Only this owner's rows."""
+    u = _control_owner(x_api_key)
+    limit = max(1, min(int(limit), 200))
+    return {"ok": True,
+            "conversations": [dict(r) for r in _models.list_conversations(u["id"], limit)],
+            "open_requests": [dict(r) for r in _models.list_customer_requests(u["id"], "open")]}
+
+
+@app.post("/api/requests/{rid}/resolve")
+async def request_resolve(request: Request, rid: str, x_api_key: str | None = Header(default=None)):
+    """Owner decision on a customer request (more time / dispute).
+    more_time + approved: the promised date is set and reminders resume from it.
+    more_time + rejected: the case resumes its normal schedule.
+    dispute + rejected: the invoice returns to pending.
+    dispute + approved: the dispute stands; the invoice stays disputed for
+    the owner to handle offline."""
+    u = _control_owner(x_api_key)
+    d = await request.json()
+    decision = (d.get("decision") or "").lower()
+    if decision not in ("approved", "rejected"):
+        raise HTTPException(status_code=400, detail="decision must be approved or rejected")
+    rrow = _models.get_customer_request(rid)
+    r = dict(rrow) if rrow else None
+    if not r or r["owner_id"] != u["id"] or r["status"] != "open":
+        raise HTTPException(status_code=404, detail="request not found or already resolved")
+    inv = _models.get_invoice(r["invoice_id"]) if r["invoice_id"] else None
+    if decision == "approved" and r["kind"] == "more_time" and inv:
+        pdate = (d.get("promised_date") or r.get("requested_date") or "").strip()[:10]
+        _models.ex("UPDATE invoices SET promised_date=?, paused=0 WHERE id=?", (pdate, inv["id"]))
+    elif decision == "rejected" and r["kind"] == "more_time" and inv:
+        _models.ex("UPDATE invoices SET paused=0 WHERE id=?", (inv["id"],))
+    elif decision == "rejected" and r["kind"] == "dispute" and inv:
+        _models.ex("UPDATE invoices SET status='pending' WHERE id=?", (inv["id"],))
+    _models.resolve_customer_request(rid, decision, owner_id=u["id"])
+    _models.log_audit(u["id"], f"customer_request_{decision}",
+                      _json9.dumps({"request_id": rid, "kind": r["kind"],
+                                    "invoice": inv["number"] if inv else ""}))
+    if inv:
+        _models.log_activity(u["id"], "automation",
+                             f"customer request ({r['kind']}) on invoice {inv['number']} {decision}")
+    return {"ok": True, "request_id": rid, "decision": decision}
+
+
+@app.get("/api/invoices/promised")
+async def invoices_promised(x_api_key: str | None = Header(default=None)):
+    u = _control_owner(x_api_key)
+    return {"ok": True, "invoices": [dict(r) for r in _models.list_promised_invoices(u["id"])]}
+
+
+@app.get("/api/comm-stats")
+async def comm_stats(x_api_key: str | None = Header(default=None), days: int = 30):
+    """Delivery statistics and communication activity for this business."""
+    u = _control_owner(x_api_key)
+    days = max(1, min(int(days), 365))
+    return {"ok": True, "delivery": _models.delivery_stats(u["id"], days),
+            "activity": _models.comm_activity(u["id"], days)}
+
+
+@app.post("/api/invoices/import-csv")
+async def invoices_import_csv(request: Request, x_api_key: str | None = Header(default=None)):
+    """Owner-guarded invoice import. Rows are validated; customers are
+    matched by email (then phone) or created; nothing is auto-settled."""
+    u = _control_owner(x_api_key)
+    data = await request.json()
+    rows = data.get("rows") if isinstance(data.get("rows"), list) else None
+    if rows is None and data.get("csv"):
+        import csv as _csv, io as _io
+        rows = list(_csv.DictReader(_io.StringIO(str(data["csv"]))))
+    if not isinstance(rows, list) or not rows:
+        raise HTTPException(status_code=400, detail="rows or csv required")
+    if len(rows) > 500:
+        raise HTTPException(status_code=400, detail="import is capped at 500 rows per call")
+    created, errors = [], []
+    for idx, r in enumerate(rows[:500], start=1):
+        try:
+            if not isinstance(r, dict):
+                raise ValueError("row must be an object")
+            name = str(r.get("customer") or r.get("name") or "").strip()
+            email = str(r.get("email") or "").strip().lower()
+            phone = str(r.get("phone") or "").strip()
+            number = str(r.get("number") or "").strip()
+            amount = int(round(float(str(r.get("amount", "")).replace(",", "")
+                                          .replace("\u20b9", "").replace("Rs", "").strip() or "0")))
+            due = str(r.get("due_date") or "").strip()[:10]
+            issue = str(r.get("issue_date") or "").strip()[:10]
+            promised = str(r.get("promised_date") or "").strip()[:10]
+            if not name or not number or amount <= 0:
+                raise ValueError("customer, number and a positive amount are required")
+            if not _re9.match(r"^\d{4}-\d{2}-\d{2}$", due):
+                raise ValueError("due_date must be YYYY-MM-DD")
+            for d0, lbl in ((issue, "issue_date"), (promised, "promised_date")):
+                if d0 and not _re9.match(r"^\d{4}-\d{2}-\d{2}$", d0):
+                    raise ValueError(lbl + " must be YYYY-MM-DD")
+            if _models.one("SELECT 1 AS ok FROM invoices WHERE owner_id=? AND number=?", (u["id"], number)):
+                raise ValueError("invoice number already exists")
+            lim = _models.plan_limit_msg(u["id"], "invoices")
+            if lim:
+                raise ValueError(lim)
+            cu = None
+            if email:
+                cu = _models.one("SELECT * FROM customers WHERE owner_id=? AND LOWER(email)=?",
+                                 (u["id"], email))
+            if not cu and phone:
+                for c2 in _models.q("SELECT * FROM customers WHERE owner_id=?", (u["id"],)):
+                    if _inbound9._norm_phone(c2.get("phone")) == _inbound9._norm_phone(phone):
+                        cu = c2
+                        break
+            if not cu:
+                cu = _models.create_customer(u["id"], name, email=email, phone=phone)
+            inv = _models.create_invoice(u["id"], cu["id"], number, amount,
+                                         str(r.get("description") or ""), due)
+            if issue or promised:
+                _models.ex("UPDATE invoices SET issue_date=?, promised_date=? WHERE id=?",
+                           (issue, promised, inv["id"]))
+            created.append(number)
+        except Exception as e:
+            errors.append({"row": idx, "error": str(e)[:200]})
+    _models.log_audit(u["id"], "invoices_imported",
+                      _json9.dumps({"created": len(created), "errors": len(errors)}))
+    return {"ok": True, "created": len(created), "invoice_numbers": created[:50],
+            "errors": errors[:50]}
 
 # ---- hybrid automation architecture, Phase 3: customer reactivation agent ----
 from . import reactivation as _reactivation

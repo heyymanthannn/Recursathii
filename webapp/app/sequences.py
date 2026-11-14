@@ -1,8 +1,10 @@
 """Smart follow-up engine: per-business configurable recovery sequences.
 
 A sequence is an ordered list of steps. Each step fires once per invoice when
-the invoice is at least `offset` days past due, through the channels the step
-lists. A step flagged `escalate` queues its message but holds it for owner
+the invoice is at least `offset` days past its anchor date (the promised date
+when the business recorded one, else the due date), through the channels the
+step lists. Offsets may be negative: -7 to -1 schedule a heads-up BEFORE the
+due date (validated; a step at day 0 or later still follows the due date). A step flagged `escalate` queues its message but holds it for owner
 approval instead of sending (the spec's day-7 escalation). Steps are example
 defaults, never mandatory: every business can replace the whole schedule.
 
@@ -50,7 +52,7 @@ def _validate(steps):
     if not isinstance(steps, list) or not (1 <= len(steps) <= 10):
         raise ValueError("sequence must be a list of 1 to 10 steps")
     seen = set()
-    last = -1
+    last = -8   # offsets may start up to a week before the due date
     out = []
     for s in steps:
         if not isinstance(s, dict):
@@ -63,10 +65,10 @@ def _validate(steps):
             off = int(s.get("offset", 0))
         except Exception:
             raise ValueError("step offset must be an integer")
-        if not (0 <= off <= 90) or off < last:
-            raise ValueError("step offsets must be 0-90 and non-decreasing")
+        if not (-7 <= off <= 90) or off < last:
+            raise ValueError("step offsets must be between -7 and 90 and non-decreasing")
         last = off
-        tk = s.get("template_key") or ("reminder_due" if off == 0 else
+        tk = s.get("template_key") or ("reminder_due" if off <= 0 else
                                        "overdue_7" if off >= 7 else "overdue_1")
         if tk not in _ALLOWED_TPL:
             raise ValueError("unknown template_key: " + str(tk))

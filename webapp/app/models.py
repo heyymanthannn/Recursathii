@@ -4,7 +4,7 @@ Dual-driver: PAYRECOVERY_DB holding a postgres:// URL routes every query to
 PostgreSQL through app.pgcompat (TLS enforced, translated SQLite dialect); any
 other value keeps the stdlib SQLite backend for local development.
 """
-import os, sqlite3, threading, time, uuid
+import os, json, sqlite3, threading, time, uuid
 
 try:
     from app import pgcompat
@@ -127,7 +127,8 @@ def init():
                          ("delivered_at", "REAL"), ("read_at", "REAL"), ("failed_at", "REAL"),
                          ("bounced_at", "REAL"), ("approval_binding", "TEXT"),
                          ("customer_id", "TEXT"), ("provider_ref", "TEXT DEFAULT ''"),
-                         ("delivery_status", "TEXT DEFAULT ''"), ("provider_updated", "REAL")]:
+                         ("delivery_status", "TEXT DEFAULT ''"), ("provider_updated", "REAL"),
+                         ("tpl_params", "TEXT DEFAULT ''")]:
             if col not in ocols:
                 c.execute(f"ALTER TABLE outbox ADD COLUMN {col} {ddl}")
         if "reset_token" not in cols:
@@ -172,6 +173,39 @@ def init():
           smtp_host TEXT, smtp_port INTEGER, smtp_user TEXT, smtp_pass_enc TEXT,
           mail_from_name TEXT, wa_phone_id TEXT, wa_token_enc TEXT,
           paused INTEGER DEFAULT 0, created REAL
+        );
+        """)
+
+        iconn = [r["name"] for r in c.execute("PRAGMA table_info(connect)")]
+        for col, ddl in [("wa_app_secret_enc", "TEXT DEFAULT ''"),
+                         ("bank_name", "TEXT DEFAULT ''"),
+                         ("bank_account_note", "TEXT DEFAULT ''"),
+                         ("payment_link_url", "TEXT DEFAULT ''")]:
+            if col not in iconn:
+                c.execute(f"ALTER TABLE connect ADD COLUMN {col} {ddl}")
+        icols = [r["name"] for r in c.execute("PRAGMA table_info(invoices)")]
+        for col, ddl in [("issue_date", "TEXT DEFAULT ''"),
+                         ("promised_date", "TEXT DEFAULT ''")]:
+            if col not in icols:
+                c.execute(f"ALTER TABLE invoices ADD COLUMN {col} {ddl}")
+        c.executescript("""
+        CREATE TABLE IF NOT EXISTS conversations(
+          id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, customer_id TEXT DEFAULT '',
+          invoice_id TEXT DEFAULT '', channel TEXT DEFAULT 'whatsapp',
+          direction TEXT DEFAULT 'in', body TEXT DEFAULT '',
+          provider_message_id TEXT UNIQUE, intent TEXT DEFAULT '', created REAL
+        );
+        CREATE INDEX IF NOT EXISTS ix_conv_owner ON conversations(owner_id);
+        CREATE TABLE IF NOT EXISTS customer_requests(
+          id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, customer_id TEXT DEFAULT '',
+          invoice_id TEXT DEFAULT '', kind TEXT NOT NULL, note TEXT DEFAULT '',
+          requested_date TEXT DEFAULT '', status TEXT DEFAULT 'open', created REAL
+        );
+        CREATE INDEX IF NOT EXISTS ix_req_owner ON customer_requests(owner_id);
+        CREATE TABLE IF NOT EXISTS wa_templates(
+          owner_id TEXT, template_key TEXT, meta_name TEXT NOT NULL,
+          lang TEXT DEFAULT 'en', updated REAL,
+          PRIMARY KEY(owner_id, template_key)
         );
         """)
 
@@ -403,7 +437,8 @@ def set_template(owner_id, key, subject, body):
        {"owner_id": owner_id, "key": key, "subject": subject, "body": body, "updated": now()})
 
 # ---- outbox ----
-def queue(owner_id, channel, dest, tpl, subject, body, dedupe="", customer_id=""):
+def queue(owner_id, channel, dest, tpl, subject, body, dedupe="", customer_id="",
+          params=None):
     if dedupe:
         if one("SELECT id FROM outbox WHERE dedupe=?", (dedupe,)):
             return None
@@ -411,9 +446,10 @@ def queue(owner_id, channel, dest, tpl, subject, body, dedupe="", customer_id=""
         dedupe = None   # UNIQUE index allows many NULLs, not many empty strings
     o = {"id": uid(), "owner_id": owner_id, "channel": channel, "dest": dest,
          "tpl": tpl, "dedupe": dedupe, "subject": subject, "body": body,
-         "status": "queued", "created": now(), "customer_id": customer_id or None}
-    ex("INSERT INTO outbox(id,owner_id,channel,dest,tpl,dedupe,subject,body,status,created,customer_id) "
-       "VALUES(:id,:owner_id,:channel,:dest,:tpl,:dedupe,:subject,:body,:status,:created,:customer_id)", o)
+         "status": "queued", "created": now(), "customer_id": customer_id or None,
+         "tpl_params": json.dumps(params) if params else ""}
+    ex("INSERT INTO outbox(id,owner_id,channel,dest,tpl,dedupe,subject,body,status,created,customer_id,tpl_params) "
+       "VALUES(:id,:owner_id,:channel,:dest,:tpl,:dedupe,:subject,:body,:status,:created,:customer_id,:tpl_params)", o)
     return get_outbox(o["id"])
 
 def get_outbox(oid): return one("SELECT * FROM outbox WHERE id=?", (oid,))
@@ -653,7 +689,8 @@ def get_connect(owner_id):
 
 def save_connect(owner_id, business_name="", logo="", smtp_host="", smtp_port=587,
                  smtp_user="", smtp_pass_enc=None, mail_from_name="", wa_phone_id="",
-                 wa_token_enc=None, paused=0):
+                 wa_token_enc=None, paused=0, wa_app_secret_enc=None,
+                 bank_name="", bank_account_note="", payment_link_url=""):
     cur = get_connect(owner_id)
     row = dict(cur) if cur else {}
     vals = {
@@ -667,13 +704,19 @@ def save_connect(owner_id, business_name="", logo="", smtp_host="", smtp_port=58
         "mail_from_name": mail_from_name if mail_from_name else row.get("mail_from_name", ""),
         "wa_phone_id": (wa_phone_id or row.get("wa_phone_id", "")).strip(),
         "wa_token_enc": wa_token_enc if wa_token_enc is not None else row.get("wa_token_enc", ""),
+        "wa_app_secret_enc": wa_app_secret_enc if wa_app_secret_enc is not None else row.get("wa_app_secret_enc", ""),
+        "bank_name": (bank_name or row.get("bank_name", "")).strip(),
+        "bank_account_note": (bank_account_note or row.get("bank_account_note", "")).strip(),
+        "payment_link_url": (payment_link_url or row.get("payment_link_url", "")).strip(),
         "paused": int(row.get("paused", 0)) if paused is None else int(paused),
         "created": row.get("created") or now(),
     }
     ex("INSERT OR REPLACE INTO connect(owner_id,business_name,logo,smtp_host,smtp_port,"
-       "smtp_user,smtp_pass_enc,mail_from_name,wa_phone_id,wa_token_enc,paused,created) "
+       "smtp_user,smtp_pass_enc,mail_from_name,wa_phone_id,wa_token_enc,paused,created,"
+       "wa_app_secret_enc,bank_name,bank_account_note,payment_link_url) "
        "VALUES(:owner_id,:business_name,:logo,:smtp_host,:smtp_port,:smtp_user,"
-       ":smtp_pass_enc,:mail_from_name,:wa_phone_id,:wa_token_enc,:paused,:created)", vals)
+       ":smtp_pass_enc,:mail_from_name,:wa_phone_id,:wa_token_enc,:paused,:created,"
+       ":wa_app_secret_enc,:bank_name,:bank_account_note,:payment_link_url)", vals)
     return get_connect(owner_id)
 
 def set_connect_paused(owner_id, paused):
@@ -1044,6 +1087,107 @@ def list_claims(owner_id):
       FROM payments p LEFT JOIN invoices i ON i.id=p.invoice_id
       LEFT JOIN customers cu ON cu.id=p.customer_id
       WHERE p.owner_id=? AND p.status='claimed' ORDER BY p.created DESC LIMIT 50""", (owner_id,))
+
+# ---- conversations (Phase 9: inbound customer replies) ----
+def record_conversation(owner_id, customer_id="", invoice_id="", channel="whatsapp",
+                        direction="in", body="", provider_message_id="", intent=""):
+    """Store one conversation message. Idempotent on the provider's message id:
+    a replayed webhook returns the existing row (dup=True) and adds nothing."""
+    if provider_message_id:
+        seen = one("SELECT * FROM conversations WHERE provider_message_id=?",
+                   (provider_message_id,))
+        if seen:
+            return dict(seen), True
+    row = {"id": uid(), "owner_id": owner_id, "customer_id": customer_id or "",
+           "invoice_id": invoice_id or "", "channel": channel, "direction": direction,
+           "body": body or "", "provider_message_id": provider_message_id or "",
+           "intent": intent or "", "created": now()}
+    ex("INSERT INTO conversations(id,owner_id,customer_id,invoice_id,channel,direction,"
+       "body,provider_message_id,intent,created) VALUES(:id,:owner_id,:customer_id,"
+       ":invoice_id,:channel,:direction,:body,:provider_message_id,:intent,:created)", row)
+    return get_conversation(row["id"]), False
+
+def get_conversation(cid): return one("SELECT * FROM conversations WHERE id=?", (cid,))
+
+def list_conversations(owner_id, limit=100):
+    return q("""SELECT c.*, cu.name AS customer_name, cu.phone AS customer_phone,
+                       i.number AS invoice_number
+                FROM conversations c LEFT JOIN customers cu ON cu.id=c.customer_id
+                LEFT JOIN invoices i ON i.id=c.invoice_id
+                WHERE c.owner_id=? ORDER BY c.created DESC LIMIT ?""", (owner_id, limit))
+
+# ---- customer requests (more time / disputes) ----
+def create_customer_request(owner_id, customer_id="", invoice_id="", kind="", note="",
+                            requested_date=""):
+    r = {"id": uid(), "owner_id": owner_id, "customer_id": customer_id or "",
+         "invoice_id": invoice_id or "", "kind": kind, "note": (note or "")[:500],
+         "requested_date": (requested_date or "")[:10], "status": "open", "created": now()}
+    ex("INSERT INTO customer_requests(id,owner_id,customer_id,invoice_id,kind,note,"
+       "requested_date,status,created) VALUES(:id,:owner_id,:customer_id,:invoice_id,"
+       ":kind,:note,:requested_date,:status,:created)", r)
+    return one("SELECT * FROM customer_requests WHERE id=?", (r["id"],))
+
+def get_customer_request(rid): return one("SELECT * FROM customer_requests WHERE id=?", (rid,))
+
+def list_customer_requests(owner_id, status="open"):
+    if status:
+        return q("""SELECT r.*, i.number AS invoice_number, cu.name AS customer_name
+          FROM customer_requests r LEFT JOIN invoices i ON i.id=r.invoice_id
+          LEFT JOIN customers cu ON cu.id=r.customer_id
+          WHERE r.owner_id=? AND r.status=? ORDER BY r.created DESC""", (owner_id, status))
+    return q("""SELECT r.*, i.number AS invoice_number, cu.name AS customer_name
+      FROM customer_requests r LEFT JOIN invoices i ON i.id=r.invoice_id
+      LEFT JOIN customers cu ON cu.id=r.customer_id
+      WHERE r.owner_id=? ORDER BY r.created DESC""", (owner_id,))
+
+def resolve_customer_request(rid, status, owner_id=None):
+    r = get_customer_request(rid)
+    if not r or (owner_id and r["owner_id"] != owner_id):
+        return None
+    ex("UPDATE customer_requests SET status=? WHERE id=?", (status, rid))
+    return one("SELECT * FROM customer_requests WHERE id=?", (rid,))
+
+# ---- approved WhatsApp template mapping (Meta template send path) ----
+def save_wa_template_map(owner_id, template_key, meta_name, lang="en"):
+    ex("INSERT INTO wa_templates(owner_id,template_key,meta_name,lang,updated) VALUES(?,?,?,?,?) "
+       "ON CONFLICT(owner_id,template_key) DO UPDATE SET meta_name=excluded.meta_name, "
+       "lang=excluded.lang, updated=excluded.updated",
+       (owner_id, template_key, meta_name, lang or "en", now()))
+    return get_wa_template_map(owner_id, template_key)
+
+def get_wa_template_map(owner_id, template_key):
+    return one("SELECT * FROM wa_templates WHERE owner_id=? AND template_key=?",
+               (owner_id, template_key))
+
+def list_wa_template_maps(owner_id):
+    return q("SELECT * FROM wa_templates WHERE owner_id=? ORDER BY template_key", (owner_id,))
+
+# ---- promised-date views + communication statistics ----
+def list_promised_invoices(owner_id):
+    return q("""SELECT * FROM invoices WHERE owner_id=? AND promised_date IS NOT NULL
+                AND promised_date!='' AND status NOT IN ('paid','cancelled')
+                ORDER BY promised_date""", (owner_id,))
+
+def delivery_stats(owner_id, days=30):
+    since = now() - days * 86400
+    by_status = {r["st"]: int(r["n"]) for r in q(
+        """SELECT COALESCE(NULLIF(delivery_status,''), status) AS st, COUNT(*) AS n
+           FROM outbox WHERE owner_id=? AND created>=? GROUP BY st""", (owner_id, since))}
+    total = sum(by_status.values())
+    delivered = by_status.get("delivered", 0) + by_status.get("read", 0)
+    failed = by_status.get("failed", 0) + by_status.get("bounced", 0)
+    return {"window_days": days, "total": total, "by_status": by_status,
+            "delivered_or_read": delivered,
+            "delivery_rate_pct": round(100.0 * delivered / total, 1) if total else 0.0,
+            "accepted_not_confirmed": by_status.get("accepted", 0),
+            "failed_or_bounced": failed}
+
+def comm_activity(owner_id, days=30):
+    since = now() - days * 86400
+    rows = q("""SELECT tpl, channel, COUNT(*) AS n FROM outbox
+                WHERE owner_id=? AND created>=? GROUP BY tpl, channel ORDER BY n DESC""",
+             (owner_id, since))
+    return [{"template": r["tpl"], "channel": r["channel"], "count": int(r["n"])} for r in rows]
 
 # ---- alerts (real states only) ----
 def owner_alerts(owner_id):
