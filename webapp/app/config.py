@@ -69,7 +69,7 @@ PLANS = {
     },
     "enterprise": {
         "plan_id_env": "RZP_PLAN_SCALE",   # keeps the existing Razorpay plan env var
-        "amount": 599900,            # Rs 5,999/mo
+        "amount": 999900,            # Rs 9,999/mo (owner-approved Nov 15, 2026; supersedes 5,999/6,999/7,999)
         "annual_amount": 5999000,    # Rs 59,990/yr
         "name": "Enterprise",
         "trial_days": 14,
@@ -92,6 +92,21 @@ PLANS = {
 
 # Older accounts may still carry plan="scale"; it maps to Enterprise.
 PLAN_ALIASES = {"scale": "enterprise"}
+
+# Official pricing (owner-approved source of truth, Nov 15, 2026):
+# Starter Rs 999/mo, Growth Rs 4,999/mo, Enterprise Rs 9,999/mo.
+# The backend refuses to boot on any outdated or inconsistent plan price.
+OFFICIAL_MONTHLY = {"starter": 99900, "growth": 499900, "enterprise": 999900}
+
+def validate_pricing(plans=None):
+    plans = PLANS if plans is None else plans
+    for _key, _paise in OFFICIAL_MONTHLY.items():
+        _got = plans[_key]["amount"]
+        if _got != _paise:
+            raise ValueError(f"plan pricing drift: {_key} is {_got}, official price is {_paise}")
+
+
+validate_pricing()
 
 
 def plan_key(plan):

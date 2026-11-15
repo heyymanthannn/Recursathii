@@ -98,8 +98,8 @@ record("consent: opt-out recorded on customer", cu2.get("wa_opt_out") == 1, dict
 
 # ---- 8. billing: plans visible, no live checkout without keys ----
 r = client.get("/billing")
-has_all = all(s in r.text for s in ("999", "4,999", "5,999"))
-record("billing: three approved plans shown (Rs 999 / 4,999 / 5,999)", r.status_code == 200 and has_all, r.status_code)
+has_all = all(s in r.text for s in ("999", "4,999", "9,999"))
+record("billing: three approved plans shown (Rs 999 / 4,999 / 9,999)", r.status_code == 200 and has_all, r.status_code)
 record("billing: no live subscription link without keys", "rzp_live" not in r.text and "checkout.razorpay.com" not in r.text, r.status_code)
 
 # ---- 9. live messaging gate ----

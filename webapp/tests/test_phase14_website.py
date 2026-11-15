@@ -72,18 +72,19 @@ record("links: every internal nav/footer link resolves", not bad_links, bad_link
 record("a11y: all images have alt text", no_alt == 0, no_alt)
 record("a11y: lang attribute on html", no_lang == 0, no_lang)
 
-# ---- pricing consistency (approved: Rs 999 / 4,999 / 5,999) ----
+# ---- pricing consistency (approved: Rs 999 / 4,999 / 9,999) ----
 land = client.get("/").text
 land_clean = re.sub(r"<script.*?</script>|<style.*?</style>", "", land, flags=re.S)
 prices = re.findall(r"₹\s*[\d,]+|Rs\.?\s*[\d,]+", land_clean)
 record("pricing: landing shows no in-page prices (early-access positioning)", not prices, prices[:4])
-wrong = "6,999" in land or "6999" in land
-record("pricing: no stray Rs 6,999 anywhere on landing", not wrong, "6,999 found" if wrong else "")
+stale = [s2 for s2 in ("5,999", "6,999", "7,999", "2,499") if s2 in land or s2.replace(",", "") in land]
+record("pricing: no stale Rs 5,999/6,999/7,999/2,499 on landing", not stale, stale)
 for d in ("app/templates", "landing"):
     for tpl in os.listdir(d):
         txt = open(os.path.join(d, tpl)).read()
-        if "6,999" in txt or "6999" in txt:
-            record(f"pricing: {d}/{tpl} clean of Rs 6,999", False, "6,999 in file")
+        stale = [s2 for s2 in ("5,999", "6,999", "7,999", "2,499") if s2 in txt or s2.replace(",", "") in txt]
+        if stale:
+            record(f"pricing: {d}/{tpl} clean of stale prices", False, str(stale))
 
 # ---- footer present on public pages ----
 foot = all(("Privacy Policy" in client.get(p).text and "Terms of Service" in client.get(p).text) for p in ("/", "/login", "/signup"))

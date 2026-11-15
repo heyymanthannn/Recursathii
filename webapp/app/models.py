@@ -1242,7 +1242,7 @@ def delete_owner_data(owner_id):
 # ---- platform admin overview ----
 def admin_overview():
     owners = q("SELECT * FROM users WHERE role='owner' ORDER BY created DESC")
-    per_plan = {"starter": 999, "growth": 4999, "enterprise": 5999, "scale": 5999}
+    per_plan = {"starter": 999, "growth": 4999, "enterprise": 9999, "scale": 9999}
     active = [o for o in owners if o.get("plan_status") == "active"]
     mrr = sum(per_plan.get(o.get("plan") or "starter", 0) for o in active)
     rev = one("SELECT COALESCE(SUM(amount),0) AS s FROM plat_pays WHERE status='confirmed'") or {}
