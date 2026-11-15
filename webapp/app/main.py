@@ -243,10 +243,78 @@ def _pay_amount(plan: str, row: dict | None) -> float:
 
 
 @app.get("/checkout/{merchant_id}")
-async def checkout_page(merchant_id: str, claimed: int = 0):
-    """Premium checkout: plan summary, coupon entry, live-updating UPI QR."""
+async def checkout_page(request: Request, merchant_id: str, claimed: int = 0):
+    """Premium checkout: plan summary, coupon entry, live-updating UPI QR.
+
+    Plan slugs (starter/growth/enterprise, alias scale) resolve to a READ-ONLY
+    plan page: no record writes from GET requests, ever. The onboarding URLs
+    /checkout/{plan} and /checkout/{plan}?merchant_id=... keep working, and
+    ?merchant_id= links to that merchant's checkout instead of creating data.
+    """
     from . import manual_upi, db
     from fastapi.responses import HTMLResponse
+    _plan = {"scale": "enterprise"}.get(merchant_id, merchant_id)
+    if _plan in PLANS:
+        _mq = (request.query_params.get("merchant_id") or "").strip()
+        _row = _merchant_row(_mq) if _mq else None
+        _full = PLANS[_plan]["amount"] / 100
+        _pname = PLANS[_plan].get("name") or _plan.title()
+        _feats = "".join(
+            "<div class=\"line\"><span>&#10003;</span><b>%s</b></div>" % _esc(f)
+            for f in (PLANS[_plan].get("features") or [])[:6])
+        _cta = ("<a class=\"btn\" href=\"/checkout/%s\">Continue to your checkout</a>" % _esc(_mq)
+                if _row else "<a class=\"btn\" href=\"/signup\">Start your free trial</a>")
+        _css = (
+            "*{box-sizing:border-box}"
+            "body{background:#faf8f3;color:#23233b;font-family:Inter,sans-serif;margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:28px 16px}"
+            ".w{width:100%;max-width:520px}"
+            ".top{display:flex;align-items:center;gap:10px;margin-bottom:22px}"
+            ".top svg{width:30px;height:30px}"
+            ".brand{font-family:Fraunces,serif;font-size:20px;color:#20264a}"
+            ".brand b{color:#7c6cff}"
+            ".card{background:#fff;border:1px solid #ece8df;border-radius:18px;padding:28px;box-shadow:0 10px 30px rgba(32,38,74,.06);margin-bottom:16px}"
+            ".pill{display:inline-block;background:#f0edff;color:#5b4bd6;font-size:12px;font-weight:600;padding:4px 12px;border-radius:99px;letter-spacing:.02em}"
+            "h1{font-family:Fraunces,serif;font-size:26px;color:#20264a;margin:12px 0 4px}"
+            ".sub{color:#6b6f8e;font-size:14px;line-height:1.55;margin:0 0 14px}"
+            ".amt{font-size:38px;font-weight:700;color:#20264a;letter-spacing:-.02em}"
+            ".amt small{font-size:15px;color:#6b6f8e;font-weight:500}"
+            ".line{display:flex;justify-content:space-between;font-size:14px;color:#4a4e6d;padding:9px 0;border-bottom:1px solid #f2efe8}"
+            ".line b{color:#20264a}"
+            ".btn{display:block;text-align:center;background:linear-gradient(135deg,#7c6cff,#5a8dff);border:0;border-radius:12px;padding:13px 18px;font-weight:600;color:#fff;font-size:15px;cursor:pointer;width:100%;text-decoration:none;margin-top:14px}"
+            ".btn:hover{filter:brightness(1.05)}"
+            ".fine{color:#8a8fae;font-size:12px;line-height:1.6;margin:12px 0 0}"
+            "a{color:#5b4bd6}"
+            ".foot{text-align:center;color:#9aa0bd;font-size:12px;margin-top:6px}"
+            "@media(max-width:480px){.card{padding:20px}.amt{font-size:32px}}"
+        )
+        _icon = "<link rel=\"icon\" href=\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%237c6cff'/%3E%3Cstop offset='1' stop-color='%2346d8ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='9' fill='url(%23g)'/%3E%3Cpath d='M16 9a7 7 0 1 0 7 7' stroke='white' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Cpath d='M23 12v4h-4' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\">"
+        _logo = ("<svg viewBox=\"0 0 32 32\"><defs><linearGradient id=\"g\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\">"
+                 "<stop offset=\"0\" stop-color=\"#7c6cff\"/><stop offset=\"1\" stop-color=\"#46d8ff\"/></linearGradient></defs>"
+                 "<rect width=\"32\" height=\"32\" rx=\"9\" fill=\"url(#g)\"/>"
+                 "<path d=\"M16 9a7 7 0 1 0 7 7\" stroke=\"white\" stroke-width=\"3\" fill=\"none\" stroke-linecap=\"round\"/>"
+                 "<path d=\"M23 12v4h-4\" stroke=\"white\" stroke-width=\"3\" fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>")
+        html = (
+            "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
+            "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
+            "<title>" + _pname + " | RecurSaathi</title>"
+            + _icon +
+            "<meta name=\"theme-color\" content=\"#faf8f3\">"
+            "<link href=\"https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400..700&display=swap\" rel=\"stylesheet\">"
+            "<style>" + _css + "</style></head><body>"
+            "<div class=\"w\"><div class=\"top\">" + _logo + "<span class=\"brand\">Recur<b>Saathi</b></span></div>"
+            "<div class=\"card\"><span class=\"pill\">" + _pname + " plan</span>"
+            "<h1>RecurSaathi " + _pname + "</h1>"
+            "<p class=\"sub\">14-day free trial of the full platform, then billed monthly. Cancel any time from your billing page.</p>"
+            "<div class=\"amt\">&#8377;" + f"{_full:,.0f}" + "<small> /month</small></div>"
+            "<div style=\"margin:12px 0 4px\">"
+            "<div class=\"line\"><span>Plan</span><b>" + _pname + "</b></div>"
+            "<div class=\"line\"><span>Billing</span><b>Monthly</b></div></div>"
+            + _feats + _cta +
+            "<p class=\"fine\">Prices exclude 18% GST. Your customers' invoice payments never come here - they go straight to your own bank via your UPI ID or your own gateway. Subscription payments go to RecurSaathi.</p></div>"
+            "<div class=\"foot\">Already have an account? <a href=\"/login\">Sign in</a> &middot; <a href=\"/\">recursathii.onrender.com</a></div>"
+            "</div></body></html>"
+        )
+        return HTMLResponse(html)
     m = billing.MERCHANTS.get(merchant_id)
     row = _merchant_row(merchant_id)
     if not m and row:
@@ -582,14 +650,6 @@ async def onboard(request: Request):
         raise HTTPException(status_code=400, detail="valid email required")
     m = billing.onboard(data["merchant_id"], _em, data["plan"])
     return {"merchant_id": m.id, "plan": m.plan, "status": m.status}
-
-@app.get("/checkout/{plan}")
-async def checkout(plan: str, merchant_id: str = "demo"):
-    plan = {"scale": "enterprise"}.get(plan, plan)
-    if plan not in PLANS:
-        raise HTTPException(status_code=404, detail="unknown plan")
-    billing.onboard(merchant_id, f"{merchant_id}@example.com", plan)
-    return {"plan": plan, "checkout_url": billing.subscription_link(plan, merchant_id)}
 
 @app.get("/dashboard/{merchant_id}")
 async def dashboard(merchant_id: str):
