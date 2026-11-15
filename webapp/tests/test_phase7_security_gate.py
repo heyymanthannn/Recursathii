@@ -107,6 +107,16 @@ r = client.get("/dashboard", follow_redirects=False)
 record("expired sessions cannot authenticate",
        r.status_code == 303 and "/login" in r.headers.get("location", ""), str(r.status_code))
 auth.SESSION_TTL = _t0
+# copied-token rejection: a token captured before logout must stop working at once
+import re as _re
+r = client.post("/login", data={"email": B["email"], "password": PW}, follow_redirects=False)
+_m = _re.search(auth.SESSION_COOKIE + r"=([^;]+)", r.headers.get("set-cookie", ""))
+_copied = _m.group(1) if _m else ""
+client.get("/logout", follow_redirects=False)
+client.cookies.set(auth.SESSION_COOKIE, _copied)
+r = client.get("/dashboard", follow_redirects=False)
+record("copied token rejected after logout",
+       r.status_code == 303 and "/login" in r.headers.get("location", ""), str(r.status_code))
 
 # ---- 2. anonymous protection on private surfaces ----
 client.cookies.clear()

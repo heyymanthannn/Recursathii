@@ -259,8 +259,9 @@ async def resend_verification(request: Request):
 
 @router.get("/logout")
 
-async def logout():
+async def logout(request: Request):
     resp = RedirectResponse("/login", status_code=303)
+    auth.revoke_session(request)
     auth.end_session(resp)
     return resp
 
