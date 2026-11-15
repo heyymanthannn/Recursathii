@@ -1101,7 +1101,7 @@ async def contact_send(request: Request, name: str = Form(""), email: str = Form
 # ---------- scheduler tick (call from cron / manually) ----------
 @router.get("/cron/run")
 async def cron_run(request: Request, x_admin_token: str = ""):
-    if x_admin_token != config.ADMIN_TOKEN:
+    if not config.admin_token_ok(x_admin_token):
         return HTMLResponse("unauthorized", status_code=401)
     owners = models.q("SELECT * FROM users WHERE role='owner' AND plan_status IN ('active','trialing')")
     base = base_url(request)

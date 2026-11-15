@@ -1,4 +1,5 @@
 """Settings and SaaS pricing plans. All secrets come from env, never hardcoded."""
+import hmac
 import os
 
 # Phase 7.6: webhook secrets are REQUIRED. Fail closed when the env var is
@@ -142,7 +143,13 @@ YOUPI_MERCHANT_ID = os.environ.get("YOUPI_MERCHANT_ID", "")
 # owner's bank account. Customers scan the QR in Google Pay (or any UPI app).
 MANUAL_UPI_ID = os.environ.get("MANUAL_UPI_ID", "")   # owner UPI handle, set in Render env (kept out of the public repo)
 MANUAL_UPI_PAYEE = os.environ.get("MANUAL_UPI_PAYEE", "RecurSaathi")
-ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "changeme-admin")  # for mark-paid endpoint
+ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "")  # admin endpoints; REQUIRED in production (fail-fast)
+
+def admin_token_ok(token) -> bool:
+    """Fail-closed admin token check. When ADMIN_TOKEN is unset or empty,
+    every request is refused: an empty token can never authenticate."""
+    return bool(ADMIN_TOKEN) and hmac.compare_digest(token or "", ADMIN_TOKEN)
+
 
 # ---- Plan feature entitlements -------------------------------------------
 # A feature only appears in the UI or API when it is implemented in the app.

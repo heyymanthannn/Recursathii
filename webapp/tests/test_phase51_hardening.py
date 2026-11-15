@@ -8,6 +8,7 @@ touched.
 """
 import os, tempfile, threading, socket, time, hashlib, sqlite3
 os.environ["PAYRECOVERY_DB"] = tempfile.mktemp(prefix="test_51_", suffix=".sqlite")
+os.environ.setdefault("ADMIN_TOKEN", "p51-admin-token")
 from fastapi.testclient import TestClient
 from app import main as app_main, models, pilot, permissions
 from app.providers import send_email, send_whatsapp, deliver_outbox

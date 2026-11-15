@@ -80,7 +80,8 @@ except RuntimeError:
     record("require_production_secrets raises with RENDER and no APP_SECRET", True)
 try:
     _env = {"RENDER": "1", "APP_SECRET": "x" * 40, "BACKUP_ENC_KEY": "k" * 44,
-            "BILLING_WEBHOOK_SECRET": "b" * 20, "YOUPI_WEBHOOK_SECRET": "y" * 20}
+            "BILLING_WEBHOOK_SECRET": "b" * 20, "YOUPI_WEBHOOK_SECRET": "y" * 20,
+            "ADMIN_TOKEN": "a" * 32}
     _w = vault.require_production_secrets(_env)
     record("require_production_secrets ok with full secret set", isinstance(_w, list))
 except Exception:
