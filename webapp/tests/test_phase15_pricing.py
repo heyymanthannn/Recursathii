@@ -35,9 +35,9 @@ record("config: inr() renders Rs 999 / Rs 4,999 for Starter/Growth",
        inr(99900) == "₹999" and inr(499900) == "₹4,999", (inr(99900), inr(499900)))
 
 # ---- 2. annual pricing untouched (owner decides separately) ----
-record("config: annual amounts unchanged (9,990 / 49,990 / 59,990)",
+record("config: annual amounts official (9,990 / 49,990 / 99,990)",
        (config.PLANS["starter"]["annual_amount"], config.PLANS["growth"]["annual_amount"],
-        config.PLANS["enterprise"]["annual_amount"]) == (999000, 4999000, 5999000),
+        config.PLANS["enterprise"]["annual_amount"]) == (999000, 4999000, 9999000),
        tuple(config.PLANS[k]["annual_amount"] for k in ("starter", "growth", "enterprise")))
 
 # ---- 3. backend rejects outdated or inconsistent plan pricing ----
@@ -88,8 +88,8 @@ u2 = new_owner("p15b@test.local")
 models.update_user(u2["id"], plan_status="active")
 r = client.post("/billing/change-plan", data={"plan": "enterprise", "cycle": "annual"}, follow_redirects=False)
 pays2 = models.list_plat_pays(u2["id"])
-record("checkout: Enterprise annual checkout uses unchanged annual Rs 59,990",
-       pays2 and pays2[0]["amount"] == 5999000, pays2[0]["amount"] if pays2 else r.status_code)
+record("checkout: Enterprise annual checkout uses official Rs 99,990",
+       pays2 and pays2[0]["amount"] == 9999000, pays2[0]["amount"] if pays2 else r.status_code)
 
 u3 = new_owner("p15c@test.local")
 models.update_user(u3["id"], plan_status="active")
@@ -110,11 +110,13 @@ record("billing: page shows Rs 9,999 for Enterprise",
 record("billing: no stale Rs 5,999/6,999/7,999 anywhere on billing page",
        not any(s in r.text for s in ("5,999", "6,999", "7,999")),
        [s for s in ("5,999", "6,999", "7,999") if s in r.text])
-record("billing: annual line still shows Rs 59,990/yr (unchanged)", "59,990" in r.text, "59,990 missing")
+record("billing: annual line shows Rs 99,990/yr for Enterprise", "99,990" in r.text, "99,990 missing")
 
 for path in ("/", "/pricing", "/terms", "/privacy"):
     txt = client.get(path).text
-    stale = [s for s in ("5,999", "6,999", "7,999", "2,499") if s in txt or s.replace(",", "") in txt]
+    import re as _re
+    stale = [s for s in ("5,999", "6,999", "7,999", "2,499")
+             if s in txt or _re.search(r"(?<!\\d)" + s.replace(",", "") + r"(?!\\d)", txt)]
     record(f"public: {path} clean of stale plan prices", not stale, stale)
 
 # ---- 7. existing subscriptions not migrated or charged ----

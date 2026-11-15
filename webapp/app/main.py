@@ -10,6 +10,7 @@ from fastapi import FastAPI, Request, HTTPException, Header, Form
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 
 from . import engine, billing, playbooks, youpi, config, manual_upi, auth
+from . import early_adopter
 from .ratelimit import allow as rl_allow
 from .config import WEBHOOK_SECRET, BILLING_WEBHOOK_SECRET, PLANS
 from fastapi.responses import HTMLResponse, Response
@@ -125,7 +126,23 @@ async def billing_webhook(request: Request,
     payload = await request.json()
     event = payload.get("event", "")
     sub = (payload.get("payload") or {}).get("subscription", {}).get("entity", {})
-    return billing.handle_billing_event(event, sub)
+    sandbox = billing.handle_billing_event(event, sub)
+    # Phase 16: platform subscriptions (incl. early-adopter) activate only on
+    # this signature-verified, idempotent event path.
+    platform = early_adopter.process_billing_event(payload)
+    return {"ok": True, **sandbox, "platform": platform}
+
+@app.get("/api/early-adopter-availability", include_in_schema=False)
+async def early_adopter_availability(request: Request):
+    """Public, server-side availability for the pricing page. No user data,
+    rate limited; the page never fabricates scarcity."""
+    _ip = (request.headers.get("x-forwarded-for") or request.client.host or "?").split(",")[0].strip()
+    if not rl_allow("ea_avail:" + _ip, 60, 3600):
+        raise HTTPException(status_code=429, detail="Too many requests")
+    av = early_adopter.availability()
+    return {"max": av["max"], "issued": av["issued"], "remaining": av["remaining"],
+            "available": av["available"]}
+
 
 @app.post("/api/signup")
 async def api_signup(request: Request):
@@ -490,6 +507,24 @@ button{width:100%;background:linear-gradient(135deg,#7c6cf8,#5ac8fa);border:0;bo
 <form method="post" action="/admin/confirm"><input type="hidden" name="merchant_id" value="{m.get('id','')}"><button type="submit">Confirm paid &amp; activate</button></form></div>""")
     if not cards:
         cards = ['<div class="empty">No pending payments right now. New trial signups land here the moment they say "I\'ve paid".</div>']
+    ea = early_adopter.admin_stats()
+    _eav = ea["availability"]
+    ea_lines = [f"<b>Early Adopter Enterprise</b>",
+                f"<div class='meta'>{_eav['issued']} of {_eav['max']} issued &middot; {_eav['remaining']} slots remaining &middot; "
+                f"{ea['pending_reservations']} pending &middot; {ea['expired_reservations']} expired &middot; "
+                f"{ea['failed_checkouts']} failed checkouts</div>",
+                f"<div class='meta'>MRR &#8377;{ea['mrr']:,} &middot; ARR &#8377;{ea['arr']:,} &middot; "
+                f"early-adopter revenue &#8377;{ea['ea_revenue']/100:,.0f} &middot; "
+                f"regular Enterprise &#8377;{ea['regular_enterprise_revenue']/100:,.0f}</div>"]
+    for _r in ea["upcoming_renewals"]:
+        import time as _t
+        ea_lines.append(f"<div class='meta'>Renewal: {_r['plan']} &middot; &#8377;{(_r['price'] or 0)/100:,.0f} &middot; "
+                        f"{_t.strftime('%d %b %Y', _t.localtime(_r['term_end'])) if _r['term_end'] else '-'}</div>")
+    for _r in ea["failed_renewals"]:
+        import time as _t
+        ea_lines.append(f"<div class='meta' style='color:#ffd166'>Needs attention: {_r['plan']} &middot; "
+                        f"&#8377;{(_r['price'] or 0)/100:,.0f} &middot; {_r['updated'] and _t.strftime('%d %b %Y', _t.localtime(_r['updated']))}</div>")
+    cards.append("<div class='card'>" + "".join(ea_lines) + "</div>")
     html = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin | RecurSaathi</title>
 <meta name="robots" content="noindex,nofollow">

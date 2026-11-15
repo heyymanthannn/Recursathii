@@ -77,12 +77,14 @@ land = client.get("/").text
 land_clean = re.sub(r"<script.*?</script>|<style.*?</style>", "", land, flags=re.S)
 prices = re.findall(r"₹\s*[\d,]+|Rs\.?\s*[\d,]+", land_clean)
 record("pricing: landing shows no in-page prices (early-access positioning)", not prices, prices[:4])
-stale = [s2 for s2 in ("5,999", "6,999", "7,999", "2,499") if s2 in land or s2.replace(",", "") in land]
+stale = [s2 for s2 in ("5,999", "6,999", "7,999", "2,499")
+        if s2 in land or re.search(r"(?<!\d)" + s2.replace(",", "") + r"(?!\d)", land)]
 record("pricing: no stale Rs 5,999/6,999/7,999/2,499 on landing", not stale, stale)
 for d in ("app/templates", "landing"):
     for tpl in os.listdir(d):
         txt = open(os.path.join(d, tpl)).read()
-        stale = [s2 for s2 in ("5,999", "6,999", "7,999", "2,499") if s2 in txt or s2.replace(",", "") in txt]
+        stale = [s2 for s2 in ("5,999", "6,999", "7,999", "2,499")
+                 if s2 in txt or re.search(r"(?<!\d)" + s2.replace(",", "") + r"(?!\d)", txt)]
         if stale:
             record(f"pricing: {d}/{tpl} clean of stale prices", False, str(stale))
 

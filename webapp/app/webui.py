@@ -619,18 +619,29 @@ async def billing_page(request: Request):
     user["plan"] = config.plan_key(user.get("plan") or "starter")
     usage = models.plan_usage(user["id"])
     blocked = request.query_params.get("blocked", "")
+    from . import early_adopter
+    sub = early_adopter.get_subscription(user["id"])
+    ea_av = early_adopter.availability()
     return render("billing.html", request, user=user, tab="subscription", pays=pays,
-                  plans=config.PLANS, inr=inr, usage=usage, now_ts=time.time(), blocked=blocked)
+                  plans=config.PLANS, inr=inr, usage=usage, now_ts=time.time(),
+                  blocked=blocked, sub=sub, ea_av=ea_av,
+                  ea_price=early_adopter.EA_ANNUAL_PAISE)
 
 @router.post("/billing/change-plan")
-async def change_plan(request: Request, plan: str = Form(""), cycle: str = Form("monthly")):
+async def change_plan(request: Request, plan: str = Form(""), cycle: str = Form("monthly"),
+                      ea: str = Form("")):
     user = guard(request)
     if not user:
         return RedirectResponse("/login", status_code=303)
     plan = config.plan_key(plan)
     if plan in config.PLANS and plan != config.plan_key(user["plan"]):
         p = config.PLANS[plan]
+        from . import early_adopter
         if user["plan_status"] == "trialing":
+            if ea == "1" and plan == "enterprise" and cycle == "annual":
+                # The early-adopter offer is for PAYING Enterprise businesses;
+                # a free-trial checkout can never claim or hold a slot.
+                return RedirectResponse("/billing?blocked=ea_trial", status_code=303)
             # Plan changes during a free trial are free; the trial keeps running.
             models.update_user(user["id"], plan=plan, plan_status="trialing")
             models.log_audit(user["id"], "billing.plan_change", f"{plan} during trial (no charge)")
@@ -638,12 +649,32 @@ async def change_plan(request: Request, plan: str = Form(""), cycle: str = Form(
             # No verified payment -> no activation. The plan sits in pending_payment
             # until the payment is confirmed (admin panel or billing webhook).
             cyc = "annual" if cycle == "annual" else "monthly"
-            amount = p["annual_amount"] if cyc == "annual" else p["amount"]
+            # unique per checkout: two checkouts in the same second must never
+            # share a reference (webhooks correlate on it)
+            ref = "pc-" + models.uid()[:16]
+            is_ea = bool(ea == "1" and plan == "enterprise" and cyc == "annual")
+            if is_ea:
+                # Server-side eligibility first: the slot is reserved atomically
+                # and expires in 30 minutes if the checkout is abandoned.
+                ok, res = early_adopter.reserve(user, checkout_ref=ref)
+                if not ok:
+                    reason = {"sold_out": "ea_sold_out", "already_claimed": "ea_already"}.get(res, "ea_unavailable")
+                    return RedirectResponse(f"/billing?blocked={reason}", status_code=303)
+                # The payable amount comes from trusted server config only.
+                amount = config.EA_OFFER["annual_price"]
+                regular = p["annual_amount"]
+            else:
+                amount = p["annual_amount"] if cyc == "annual" else p["amount"]
+                regular = amount
             models.update_user(user["id"], plan=plan, plan_status="pending_payment",
                                billing_cycle=cyc)
-            models.record_plat_pay(user["id"], plan, amount, "pending",
-                                   reference=f"plan-change-{int(time.time())}")
-            models.log_audit(user["id"], "billing.plan_change", f"{plan}/{cyc} pending payment")
+            models.record_plat_pay(user["id"], plan, amount, "pending", reference=ref)
+            early_adopter.open_checkout(user, plan=plan, cycle=cyc, price=amount,
+                                        regular_renewal_price=regular,
+                                        is_early_adopter=is_ea, payment_ref=ref)
+            models.log_audit(user["id"], "billing.plan_change",
+                             f"{plan}/{cyc}{' early-adopter' if is_ea else ''} "
+                             f"pending payment ({amount})")
     return RedirectResponse("/billing", status_code=303)
 
 @router.post("/billing/cancel")
