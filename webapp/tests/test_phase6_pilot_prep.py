@@ -14,6 +14,7 @@ import os, sys, tempfile, time, hmac, hashlib, json, datetime
 os.environ["PAYRECOVERY_DB"] = tempfile.mktemp(prefix="test_p6_", suffix=".sqlite")
 os.environ.setdefault("MANUAL_UPI_ID", "testpay@upi")
 os.environ["RZP_WEBHOOK_SECRET"] = "pilot-webhook-secret"  # fail-closed: explicit test secret
+os.environ.setdefault("ADMIN_TOKEN", "p6-admin-token")
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 import clock as _rsclock  # deterministic suite clock (12:30 IST default; see tests/clock.py)

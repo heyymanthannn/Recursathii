@@ -66,7 +66,7 @@ except ValueError:
 # ---- 4. signup helper ----
 def new_owner(email, plan="starter"):
     client.post("/signup", data={"name": "P " + email, "business": "P15 Biz", "email": email,
-                                 "phone": "919810000201", "upi_vpa": "p15@upi", "password": "pw12345678"},
+                                 "phone": "919810000201", "upi_vpa": "p15@upi", "password": "pw12345678", "password2": "pw12345678", "accept": "1"},
                 follow_redirects=False)
     u = models.get_user_by_email(email)
     client.post("/login", data={"email": email, "password": "pw12345678"}, follow_redirects=False)

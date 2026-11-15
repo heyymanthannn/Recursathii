@@ -15,6 +15,7 @@ os.environ["MANUAL_UPI_ID"] = "test@upi"
 for k in ("RAZORPAY_KEY_ID", "YOUPI_API_URL", "SCHEDULER_TICK_TOKEN",
           "SUPABASE_URL", "SUPABASE_SERVICE_KEY", "BACKUP_ENC_KEY"):
     os.environ.pop(k, None)
+os.environ.setdefault("ADMIN_TOKEN", "sec-regression-admin")
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 
 from fastapi.testclient import TestClient  # noqa: E402

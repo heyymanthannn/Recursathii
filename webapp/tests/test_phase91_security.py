@@ -12,10 +12,11 @@ Isolated temp DB, synthetic data only, no network, no real providers.
 import os, sys, tempfile, gzip, sqlite3
 os.environ["PAYRECOVERY_DB"] = tempfile.mktemp(prefix="test_p91_", suffix=".sqlite")
 os.environ.setdefault("MANUAL_UPI_ID", "testpay@upi")
+os.environ.setdefault("ADMIN_TOKEN", "p91-admin-token")
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 from fastapi.testclient import TestClient
-from app import main as app_main, models, webui, vault
+from app import main as app_main, models, webui, vault, config
 from app.auth import hash_pw
 
 models.init()
@@ -72,7 +73,7 @@ except RuntimeError:
     record("fail-fast: dev default value raises", True)
 _all = _failfast({"RENDER": "1", "APP_SECRET": "p" * 40,
         "BACKUP_ENC_KEY": "k" * 44, "BILLING_WEBHOOK_SECRET": "b" * 20,
-        "YOUPI_WEBHOOK_SECRET": "y" * 20})
+        "YOUPI_WEBHOOK_SECRET": "y" * 20, "ADMIN_TOKEN": "a" * 32})
 record("fail-fast: all present ok (warn list returned)", isinstance(_all, list), _all)
 record("fail-fast: dev unaffected (no RENDER)", _failfast({}) == [])
 try:
@@ -80,6 +81,22 @@ try:
     record("fail-fast: missing non-APP secret still raises", False)
 except RuntimeError:
     record("fail-fast: missing non-APP secret still raises", True)
+
+try:
+    _failfast({"RENDER": "1", "APP_SECRET": "p" * 40, "BACKUP_ENC_KEY": "k" * 44,
+               "BILLING_WEBHOOK_SECRET": "b" * 20, "YOUPI_WEBHOOK_SECRET": "y" * 20})
+    record("fail-fast: missing ADMIN_TOKEN raises", False)
+except RuntimeError as e:
+    record("fail-fast: missing ADMIN_TOKEN raises", "ADMIN_TOKEN" in str(e), str(e))
+
+# ---- 3b. admin token checks fail closed when ADMIN_TOKEN is unset ----
+_saved_admin = config.ADMIN_TOKEN
+config.ADMIN_TOKEN = ""
+record("admin check refuses empty token when unset", config.admin_token_ok("") is False)
+record("admin check refuses guessed token when unset", config.admin_token_ok("changeme-admin") is False)
+config.ADMIN_TOKEN = _saved_admin
+record("admin check accepts correct token", config.admin_token_ok(_saved_admin) is True)
+record("admin check rejects wrong and empty", config.admin_token_ok("") is False and config.admin_token_ok(None) is False and config.admin_token_ok("wrong") is False)
 
 # ---- 4. APP_SECRET rotation invalidates signed sessions ----
 from app import auth

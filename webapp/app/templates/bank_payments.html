@@ -1,0 +1,35 @@
+{% extends "base.html" %}{% block title %}Subscription payments | RecurSaathi{% endblock %}{% block content %}
+<h1>Subscription payments</h1>
+<p class="sub">History, renewal date and reminders. Nothing renews or charges automatically.</p>
+{% if submitted %}<div class="card" style="margin:14px 0"><strong>Submitted for verification:</strong>
+<span class="muted">reference {{ submitted }} is in PENDING_VERIFICATION. Your plan activates after our team verifies it.</span></div>{% endif %}
+{% if error %}<div class="card" style="border-color:var(--purple)"><strong>Could not submit.</strong>
+<span class="muted">{{ error }}</span></div>{% endif %}
+{% if renewal.period_end %}
+<div class="card" style="margin:14px 0">
+<div class="label">Current period</div>
+<div class="kpi {{ 'blue' if renewal.days_left >= 0 else 'red' }}">
+{% if renewal.days_left >= 0 %}{{ renewal.days_left }} day(s) left{% else %}Expired{% endif %}</div>
+<div class="muted" style="margin:8px 0">Renews {{ renewal.period_end | datetime }}.
+Reminders are queued a week before expiry. Nothing is charged automatically; you pay by bank transfer again when you choose to.</div>
+</div>
+{% endif %}
+<div class="card" style="margin:14px 0">
+<div class="label">Payment history</div>
+{% if pays %}
+<table>
+<thead><tr><th>Reference</th><th>Plan</th><th>Amount</th><th>Method</th><th>UTR</th><th>Status</th><th>Submitted</th><th></th></tr></thead>
+<tbody>
+{% for p in pays %}
+<tr><td>{{ p.reference }}</td><td>{{ p.plan | capitalize }} {{ p.cycle }}</td><td>{{ inr(p.amount) }}</td><td>{{ p.method | upper }}</td><td>{{ p.utr }}</td>
+<td>{{ p.status }}{% if p.status == 'approved' %} (receipt below){% endif %}{% if p.status == 'rejected' and p.decision_note %}: {{ p.decision_note }}{% endif %}</td>
+<td>{{ p.submitted_at | datetime }}</td>
+<td>{% if p.status == 'approved' %}<a href="/subscription/receipt/{{ p.reference }}">Receipt</a>{% endif %}</td></tr>
+{% endfor %}
+</tbody>
+</table>
+{% else %}
+<p class="muted">No payments yet. <a href="/subscription/pay">Pay by bank transfer</a> to activate or renew your plan.</p>
+{% endif %}
+</div>
+{% endblock %}

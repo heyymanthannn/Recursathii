@@ -132,6 +132,12 @@ async def billing_webhook(request: Request,
     platform = early_adopter.process_billing_event(payload)
     return {"ok": True, **sandbox, "platform": platform}
 
+@app.get("/api/me", include_in_schema=False)
+async def api_me(request: Request):
+    """Public auth-state probe for the static site nav: boolean only, no PII."""
+    user = auth.current_user(request)
+    return {"authenticated": bool(user), "onboarded": bool(user and user.get("onboarded"))}
+
 @app.get("/api/early-adopter-availability", include_in_schema=False)
 async def early_adopter_availability(request: Request):
     """Public, server-side availability for the pricing page. No user data,
@@ -453,7 +459,7 @@ async def pay_qr(merchant_id: str):
 @app.post("/admin/mark-paid")
 async def admin_mark_paid(request: Request, x_admin_token: str = Header(default="")):
     """Owner confirms an incoming UPI payment; activates the merchant account."""
-    if not hmac.compare_digest(x_admin_token, config.ADMIN_TOKEN):
+    if not config.admin_token_ok(x_admin_token):
         raise HTTPException(status_code=401, detail="invalid admin token")
     data = await request.json()
     return manual_upi.mark_paid(data.get("merchant_id", ""))
@@ -461,7 +467,7 @@ async def admin_mark_paid(request: Request, x_admin_token: str = Header(default=
 @app.post("/admin/plat-confirm")
 async def admin_plat_confirm(request: Request, x_admin_token: str = Header(default="")):
     """Confirm a pending subscription payment -> activates that business's plan."""
-    if not hmac.compare_digest(x_admin_token, config.ADMIN_TOKEN):
+    if not config.admin_token_ok(x_admin_token):
         raise HTTPException(status_code=401, detail="invalid admin token")
     from . import models
     data = await request.json()
@@ -547,7 +553,7 @@ button{width:100%;background:linear-gradient(135deg,#00d4a0,#00b389);border:0;bo
 async def admin_login(request: Request):
     from fastapi.responses import RedirectResponse
     form = await request.form()
-    if not hmac.compare_digest(form.get("token") or "", config.ADMIN_TOKEN):
+    if not config.admin_token_ok(form.get("token")):
         return RedirectResponse("/admin?e=1", status_code=303)
     resp = RedirectResponse("/admin", status_code=303)
     resp.set_cookie("admin_token", _ADMIN_COOKIE, max_age=60 * 60 * 24 * 30, httponly=True, samesite="lax", secure=_cookie_secure())
@@ -564,7 +570,7 @@ async def admin_confirm(request: Request):
 
 @app.get("/admin/pending")
 async def admin_pending(x_admin_token: str = Header(default="")):
-    if not hmac.compare_digest(x_admin_token, config.ADMIN_TOKEN):
+    if not config.admin_token_ok(x_admin_token):
         raise HTTPException(status_code=401, detail="invalid admin token")
     return {"pending": manual_upi.pending(), "activations": manual_upi.activations()}
 
@@ -1547,7 +1553,7 @@ async def pilot_reconcile(request: Request, x_api_key: str | None = Header(defau
 async def pilot_metrics(x_admin_token: str = Header(default="")):
     """Operator-level pilot monitoring across every business. Admin token
     only, never a business API key: tenant isolation is not weakened."""
-    if not hmac.compare_digest(x_admin_token, config.ADMIN_TOKEN):
+    if not config.admin_token_ok(x_admin_token):
         raise HTTPException(status_code=401, detail="invalid admin token")
     _models.log_audit("platform", "pilot_metrics_access", "restricted pilot monitoring read")
     return _pilot.pilot_metrics()
@@ -1555,7 +1561,7 @@ async def pilot_metrics(x_admin_token: str = Header(default="")):
 
 @app.get("/pilot/backup-check")
 async def pilot_backup(x_admin_token: str = Header(default="")):
-    if not hmac.compare_digest(x_admin_token, config.ADMIN_TOKEN):
+    if not config.admin_token_ok(x_admin_token):
         raise HTTPException(status_code=401, detail="invalid admin token")
     return _pilot.backup_check()
 
@@ -1579,7 +1585,7 @@ async def pilot_activation_challenge(request: Request, x_api_key: str | None = H
 async def pilot_trust_source(request: Request, x_admin_token: str = Header(default="")):
     """Platform admin only. Seeds the trusted reference source (what a live
     gateway API export would show). Business API keys can never write here."""
-    if not hmac.compare_digest(x_admin_token, config.ADMIN_TOKEN):
+    if not config.admin_token_ok(x_admin_token):
         raise HTTPException(status_code=403, detail="admin token required")
     d = await request.json()
     try:
@@ -1594,7 +1600,7 @@ async def pilot_trust_source(request: Request, x_admin_token: str = Header(defau
 
 @app.post("/pilot/backup")
 async def pilot_backup_create(request: Request, x_admin_token: str = Header(default="")):
-    if not hmac.compare_digest(x_admin_token, config.ADMIN_TOKEN):
+    if not config.admin_token_ok(x_admin_token):
         raise HTTPException(status_code=403, detail="admin token required")
     d = await request.json() if request.headers.get("content-length", "0") not in ("0", "") else {}
     return {"ok": True, "backup": _pilot.create_backup(str((d or {}).get("label") or "pre-rollback"))}
@@ -1602,7 +1608,7 @@ async def pilot_backup_create(request: Request, x_admin_token: str = Header(defa
 
 @app.get("/pilot/backup")
 async def pilot_backup_verify(x_admin_token: str = Header(default=""), backup_id: str = ""):
-    if not hmac.compare_digest(x_admin_token, config.ADMIN_TOKEN):
+    if not config.admin_token_ok(x_admin_token):
         raise HTTPException(status_code=403, detail="admin token required")
     if not backup_id:
         return {"ok": True, "backups": _models.q("SELECT id,label,sha256,created FROM pilot_backups ORDER BY created DESC LIMIT 20")}
@@ -1614,7 +1620,7 @@ async def pilot_backup_verify(x_admin_token: str = Header(default=""), backup_id
 
 @app.post("/pilot/prepare")
 async def pilot_prepare(request: Request, x_admin_token: str = Header(default="")):
-    if not hmac.compare_digest(x_admin_token, config.ADMIN_TOKEN):
+    if not config.admin_token_ok(x_admin_token):
         raise HTTPException(status_code=403, detail="admin token required")
     d = await request.json() if request.headers.get("content-length", "0") not in ("0", "") else {}
     return {"ok": True, **_pilot.prepare_pilots(int((d or {}).get("count") or 3))}
@@ -1633,7 +1639,7 @@ async def pilot_deliver(request: Request, x_admin_token: str = Header(default=""
     """Platform admin only: run the controlled delivery pipeline against the
     configured providers (SMTP host/port, WhatsApp Cloud API base). Used in
     the controlled test environment; never contacts real customers."""
-    if not hmac.compare_digest(x_admin_token, config.ADMIN_TOKEN):
+    if not config.admin_token_ok(x_admin_token):
         raise HTTPException(status_code=403, detail="admin token required")
     d = await request.json()
     out = _providers.deliver_outbox(str(d.get("owner_id") or ""), d.get("config") or {})

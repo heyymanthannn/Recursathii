@@ -395,7 +395,6 @@ html{scroll-behavior:smooth}
 .b-retry{background:#e4f4e6;color:#1d7a37}.b-wait{background:#fdf1dd;color:#9a6b1f}.b-stop{background:#fbe5e5;color:#b3261e}
 </style><link rel="stylesheet" href="site.css">
 </head><body>
-<div id="eaBanner" style="background:#eef0ff;border-bottom:1px solid #dcdcff;color:#3d3d8f;font-size:13px;text-align:center;padding:9px 16px;position:relative;z-index:60">RecurSaathi is in early access &mdash; this page describes the product we&rsquo;re building. <a href="#" data-ea-mail style="color:#4f46e5;font-weight:700;text-decoration:underline">Request early access</a></div>
 <nav class="nav">
   <div class="in">
     <a class="logo" href="/#top"><i></i><span><b>Recur</b>Saathi</span></a>
@@ -406,7 +405,8 @@ html{scroll-behavior:smooth}
       <a href="/pricing">Pricing</a>
       <a href="/contact">Contact</a>
     </div>
-    <a class="btn btn-primary btn-sm nbtn" href="#" data-ea-mail>Request early access</a>
+    <a class="btn btn-ghost btn-sm nbtn" href="/login">Log In</a>
+    <a class="btn btn-primary btn-sm nbtn" href="/signup">Sign Up</a>
   </div>
 </nav>
 <main class="page"><span class="kick2">Free tool</span><h1>Payment failure reason decoder</h1><p class="lead">Pick the decline code your gateway shows and get its plain-English meaning, whether it is worth retrying, and the next step. Runs in your browser.</p>
@@ -424,7 +424,7 @@ html{scroll-behavior:smooth}
 <p>A soft failure (balance, timeout, bank outage) usually fixes itself or fixes itself with a nudge. A hard failure (paused mandate, expired card, revoked mandate) needs the customer to act before any retry can succeed. Sorting your failures into these two buckets is the single highest-value thing you can do with a gateway export.</p>
 <h2>What RecurSaathi does with this</h2>
 <p>RecurSaathi sorts every failure for you, retries the soft ones on schedule and queues a human-readable nudge for the hard ones (delivered over your connected email or WhatsApp number; queued as no channel until then), with a verified "I've paid" path when the customer pays manually. You see the reason code next to each failed payment instead of digging through gateway logs.</p>
-<div class="cta2"><a class="btn btn-primary" href="#" data-ea-mail>Request early access</a><a class="herosec" href="/rbi-retry-window-checker">Retry window checker</a><a class="herosec" href="/guide">The recovery guide</a></div>
+<div class="cta2"><a class="btn btn-primary"  href="/signup" >Get started free</a><a class="herosec" href="/rbi-retry-window-checker">Retry window checker</a><a class="herosec" href="/guide">The recovery guide</a></div>
 </div>
 <section class="calcfaq"><h2>Questions people ask</h2><details><summary>My gateway shows a code that is not on this list.</summary><p>Pick the closest match by wording. Most codes map to one of these buckets: balance, mandate state, authentication, card state, connectivity or risk. If you are stuck, email us the code and we will tell you which bucket it lands in.</p></details><details><summary>Should I retry a payment that failed for insufficient funds?</summary><p>Yes, but not immediately. A retry after a gap is the usual move; a retry timed around the customer's payday is what actually converts.</p></details><details><summary>Can I just raise a one-time payment link instead?</summary><p>Often yes, and often better. A one-time link does not consume mandate retries and lets the customer pay the specific invoice right now.</p></details></section></main><footer>
   <div class="wrap">

@@ -40,7 +40,7 @@ def require_production_secrets(env=None):
     if not (env.get("RENDER") or env.get("RENDER_EXTERNAL_URL")):
         return []
     missing = [k for k in ("APP_SECRET", "BACKUP_ENC_KEY", "BILLING_WEBHOOK_SECRET",
-                           "YOUPI_WEBHOOK_SECRET") if not (env.get(k) or "").strip()]
+                           "YOUPI_WEBHOOK_SECRET", "ADMIN_TOKEN") if not (env.get(k) or "").strip()]
     if missing:
         raise RuntimeError("missing required secrets in production: " + ", ".join(missing)
                            + " (set them in the Render environment before deploying)")

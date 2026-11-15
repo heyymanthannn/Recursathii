@@ -29,12 +29,12 @@ def _epoch(user_id: str) -> int:
     except Exception:
         return 0
 
-def start_session(response, user_id: str):
+def start_session(response, user_id: str, ttl: int | None = None):
     # session epoch: bumped on every password change, so all cookies issued
     # before a rotation stop validating (server-side revocation without a
     # session store; pre-epoch cookies stay valid only for epoch-0 accounts)
     response.set_cookie(SESSION_COOKIE, _s.dumps({"u": user_id, "e": _epoch(user_id)}),
-                        httponly=True, samesite="lax", max_age=SESSION_TTL)
+                        httponly=True, samesite="lax", max_age=ttl or SESSION_TTL)
     # Secure flag is added per-request by the security middleware when the
     # connection is actually https (incl. X-Forwarded-Proto behind Render),
     # so localhost dev and the http test client keep working.

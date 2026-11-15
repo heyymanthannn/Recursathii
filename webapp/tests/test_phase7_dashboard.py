@@ -50,7 +50,7 @@ record("sequences ensure_schema idempotent", True)
 # ---- 2. signup: automations OFF by default ----
 r = client.post("/signup", data={"name": "Test Owner", "business": "Test Biz",
                                  "email": "owner@test.test", "phone": "9000000000",
-                                 "upi_vpa": "test@upi", "password": PW},
+                                 "upi_vpa": "test@upi", "password": PW, "password2": PW, "accept": "1"},
                 follow_redirects=False)
 record("signup accepted -> login page", r.status_code == 303 and "/login" in r.headers.get("location", ""),
        r.status_code)

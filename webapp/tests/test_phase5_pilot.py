@@ -3,6 +3,7 @@ imports with reconciliation, monitoring metrics, backup check, and the
 three-isolated-workspaces acceptance demo."""
 import os, tempfile, time
 os.environ["PAYRECOVERY_DB"] = tempfile.mktemp(prefix="test_pilot_", suffix=".sqlite")
+os.environ.setdefault("ADMIN_TOKEN", "pilot-admin-token")
 from fastapi.testclient import TestClient
 from app import main as app_main, models, pilot, permissions, intelligence
 
@@ -116,11 +117,11 @@ leak = client.get("/api/pilot/consents", headers={"X-API-Key": ids[0][1]}).json(
 record("pilot: workspace 1 sees none of pilot workspace's consents", len(leak["consents"]) == 0)
 
 # ---- metrics + backup ----
-m = client.get("/pilot/metrics", headers={"x-admin-token": "changeme-admin"}).json()
+m = client.get("/pilot/metrics", headers={"x-admin-token": os.environ["ADMIN_TOKEN"]}).json()
 record("pilot: metrics served with admin token", m["businesses_onboarded"] >= 4, str(m)[:140])
 m401 = client.get("/pilot/metrics", headers={})
 record("pilot: metrics blocked without admin token", m401.status_code == 401)
-b = client.get("/pilot/backup-check", headers={"x-admin-token": "changeme-admin"}).json()
+b = client.get("/pilot/backup-check", headers={"x-admin-token": os.environ["ADMIN_TOKEN"]}).json()
 record("pilot: backup check runs quick_check", b.get("quick_check") == "ok", str(b)[:120])
 
 print(f"\n{sum(results)}/{len(results)} passed")

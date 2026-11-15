@@ -82,3 +82,52 @@ async def owner_plan(request: Request, oid: str, plan_status: str = Form("")):
         models.update_user(oid, **kw)
         models.log_audit(user["id"], "admin.plan_status", f"{oid}->{plan_status}")
     return RedirectResponse("/admin", status_code=303)
+
+
+# ---------- Phase 24: manual bank-transfer verification (admin only) ----------
+@router.get("/admin/bank", response_class=HTMLResponse)
+async def admin_bank(request: Request):
+    """Payment verification screen. Only authorized platform admins reach it;
+    every submission sits in PENDING_VERIFICATION until a human decides."""
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    from . import manual_bank
+    names = {o["id"]: (o.get("business") or o.get("email") or o["id"])
+             for o in models.q("SELECT id, business, email FROM users")}
+    return render("admin_bank.html", request, user=user,
+                  pending=manual_bank.pending_list(),
+                  decided=manual_bank.decided_list(),
+                  business_names=names)
+
+
+@router.post("/admin/bank/{pid}/approve")
+async def admin_bank_approve(request: Request, pid: str, note: str = Form("")):
+    """Approve a verified transfer. Idempotent: a second approval cannot
+    re-activate or double-charge. Every approval is audited."""
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    from . import manual_bank
+    try:
+        row, decided = manual_bank.approve(pid, user, note)
+    except PermissionError:
+        return RedirectResponse("/admin/bank?err=not_authorized", status_code=303)
+    if not decided:
+        return RedirectResponse("/admin/bank?already=" + row["reference"], status_code=303)
+    return RedirectResponse("/admin/bank?approved=" + row["reference"], status_code=303)
+
+
+@router.post("/admin/bank/{pid}/reject")
+async def admin_bank_reject(request: Request, pid: str, reason: str = Form("")):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    from . import manual_bank
+    try:
+        row, decided = manual_bank.reject(pid, user, reason or "no reason recorded")
+    except PermissionError:
+        return RedirectResponse("/admin/bank?err=not_authorized", status_code=303)
+    if not decided:
+        return RedirectResponse("/admin/bank?already=" + row["reference"], status_code=303)
+    return RedirectResponse("/admin/bank?rejected=" + row["reference"], status_code=303)

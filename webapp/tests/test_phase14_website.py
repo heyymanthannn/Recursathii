@@ -76,7 +76,10 @@ record("a11y: lang attribute on html", no_lang == 0, no_lang)
 land = client.get("/").text
 land_clean = re.sub(r"<script.*?</script>|<style.*?</style>", "", land, flags=re.S)
 prices = re.findall(r"₹\s*[\d,]+|Rs\.?\s*[\d,]+", land_clean)
-record("pricing: landing shows no in-page prices (early-access positioning)", not prices, prices[:4])
+official = ("999", "4,999", "9,999", "9,990", "49,990", "99,990", "79,990")
+record("pricing: homepage shows the official in-page prices",
+       all(o in land_clean for o in ("999", "4,999", "9,999", "9,990", "49,990", "99,990", "79,990")),
+       [o for o in official if o not in land_clean])
 stale = [s2 for s2 in ("5,999", "6,999", "7,999", "2,499")
         if s2 in land or re.search(r"(?<!\d)" + s2.replace(",", "") + r"(?!\d)", land)]
 record("pricing: no stale Rs 5,999/6,999/7,999/2,499 on landing", not stale, stale)
@@ -87,6 +90,35 @@ for d in ("app/templates", "landing"):
                  if s2 in txt or re.search(r"(?<!\d)" + s2.replace(",", "") + r"(?!\d)", txt)]
         if stale:
             record(f"pricing: {d}/{tpl} clean of stale prices", False, str(stale))
+
+# ---- Part 4: public website CTA + nav requirements ----
+def _clean(html):
+    import re as _re
+    return _re.sub(r"<script.*?</script>|<style.*?</style>", "", html, flags=_re.S)
+
+_home = _clean(client.get("/").text)
+record("site: no Early Access CTA anywhere on the public site",
+       all("early access" not in _clean(open(os.path.join("landing", f)).read()).lower()
+           and "data-ea-mail" not in open(os.path.join("landing", f)).read()
+           and "eaBanner" not in open(os.path.join("landing", f)).read()
+           for f in os.listdir("landing") if f.endswith(".html")))
+record("site: homepage title carries the new positioning",
+       "Recover More Revenue" in client.get("/").text.split("<title>")[1].split("</title>")[0])
+record("site: homepage hero headline and description",
+       "Recover More Revenue." in _home and "intelligent reminders, customer communication and organized follow-ups" in _home)
+record("site: homepage buttons are Get Started and View Pricing",
+       ">Get Started</a>" in client.get("/").text and ">View Pricing</a>" in client.get("/").text)
+record("site: nav has Log In and Sign Up, no Early Access button",
+       ">Log In</a>" in client.get("/").text and ">Sign Up</a>" in client.get("/").text
+       and "Request Early Access" not in client.get("/").text)
+record("site: nav covers Features / How It Works / Pricing / Security / FAQ / Contact",
+       all(f'href="{h}"' in client.get("/").text for h in
+           ("#features", "#how", "#pricing", "#security", "#faq", "/contact")))
+record("site: homepage carries the required sections",
+       all(x in _home for x in ("Recovery Radar", "Invoice management", "Customer management",
+           "Automated reminders", "conversations", "Promise-to-pay", "Payment claim", "Reports and analytics")))
+record("site: authenticated nav swap endpoint returns boolean-only state",
+       client.get("/api/me").json() == {"authenticated": False, "onboarded": False})
 
 # ---- footer present on public pages ----
 foot = all(("Privacy Policy" in client.get(p).text and "Terms of Service" in client.get(p).text) for p in ("/", "/login", "/signup"))

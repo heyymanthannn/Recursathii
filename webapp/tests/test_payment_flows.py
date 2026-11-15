@@ -12,6 +12,7 @@ os.environ["RZP_WEBHOOK_SECRET"] = "test-webhook-secret"
 os.environ["BILLING_WEBHOOK_SECRET"] = "test-billing-secret"
 for k in ("RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET", "YOUPI_API_URL"):
     os.environ.pop(k, None)
+os.environ.setdefault("ADMIN_TOKEN", "flow-admin-token")
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 
 from fastapi.testclient import TestClient  # noqa: E402
