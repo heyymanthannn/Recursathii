@@ -220,6 +220,14 @@ def init():
         c.execute("INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES('0002-phase7.8-ratelimits', ?)",
                   (time.time(),))
 
+        c.execute("""CREATE TABLE IF NOT EXISTS user_sessions(
+          sid TEXT PRIMARY KEY, user_id TEXT NOT NULL,
+          expires_at REAL NOT NULL, revoked INTEGER DEFAULT 0,
+          created_at REAL)""")
+        c.execute("CREATE INDEX IF NOT EXISTS idx_user_sessions_user ON user_sessions(user_id)")
+        c.execute("INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES('0003-user-sessions', ?)",
+                  (time.time(),))
+
 def q(sql, args=()):
     with conn() as c:
         return [dict(r) for r in c.execute(sql, args)]
@@ -682,6 +690,7 @@ def clear_reset(uid_):
 
 def change_password(uid_, pw_hash):
     ex("UPDATE users SET pw_hash=?, session_epoch=COALESCE(session_epoch,0)+1 WHERE id=?", (pw_hash, uid_))
+    ex("UPDATE user_sessions SET revoked=1 WHERE user_id=?", (uid_,))
 
 
 # ---- retailer-owned connection (business email + WhatsApp Business) ----
