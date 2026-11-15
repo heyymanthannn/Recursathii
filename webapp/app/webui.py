@@ -263,6 +263,8 @@ async def logout(request: Request):
     resp = RedirectResponse("/login", status_code=303)
     auth.revoke_session(request)
     auth.end_session(resp)
+    # the platform-admin token cookie must not outlive logout either
+    resp.delete_cookie("admin_token")
     return resp
 
 # ---------- dashboard ----------

@@ -14,6 +14,7 @@ import os, sys, tempfile, time
 os.environ["PAYRECOVERY_DB"] = tempfile.mktemp(prefix="test_sg_", suffix=".sqlite")
 os.environ.setdefault("MANUAL_UPI_ID", "testpay@upi")
 os.environ["RZP_WEBHOOK_SECRET"] = "gate-webhook-secret"  # fail-closed: explicit test secret
+os.environ["ADMIN_TOKEN"] = "gate-admin-token"  # test secret for admin-token flow checks
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 from fastapi.testclient import TestClient
 from app import auth, main as app_main, models, sequences, vault
@@ -116,6 +117,47 @@ client.get("/logout", follow_redirects=False)
 client.cookies.set(auth.SESSION_COOKIE, _copied)
 r = client.get("/dashboard", follow_redirects=False)
 record("copied token rejected after logout",
+       r.status_code == 303 and "/login" in r.headers.get("location", ""), str(r.status_code))
+
+# ---- 1b. admin access after logout ----
+client.cookies.clear()  # drop the copied token planted by the check above
+# /admin is the token panel: without a valid admin token it shows the token
+# form and must show no admin data
+r = client.get("/admin", follow_redirects=False)
+record("anonymous /admin shows token form, no admin data",
+       r.status_code == 200 and "Enter your admin token" in r.text
+       and "Pending payments waiting for your confirmation" not in r.text, str(r.status_code))
+# an ordinary business owner gets the same form, never the panel
+r = client.post("/login", data={"email": A["email"], "password": PW}, follow_redirects=False)
+r = client.get("/admin", follow_redirects=False)
+record("ordinary owner cannot open the admin panel",
+       r.status_code == 200 and "Enter your admin token" in r.text
+       and "Pending payments waiting for your confirmation" not in r.text, str(r.status_code))
+# an admin-role user reaches the payment-approval surface via their session,
+# and that access dies on logout, copied token included
+admin_user = models.create_user("gate-admin@example.test", hash_pw(PW), "Gate Admin",
+                                "Platform Admin", "+10000000000", role="admin")
+r = client.post("/login", data={"email": "gate-admin@example.test", "password": PW}, follow_redirects=False)
+_m = _re.search(auth.SESSION_COOKIE + r"=([^;]+)", r.headers.get("set-cookie", ""))
+_admin_cookie = _m.group(1) if _m else ""
+r = client.get("/admin/bank", follow_redirects=False)
+record("admin-role user reaches /admin/bank", r.status_code == 200, str(r.status_code))
+client.get("/logout", follow_redirects=False)
+client.cookies.set(auth.SESSION_COOKIE, _admin_cookie)
+r = client.get("/admin/bank", follow_redirects=False)
+record("admin/bank access rejected after logout",
+       r.status_code == 303 and "/login" in r.headers.get("location", ""), str(r.status_code))
+# the ADMIN_TOKEN cookie must not survive logout either
+client.cookies.clear()
+r = client.post("/admin/login", data={"token": "gate-admin-token"}, follow_redirects=False)
+record("admin token login sets cookie", "admin_token" in dict(client.cookies),
+       str(dict(client.cookies)))
+r = client.get("/logout", follow_redirects=False)
+record("admin token cleared on logout",
+       "admin_token" not in dict(client.cookies)
+       and "admin_token=" in r.headers.get("set-cookie", ""), r.headers.get("set-cookie", ""))
+r = client.get("/admin/bank", follow_redirects=False)
+record("anonymous /admin/bank redirects to login",
        r.status_code == 303 and "/login" in r.headers.get("location", ""), str(r.status_code))
 
 # ---- 2. anonymous protection on private surfaces ----
