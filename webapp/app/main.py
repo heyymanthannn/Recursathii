@@ -132,6 +132,12 @@ async def billing_webhook(request: Request,
     platform = early_adopter.process_billing_event(payload)
     return {"ok": True, **sandbox, "platform": platform}
 
+@app.get("/api/me", include_in_schema=False)
+async def api_me(request: Request):
+    """Public auth-state probe for the static site nav: boolean only, no PII."""
+    user = auth.current_user(request)
+    return {"authenticated": bool(user), "onboarded": bool(user and user.get("onboarded"))}
+
 @app.get("/api/early-adopter-availability", include_in_schema=False)
 async def early_adopter_availability(request: Request):
     """Public, server-side availability for the pricing page. No user data,

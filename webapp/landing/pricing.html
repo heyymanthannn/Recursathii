@@ -53,7 +53,7 @@ footer a{color:var(--muted)}
 <body>
 <nav><div class="wrap nav">
   <a class="logo" href="/"><span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18V6h6a3.5 3.5 0 0 1 0 7H8l5 5"/></svg></span><span><b style="font-weight:700">Recur</b>Saathi</span></a>
-  <a class="btn btn-primary" href="#" data-ea-mail>Request Early Access</a>
+  <a class="btn btn-primary"  href="/signup" >Get started free</a>
 </div></nav>
 <main>
   <div class="wrap">
@@ -73,7 +73,7 @@ footer a{color:var(--muted)}
           <li>Email reminders &amp; basic analytics</li>
           <li>1 team member &middot; 500 customers</li>
         </ul>
-        <a class="btn btn-ghost" href="#" data-ea-mail>Start with Starter</a>
+        <a class="btn btn-ghost"  href="/signup" >Start with Starter</a>
       </div>
       <div class="pcard hot">
         <span class="pop">Most popular</span>
@@ -87,7 +87,7 @@ footer a{color:var(--muted)}
           <li>AI Recovery Assistant &amp; weekly reports</li>
           <li>5 team members &middot; 5,000 customers</li>
         </ul>
-        <a class="btn btn-primary" href="#" data-ea-mail>Choose Growth</a>
+        <a class="btn btn-primary"  href="/signup" >Choose Growth</a>
       </div>
       <div class="pcard">
         <div class="plan">Enterprise</div>
@@ -100,7 +100,7 @@ footer a{color:var(--muted)}
           <li>Team roles &amp; permissions, priority support</li>
           <li>10 team members &middot; 5 branches</li>
         </ul>
-        <a class="btn btn-ghost" href="#" data-ea-mail>Talk to us about Enterprise</a>
+        <a class="btn btn-ghost"  href="/signup" >Talk to us about Enterprise</a>
       </div>
     </div>
 
@@ -116,7 +116,7 @@ footer a{color:var(--muted)}
         <li>We send advance notice before renewal, and renewal always needs your explicit action: nothing is charged automatically</li>
         <li>Your first-year price is locked in and does not change if list prices change during the year</li>
       </ul>
-      <a class="btn btn-primary" href="#" data-ea-mail>Claim the early-adopter rate</a>
+      <a class="btn btn-primary"  href="/signup" >Claim the early-adopter rate</a>
       <p class="fine">Eligibility and slots are confirmed on our servers at checkout; this page shows live availability from the same source. No countdown timers, no invented numbers.</p>
       <p class="terms">The early-adopter offer is subject to our <a href="/terms">terms and conditions</a>. Prices exclude applicable taxes.</p>
     </div>
@@ -126,9 +126,6 @@ footer a{color:var(--muted)}
 <script src="config.js"></script>
 <script>
 (function(){
-  var cfg=window.EA_CONFIG||{};
-  var mailto=cfg.email?"mailto:"+cfg.email+"?subject="+encodeURIComponent(cfg.subject||"RecurSaathi Early Access Request"):"#";
-  document.querySelectorAll("[data-ea-mail]").forEach(function(a){a.setAttribute("href",mailto);});
   var el=document.getElementById("ea-avail");
   if(el&&window.fetch){
     fetch("/api/early-adopter-availability").then(function(r){return r.ok?r.json():null;}).then(function(d){

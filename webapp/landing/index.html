@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Early Access | RecurSaathi</title>
-<meta name="description" content="RecurSaathi is a revenue-recovery platform for subscription businesses, currently in development. Request early access to use it before launch and help shape pricing.">
-<meta property="og:title" content="Early Access | RecurSaathi">
-<meta property="og:description" content="RecurSaathi is in development. Request early access to recover failed payments, chase overdue invoices and reactivate dormant customers before launch.">
+<title>Recover More Revenue. Automatically. | RecurSaathi</title>
+<meta name="description" content="RecurSaathi helps businesses recover overdue payments through intelligent reminders, customer communication and organized follow-ups.">
+<meta property="og:title" content="Recover More Revenue. Automatically. | RecurSaathi">
+<meta property="og:description" content="RecurSaathi helps businesses recover overdue payments through intelligent reminders, customer communication and organized follow-ups.">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234f6bff'/%3E%3Cpath d='M9 22V10h8a4 4 0 0 1 0 8h-4l5 4' stroke='white' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <style>
@@ -34,14 +34,12 @@ nav{position:sticky;top:0;z-index:50;background:rgba(246,247,251,.85);backdrop-f
 .navlinks{display:flex;gap:22px;margin-left:auto;font-size:14.5px;color:var(--muted)}
 .navlinks a:hover{color:var(--ink)}
 .nav .btn{padding:10px 20px;font-size:14px}
-.badge-ea{font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#4f46e5;background:#eef0ff;border:1px solid #dcdcff;border-radius:999px;padding:4px 11px}
+.navcta{display:flex;gap:10px;margin-left:12px}
 header.hero{padding:88px 0 70px;text-align:left}
-.hero .badge-ea{display:inline-block;margin-bottom:22px}
 h1{font-size:clamp(34px,5.4vw,58px);line-height:1.08;letter-spacing:-.03em;font-weight:800}
 h1 .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
 .hero p.lead{font-size:18px;color:var(--muted);max-width:640px;margin:22px 0 30px}
 .hero .ctas{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
-.hero .micro{font-size:13px;color:var(--faint);margin-top:14px}
 .trustrow{display:flex;gap:26px;flex-wrap:wrap;margin-top:44px;padding-top:26px;border-top:1px solid var(--line)}
 .trustrow span{font-size:14px;color:var(--muted);display:inline-flex;gap:8px;align-items:center}
 .trustrow svg{width:16px;height:16px;color:var(--blue)}
@@ -52,25 +50,35 @@ h2{font-size:clamp(26px,3.4vw,36px);letter-spacing:-.02em;line-height:1.15;font-
 .shead p{color:var(--muted);margin-top:12px;font-size:16.5px}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
 .grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:28px;box-shadow:var(--shadow)}
 .card .chip{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#5b5bd6;background:#eef0ff;border-radius:999px;padding:4px 10px;margin-bottom:14px}
 .card h3{font-size:19px;margin-bottom:8px;letter-spacing:-.01em}
 .card p{color:var(--muted);font-size:15px}
 .split{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:start}
-.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;counter-reset:step}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;counter-reset:step}
 .step{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:28px;box-shadow:var(--shadow)}
 .step .n{width:34px;height:34px;border-radius:10px;background:var(--grad);color:#fff;font-weight:700;display:inline-flex;align-items:center;justify-content:center;font-size:15px;margin-bottom:16px}
 .step h3{font-size:18px;margin-bottom:8px}
 .step p{color:var(--muted);font-size:15px}
-.formcard{max-width:640px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:36px;box-shadow:var(--shadow)}
-.formcard h3{font-size:22px;margin-bottom:6px}
-.formcard .fsub{color:var(--muted);font-size:14.5px;margin-bottom:22px}
-.field{margin-bottom:14px}
-.field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--muted)}
-.field input,.field select,.field textarea{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:15px;font-family:inherit;background:#fbfbfe;color:var(--ink);outline:none;transition:border .15s}
-.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blue)}
-.field textarea{min-height:96px;resize:vertical}
-.fnote{font-size:12.5px;color:var(--faint);margin-top:12px;text-align:center}
+/* pricing */
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:stretch}
+.plan{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:30px;box-shadow:var(--shadow);display:flex;flex-direction:column}
+.plan.featured{border:2px solid var(--blue);position:relative}
+.plan .ptag{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--grad);color:#fff;font-size:11.5px;font-weight:700;letter-spacing:.06em;border-radius:999px;padding:4px 14px;white-space:nowrap}
+.plan h3{font-size:19px;margin-bottom:6px}
+.plan .pm{font-size:34px;font-weight:800;letter-spacing:-.02em;margin:10px 0 2px}
+.plan .pm span{font-size:14px;font-weight:400;color:var(--faint)}
+.plan .pa{font-size:13.5px;color:var(--faint);margin-bottom:18px}
+.plan ul{list-style:none;margin:0 0 22px}
+.plan li{font-size:14.5px;color:var(--muted);margin-bottom:8px;padding-left:22px;position:relative}
+.plan li::before{content:"\2713";position:absolute;left:0;color:var(--blue);font-weight:700}
+.plan .btn{margin-top:auto;width:100%}
+.ea-panel{margin-top:24px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:30px;box-shadow:var(--shadow)}
+.ea-panel h3{font-size:20px;margin-bottom:8px}
+.ea-panel p{color:var(--muted);font-size:15px;max-width:640px}
+.ea-slots{display:inline-flex;align-items:center;gap:8px;font-weight:600;color:var(--ink);background:#eef0ff;border:1px solid #dcdcff;border-radius:999px;padding:6px 14px;font-size:13.5px;margin:14px 0}
+.ea-slots .dot{width:8px;height:8px;border-radius:50%;background:#00b389;display:inline-block}
 .band{background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:26px 0;font-size:14.5px;color:var(--muted)}
 .band b{color:var(--ink)}
 footer{padding:56px 0 34px}
@@ -83,7 +91,6 @@ footer{padding:56px 0 34px}
 .fbottom{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);margin-top:44px;padding-top:22px;font-size:13px;color:var(--faint)}
 .reveal{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s ease}
 .reveal.in{opacity:1;transform:none}
-/* faq + security */
 .faqwrap{max-width:760px;margin:0 auto}
 .faqwrap details{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 22px;margin-bottom:12px;box-shadow:var(--shadow)}
 .faqwrap summary{font-weight:600;cursor:pointer;font-size:16px;list-style:none;position:relative;padding-right:30px;letter-spacing:-.01em}
@@ -91,10 +98,10 @@ footer{padding:56px 0 34px}
 .faqwrap summary::after{content:"+";position:absolute;right:2px;top:-2px;font-weight:700;color:var(--violet);font-size:18px}
 .faqwrap details[open] summary::after{content:"\2013"}
 .faqwrap details p{color:var(--muted);font-size:14.5px;margin-top:10px}
-@media(max-width:900px){.grid3{grid-template-columns:1fr}}
 @media(max-width:900px){
   .navlinks{display:none}
-  .grid3,.steps{grid-template-columns:1fr}
+  .navcta{margin-left:auto}
+  .grid3,.grid4,.steps,.plans{grid-template-columns:1fr}
   .split{grid-template-columns:1fr;gap:24px}
   .grid2{grid-template-columns:1fr}
   .fgrid{grid-template-columns:1fr 1fr}
@@ -103,9 +110,10 @@ footer{padding:56px 0 34px}
 }
 @media(max-width:560px){
   .fgrid{grid-template-columns:1fr}
-  .formcard{padding:26px 20px}
   .btn{width:100%}
   .hero .ctas{flex-direction:column;align-items:stretch}
+  .navcta{gap:6px}
+  .nav .btn{padding:9px 14px;font-size:13px}
 }
 </style>
 </head>
@@ -117,25 +125,28 @@ footer{padding:56px 0 34px}
       <span><b>Recur</b>Saathi</span>
     </a>
     <div class="navlinks">
-      <a href="#what">What it does</a>
-      <a href="#capabilities">Capabilities</a>
-      <a href="#how">Early access</a>
+      <a href="#features">Features</a>
+      <a href="#how">How It Works</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#security">Security</a>
+      <a href="#faq">FAQ</a>
       <a href="/contact">Contact</a>
     </div>
-    <a class="btn btn-primary" href="#" data-ea-mail>Request Early Access</a>
+    <div class="navcta" id="navAuth">
+      <a class="btn btn-ghost" href="/login">Log In</a>
+      <a class="btn btn-primary" href="/signup">Sign Up</a>
+    </div>
   </div>
 </nav>
 
 <header class="hero" id="top">
   <div class="wrap">
-    <span class="badge-ea reveal">Currently in development &middot; Early access open</span>
-    <h1 class="reveal">Stop Losing Revenue.<br><span class="grad">Start Recovering It.</span></h1>
-    <p class="lead reveal">RecurSaathi follows up on failed card and UPI AutoPay payments, chases overdue invoices and brings dormant customers back &mdash; automatically, inside RBI&rsquo;s retry windows. We&rsquo;re building it now, and a small group of early partners will use it before anyone else.</p>
+    <h1 class="reveal">Recover More Revenue.<br><span class="grad">Automatically.</span></h1>
+    <p class="lead reveal">RecurSaathi helps businesses recover overdue payments through intelligent reminders, customer communication and organized follow-ups.</p>
     <div class="ctas reveal">
-      <a class="btn btn-primary btn-lg" href="#" data-ea-mail>Request Early Access</a>
-      <a class="btn btn-ghost btn-lg" href="#how">How early access works</a>
+      <a class="btn btn-primary btn-lg" href="/signup">Get Started</a>
+      <a class="btn btn-ghost btn-lg" href="#pricing">View Pricing</a>
     </div>
-    <p class="micro reveal">Pricing is finalized at launch. Early partners help shape it and get founding terms.</p>
     <div class="trustrow reveal">
       <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>Your money never passes through us</span>
       <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>UPI AutoPay retries in RBI windows</span>
@@ -147,81 +158,93 @@ footer{padding:56px 0 34px}
 <section id="what">
   <div class="wrap split">
     <div>
-      <div class="shead reveal"><span class="kick">What it does</span><h2>Every failed payment gets a second chance, on its own.</h2></div>
-      <p class="reveal" style="color:var(--muted);max-width:560px">A customer&rsquo;s renewal fails. Most businesses find out when they reconcile the month &mdash; and by then the customer is halfway gone. RecurSaathi catches it the moment it happens: retries inside RBI&rsquo;s allowed windows, a WhatsApp or email nudge the same day with a one-tap UPI link, and a dashboard that shows exactly what was recovered.</p>
+      <div class="shead reveal"><span class="kick">Product</span><h2>Every overdue payment gets followed up, on its own.</h2></div>
+      <p class="reveal" style="color:var(--muted);max-width:560px">A customer's payment fails or an invoice slips past its due date. Most businesses find out when they reconcile the month, and by then the customer is halfway gone. RecurSaathi catches it the moment it happens: retries inside RBI's allowed windows, a WhatsApp or email reminder the same day with a one-tap UPI link, and a dashboard that shows exactly what was recovered.</p>
       <p class="reveal" style="color:var(--muted);max-width:560px;margin-top:16px">The recovery assistant is rule-based automation on your own records: decline codes decide retry timing, payment behaviour decides follow-up cadence. No black boxes.</p>
-      <p class="reveal" style="color:var(--faint);max-width:560px;margin-top:12px;font-size:14.5px">How it runs today: retries and payment links work through your own Razorpay account once it&rsquo;s connected; WhatsApp nudges deliver from your own WhatsApp Business number once that&rsquo;s connected; email nudges use your own SMTP login, also one connect away. Nothing pretends to be delivered before then: until a channel is connected, messages stay queued inside RecurSaathi and show as no channel. Customer money settles straight to you &mdash; it never passes through RecurSaathi.</p>
+      <p class="reveal" style="color:var(--faint);max-width:560px;margin-top:12px;font-size:14.5px">How it runs: retries and payment links work through your own Razorpay account once it's connected; WhatsApp reminders deliver from your own WhatsApp Business number once that's connected; email reminders use your own SMTP login, also one connect away. Until a channel is connected, messages stay queued inside RecurSaathi and show as no channel. Customer money settles straight to you; it never passes through RecurSaathi.</p>
     </div>
     <div class="card reveal">
-      <span class="chip">Early access</span>
-      <h3>Why early access</h3>
-      <p>The product is in active development. Early access partners use the current build on real billing, tell us what&rsquo;s missing, and get founding terms when we launch publicly.</p>
-      <p style="margin-top:12px">Requests are reviewed one by one. We keep the first group small on purpose.</p>
+      <span class="chip">How billing works</span>
+      <h3>You get paid directly</h3>
+      <p>RecurSaathi is a Revenue Recovery Communication OS, not a payment gateway. Customers pay your business with your own UPI ID, QR code or payment link, and the money settles directly to you.</p>
+      <p style="margin-top:12px">We manage the tracking, the reminders and the follow-ups. Every payment confirmation is verified before an invoice is marked paid.</p>
     </div>
   </div>
 </section>
 
-<section id="capabilities" style="padding-top:0">
+<section id="features" style="padding-top:0">
   <div class="wrap">
-    <div class="shead reveal"><span class="kick">Capabilities</span><h2>Three things, done properly.</h2><p>What early access partners get first.</p></div>
-    <div class="grid3">
-      <div class="card reveal"><span class="chip">Planned</span><h3>Payment Recovery</h3><p>Failed card and UPI AutoPay payments retried inside RBI&rsquo;s allowed windows through your own Razorpay account, followed by email and WhatsApp nudges with one-tap UPI payment links. Decline codes are read before anything is retried.</p></div>
-      <div class="card reveal"><span class="chip">Planned</span><h3>Customer Reactivation</h3><p>Dormant repeat customers are flagged automatically, grouped into win-back segments, and followed up with a campaign &mdash; so a silent customer doesn&rsquo;t quietly become a lost one.</p></div>
-      <div class="card reveal"><span class="chip">Planned</span><h3>Revenue Intelligence</h3><p>A live picture of what&rsquo;s leaking: recovery rates, decline reasons, outstanding balance and every automated message, in one dashboard your whole team can read.</p></div>
+    <div class="shead reveal"><span class="kick">Features</span><h2>Everything the recovery workflow needs.</h2><p>From spotting overdue revenue to confirming the last rupee.</p></div>
+    <div class="grid4">
+      <div class="card reveal"><span class="chip">Recovery Radar</span><h3>Overdue revenue, ranked</h3><p>Every invoice scored by amount, days overdue and last contact, so the next follow-up is always the one that matters most.</p></div>
+      <div class="card reveal"><span class="chip">Invoices</span><h3>Invoice management</h3><p>Add and track invoices with payment status, payment confirmation and a full audit history. CSV import and export included.</p></div>
+      <div class="card reveal"><span class="chip">Customers</span><h3>Customer management</h3><p>Contact details, outstanding balances, conversation history, promises to pay and disputes, all on one customer record.</p></div>
+      <div class="card reveal"><span class="chip">Reminders</span><h3>Automated reminders</h3><p>Scheduled email and WhatsApp reminders you configure: channels, templates, quiet hours and frequency limits stay under your control.</p></div>
+      <div class="card reveal"><span class="chip">Inbox</span><h3>Unified conversations</h3><p>Customer replies from every channel land in one inbox, with intent, payment claims and promises to pay surfaced on each message.</p></div>
+      <div class="card reveal"><span class="chip">Promises</span><h3>Promise-to-pay tracking</h3><p>When a customer commits to a date, it becomes a tracked follow-up that stays visible until it is honoured.</p></div>
+      <div class="card reveal"><span class="chip">Verification</span><h3>Payment claim verification</h3><p>Customer claims stay pending until you verify them. A screenshot or reference number never settles an invoice on its own.</p></div>
+      <div class="card reveal"><span class="chip">Reports</span><h3>Reports and analytics</h3><p>Recovery rate, outstanding balance, reminder outcomes and revenue recovered, in reports your whole team can read.</p></div>
     </div>
   </div>
 </section>
 
 <section id="how" style="padding-top:0">
   <div class="wrap">
-    <div class="shead reveal"><span class="kick">Early access</span><h2>How early access works.</h2></div>
+    <div class="shead reveal"><span class="kick">How It Works</span><h2>From overdue to recovered, in four steps.</h2></div>
     <div class="steps">
-      <div class="step reveal"><span class="n">1</span><h3>Request access</h3><p>Email us with your business and how you bill customers today. Every request is read and answered.</p></div>
-      <div class="step reveal"><span class="n">2</span><h3>Build with us</h3><p>You get the current build, use it on real billing, and tell us what works and what&rsquo;s missing. Your feedback sets the roadmap.</p></div>
-      <div class="step reveal"><span class="n">3</span><h3>Shape the launch</h3><p>Early partners help finalize pricing and features, and get founding terms when RecurSaathi launches publicly.</p></div>
+      <div class="step reveal"><span class="n">1</span><h3>Add your invoices</h3><p>Add customers and invoices by hand or import them from a CSV. Your payment instructions attach to every reminder.</p></div>
+      <div class="step reveal"><span class="n">2</span><h3>Configure your follow-ups</h3><p>Choose channels, templates, schedules and quiet hours. Automation stays off until you explicitly switch it on.</p></div>
+      <div class="step reveal"><span class="n">3</span><h3>Customers respond</h3><p>Replies, promises to pay, disputes and payment claims land in your inbox, sorted by what needs a decision.</p></div>
+      <div class="step reveal"><span class="n">4</span><h3>Verify and recover</h3><p>You confirm verified payments, the invoice settles and recovery stops. Every rupee recovered is tracked in your reports.</p></div>
     </div>
   </div>
 </section>
 
-<div class="band" id="devstatus">
-  <div class="wrap"><b>RecurSaathi is under active development.</b> Features described on this site are planned for early access partners and may change before launch. Questions? <a data-ea-mail href="#" style="color:var(--blue);font-weight:600">Email us</a>.</div>
-</div>
-
-<section id="request">
+<section id="pricing">
   <div class="wrap">
-    <div class="formcard reveal">
-      <h3>Request early access</h3>
-      <p class="fsub">Tell us a little about your business. We read every request.</p>
-      <form id="eaForm" novalidate>
-        <div class="field"><label for="fname">Business name</label><input id="fname" name="business" required></div>
-        <div class="field"><label for="fperson">Contact person</label><input id="fperson" name="person" autocomplete="name" required></div>
-        <div class="field"><label for="femail">Work email</label><input id="femail" name="email" type="email" autocomplete="email" required></div>
-        <div class="field"><label for="fbiz">Business type</label>
-          <select id="fbiz" name="type">
-            <option>Edtech &amp; coaching</option>
-            <option>Fitness &amp; studios</option>
-            <option>D2C subscriptions</option>
-            <option>Agencies &amp; services</option>
-            <option>Other</option>
-          </select>
-        </div>
-        <div class="field"><label for="fmsg">What&rsquo;s your biggest recurring payment problem? <span style="font-weight:400;color:var(--faint)">(optional)</span></label><textarea id="fmsg" name="message" placeholder="e.g. About 1 in 5 monthly renewals fail and we chase them by hand"></textarea></div>
-        <button class="btn btn-primary btn-lg" type="submit" style="width:100%">Request Early Access</button>
-        <p class="fnote" id="fnote">This opens your email app with your details filled in. Nothing is stored or sent from this website.</p>
-      </form>
+    <div class="shead reveal" style="margin-left:auto;margin-right:auto;text-align:center"><span class="kick">Pricing</span><h2>Simple plans, priced in rupees.</h2><p>Start with a 14-day free trial. No card needed.</p></div>
+    <div class="plans">
+      <div class="plan reveal">
+        <h3>Starter</h3>
+        <p class="pm">&#8377;999<span> /month</span></p>
+        <p class="pa">&#8377;9,990 billed annually (2 months free)</p>
+        <ul><li>500 customers, 200 invoices/month</li><li>Recovery Radar and overdue tracking</li><li>Email reminders with your own UPI payment link</li><li>1 team member</li></ul>
+        <a class="btn btn-ghost" href="/signup">Start free trial</a>
+      </div>
+      <div class="plan featured reveal">
+        <span class="ptag">Most popular</span>
+        <h3>Growth</h3>
+        <p class="pm">&#8377;4,999<span> /month</span></p>
+        <p class="pa">&#8377;49,990 billed annually (2 months free)</p>
+        <ul><li>5,000 customers, 2,000 invoices/month</li><li>Automated email and WhatsApp follow-ups</li><li>Dormant customer reactivation campaigns</li><li>5 team members</li></ul>
+        <a class="btn btn-primary" href="/signup">Start free trial</a>
+      </div>
+      <div class="plan reveal">
+        <h3>Enterprise</h3>
+        <p class="pm">&#8377;9,999<span> /month</span></p>
+        <p class="pa">&#8377;99,990 billed annually (2 months free)</p>
+        <ul><li>10,000 customers, 5,000 invoices/month</li><li>Team roles and permissions, 5 branches</li><li>Custom business reports</li><li>10 team members, priority support</li></ul>
+        <a class="btn btn-ghost" href="/signup">Start free trial</a>
+      </div>
+    </div>
+    <div class="ea-panel reveal">
+      <h3>Enterprise Early Adopter</h3>
+      <p>The first 10 eligible businesses get their first 12 months of Enterprise at <b>&#8377;79,990</b> instead of the regular &#8377;99,990 annual price &#8377;20,000 off, once per business. After the first 12 months, renewal happens at the then-current regular annual price, with advance notice and your explicit approval. Never a silent charge.</p>
+      <span class="ea-slots" id="eaSlots"><span class="dot"></span>Checking current availability&hellip;</span>
+      <div><a class="btn btn-primary" href="/pricing">See full pricing and offer details</a></div>
     </div>
   </div>
 </section>
 
 <section id="security" style="padding-top:0">
   <div class="wrap">
-    <div class="shead reveal"><span class="kick">Security &amp; trust</span><h2>Built safe from day one.</h2><p>How the current build protects your records and your customers.</p></div>
+    <div class="shead reveal"><span class="kick">Security</span><h2>Built safe from day one.</h2><p>How RecurSaathi protects your records and your customers.</p></div>
     <div class="grid3">
       <div class="card reveal"><span class="chip">In the build</span><h3>Hashed logins</h3><p>Passwords are stored only as salted PBKDF2-SHA256 hashes, never in plain text. Optional two-factor login (one-time codes) is included on every account.</p></div>
-      <div class="card reveal"><span class="chip">In the build</span><h3>Role-based access</h3><p>Owner, admin, staff and viewer roles, each with its own permissions. Staff and viewer accounts cannot touch billing or settings.</p></div>
+      <div class="card reveal"><span class="chip">In the build</span><h3>Role-based access</h3><p>Owner, manager and viewer roles, each with its own permissions. Staff and viewer accounts cannot touch billing or settings.</p></div>
       <div class="card reveal"><span class="chip">In the build</span><h3>Audit trail</h3><p>Every recovery action, automated message and payment verification is recorded with who did it and when.</p></div>
-      <div class="card reveal"><span class="chip">In the build</span><h3>Your money never passes through us</h3><p>Customers pay straight into your own Razorpay account through the payment links we send. RecurSaathi reads payment status only.</p></div>
-      <div class="card reveal"><span class="chip">In preparation</span><h3>Encrypted backups</h3><p>Database snapshots are encrypted before leaving the server and stored off-site on a private bucket. This activates before public launch.</p></div>
+      <div class="card reveal"><span class="chip">In the build</span><h3>Your money never passes through us</h3><p>Customers pay straight into your own UPI ID or Razorpay account through the payment instructions we send. RecurSaathi reads payment status only.</p></div>
+      <div class="card reveal"><span class="chip">In the build</span><h3>Encrypted backups</h3><p>Database snapshots are encrypted before leaving the server and stored off-site on a private bucket.</p></div>
       <div class="card reveal"><span class="chip">In the build</span><h3>Your data stays yours</h3><p>Export all your records anytime, or delete your account and its data, both built into the settings.</p></div>
     </div>
   </div>
@@ -231,11 +254,12 @@ footer{padding:56px 0 34px}
   <div class="wrap">
     <div class="shead reveal" style="margin-left:auto;margin-right:auto;text-align:center"><span class="kick">FAQ</span><h2>Straight answers.</h2></div>
     <div class="faqwrap reveal">
-      <details open><summary>What exactly does RecurSaathi do?</summary><p>It automates payment follow-ups over your own billing records: failed card and UPI AutoPay payments get retried inside RBI&rsquo;s allowed windows, overdue invoices get chased, and dormant repeat customers get flagged for win-back. The intelligence is rule-based logic on your own data &mdash; no third-party AI services.</p></details>
-      <details><summary>Does customer money ever pass through RecurSaathi?</summary><p>No. Payment links go to your own Razorpay account (or your own UPI ID), so money settles directly to you. RecurSaathi only reads the payment status so it knows when to stop following up.</p></details>
-      <details><summary>How do retries stay within RBI rules?</summary><p>Retries run through your connected Razorpay account, scheduled inside the retry windows the RBI permits for UPI AutoPay. Decline codes are read before anything is retried, so a hard decline isn&rsquo;t retried blindly.</p></details>
-      <details><summary>What does early access include?</summary><p>You use the current build on real billing, get a direct line to the person building it, and your feedback sets the roadmap. Early partners get founding terms at launch. Requests are reviewed one by one.</p></details>
-      <details><summary>Does the request form store anything?</summary><p>No. Submitting it opens your email app with your details filled in &mdash; nothing is stored or sent from this website.</p></details>
+      <details open><summary>What exactly does RecurSaathi do?</summary><p>It runs your overdue-payment follow-ups over your own billing records: failed card and UPI AutoPay payments get retried inside RBI's allowed windows, overdue invoices get chased, and dormant repeat customers get flagged for win-back. The intelligence is rule-based logic on your own data.</p></details>
+      <details><summary>Does customer money ever pass through RecurSaathi?</summary><p>No. Payment instructions carry your own UPI ID or your own Razorpay account, so money settles directly to you. RecurSaathi only reads the payment status so it knows when to stop following up.</p></details>
+      <details><summary>How do retries stay within RBI rules?</summary><p>Retries run through your connected Razorpay account, scheduled inside the retry windows the RBI permits for UPI AutoPay. Decline codes are read before anything is retried, so a hard decline isn't retried blindly.</p></details>
+      <details><summary>Do I need a WhatsApp Business account?</summary><p>WhatsApp reminders use the official Meta WhatsApp Business Platform through your own business account and number. Meta charges per conversation; those charges are yours, billed by Meta, and RecurSaathi adds nothing on top. You can start with email reminders only.</p></details>
+      <details><summary>How do I get started?</summary><p>Sign up, verify your email, and complete the guided onboarding: business profile, payment instructions and reminder preferences. Your 14-day trial starts right away, and automation stays off until you switch it on.</p></details>
+      <details><summary>What does the early adopter offer include?</summary><p>The first 10 eligible businesses pay &#8377;79,990 for their first 12 months of Enterprise instead of &#8377;99,990, one offer per business. Renewal after the first year runs at the then-current regular annual price with advance notice and your explicit approval.</p></details>
     </div>
   </div>
 </section>
@@ -245,51 +269,52 @@ footer{padding:56px 0 34px}
     <div class="fgrid">
       <div>
         <a class="logo" href="#top"><span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18V6h6a3.5 3.5 0 0 1 0 7H8l5 5"/></svg></span><span><b>Recur</b>Saathi</span></a>
-        <p>Revenue recovery for subscription businesses. Failed payments, overdue invoices and dormant customers, managed end to end.</p>
+        <p>Revenue Recovery Communication OS for small and medium businesses. Overdue invoices, customer communication and follow-ups, managed end to end.</p>
       </div>
       <div><h4>Product</h4><ul>
-        <li><a href="#what">What it does</a></li>
-        <li><a href="#capabilities">Capabilities</a></li>
-        <li><a href="#how">Early access</a></li>
-        <li><a href="#request">Request access</a></li>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#how">How It Works</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+        <li><a href="/pricing">Full pricing</a></li>
       </ul></div>
       <div><h4>Company</h4><ul>
         <li><a href="/contact">Contact</a></li>
-        <li><a href="#" data-ea-mail>Email us</a></li>
+        <li><a href="#faq">FAQ</a></li>
+        <li><a href="/login">Log In</a></li>
+        <li><a href="/signup">Sign Up</a></li>
       </ul></div>
       <div><h4>Legal</h4><ul>
         <li><a href="/privacy">Privacy Policy</a></li>
         <li><a href="/terms">Terms of Service</a></li>
       </ul></div>
     </div>
-    <div class="fbottom"><span>&copy; RecurSaathi &middot; Made in India</span><span>Early access &mdash; the product is not yet publicly launched</span></div>
+    <div class="fbottom"><span>&copy; RecurSaathi &middot; Made in India</span><span>Customer payments settle directly to the business &mdash; money never passes through RecurSaathi.</span></div>
   </div>
 </footer>
 
-<script src="config.js"></script>
 <script>
 (function(){
-  var cfg = window.EA_CONFIG || {};
-  var mailto = cfg.email ? "mailto:"+cfg.email+"?subject="+encodeURIComponent(cfg.subject||"RecurSaathi Early Access Request") : "#";
-  document.querySelectorAll("[data-ea-mail]").forEach(function(a){a.setAttribute("href",mailto);});
-  var form = document.getElementById("eaForm");
-  if(form){
-    form.addEventListener("submit",function(e){
-      e.preventDefault();
-      var g=function(id){var el=document.getElementById(id);return el?el.value.trim():"";};
-      var note=document.getElementById("fnote");
-      if(!g("fname")||!g("fperson")||!g("femail")){note.textContent="Please fill in your business name, contact person and work email.";note.style.color="#c0392b";return;}
-      if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(g("femail"))){note.textContent="That work email doesn't look complete.";note.style.color="#c0392b";return;}
-      var body="Early access request\n\nBusiness: "+g("fname")+"\nContact: "+g("fperson")+"\nEmail: "+g("femail")+"\nBusiness type: "+g("fbiz")+"\n\nBiggest recurring payment problem:\n"+g("fmsg")+"\n";
-      var subject=cfg.subject+" - "+g("fname");
-      window.location.href="mailto:"+cfg.email+"?subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent(body);
-      note.textContent="Your email app should open now with the request filled in. If nothing opens, email "+cfg.email+" directly.";
-      note.style.color="";
-    });
-  }
+  fetch("/api/me",{credentials:"same-origin"}).then(function(r){return r.ok?r.json():null}).then(function(d){
+    if(d&&d.authenticated){
+      var w=document.getElementById("navAuth");
+      if(w){w.innerHTML='<a class="btn btn-ghost" href="/settings">Account</a><a class="btn btn-primary" href="/dashboard">Dashboard</a>';}
+    }
+  }).catch(function(){});
 })();
-</script>
-<script>
+(function(){
+  fetch("/api/early-adopter-availability").then(function(r){return r.ok?r.json():null}).then(function(d){
+    var el=document.getElementById("eaSlots");
+    if(!el)return;
+    if(d&&d.available===true&&typeof d.remaining==="number"){
+      el.innerHTML='<span class="dot"></span>'+(d.remaining+(d.remaining===1?" slot":" slots")+" of "+d.max+" remaining");
+    }else{
+      el.innerHTML='<span class="dot" style="background:#8b90a7"></span>Ask us about current availability';
+    }
+  }).catch(function(){
+    var el=document.getElementById("eaSlots");
+    if(el){el.innerHTML='<span class="dot" style="background:#8b90a7"></span>Ask us about current availability';}
+  });
+})();
 (function(){
   var list=[].slice.call(document.querySelectorAll('.reveal'));
   if(!('IntersectionObserver' in window)){list.forEach(function(t){t.classList.add('in')});return}
