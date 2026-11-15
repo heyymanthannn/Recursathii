@@ -2,9 +2,29 @@
 import time
 from fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
-from . import models, auth
+from . import models, auth, config
 
 router = APIRouter()
+
+def _token_admin(request):
+    """ADMIN_TOKEN holders also reach the bank verification screens.
+
+    /admin/login sets an admin_token cookie holding only the SHA-256 digest
+    of ADMIN_TOKEN; the raw token never travels. Fails closed when the token
+    is unset or the digest is missing or wrong. The synthetic principal is
+    audited as "admin-token" so the trail stays truthful about who decided.
+    """
+    if not config.admin_cookie_ok(request.cookies.get("admin_token", "")):
+        return None
+    return {"id": "admin-token", "role": "admin", "name": "Platform Admin",
+            "email": "admin-token", "business": "RecurSaathi Platform"}
+
+def bank_guard(request):
+    """Bank-verification routes accept an admin-role user session OR a valid
+    ADMIN_TOKEN cookie. Ordinary business users and anonymous visitors get
+    neither and are redirected to /login."""
+    u = guard(request)
+    return u if u else _token_admin(request)
 
 def render(name, request, user=None, **ctx):
     from jinja2 import Environment, FileSystemLoader
@@ -89,7 +109,7 @@ async def owner_plan(request: Request, oid: str, plan_status: str = Form("")):
 async def admin_bank(request: Request):
     """Payment verification screen. Only authorized platform admins reach it;
     every submission sits in PENDING_VERIFICATION until a human decides."""
-    user = guard(request)
+    user = bank_guard(request)
     if not user:
         return RedirectResponse("/login", status_code=303)
     from . import manual_bank
@@ -105,7 +125,7 @@ async def admin_bank(request: Request):
 async def admin_bank_approve(request: Request, pid: str, note: str = Form("")):
     """Approve a verified transfer. Idempotent: a second approval cannot
     re-activate or double-charge. Every approval is audited."""
-    user = guard(request)
+    user = bank_guard(request)
     if not user:
         return RedirectResponse("/login", status_code=303)
     from . import manual_bank
@@ -113,6 +133,8 @@ async def admin_bank_approve(request: Request, pid: str, note: str = Form("")):
         row, decided = manual_bank.approve(pid, user, note)
     except PermissionError:
         return RedirectResponse("/admin/bank?err=not_authorized", status_code=303)
+    except LookupError:
+        return RedirectResponse("/admin/bank?err=not_found", status_code=303)
     if not decided:
         return RedirectResponse("/admin/bank?already=" + row["reference"], status_code=303)
     return RedirectResponse("/admin/bank?approved=" + row["reference"], status_code=303)
@@ -120,7 +142,7 @@ async def admin_bank_approve(request: Request, pid: str, note: str = Form("")):
 
 @router.post("/admin/bank/{pid}/reject")
 async def admin_bank_reject(request: Request, pid: str, reason: str = Form("")):
-    user = guard(request)
+    user = bank_guard(request)
     if not user:
         return RedirectResponse("/login", status_code=303)
     from . import manual_bank
@@ -128,6 +150,8 @@ async def admin_bank_reject(request: Request, pid: str, reason: str = Form("")):
         row, decided = manual_bank.reject(pid, user, reason or "no reason recorded")
     except PermissionError:
         return RedirectResponse("/admin/bank?err=not_authorized", status_code=303)
+    except LookupError:
+        return RedirectResponse("/admin/bank?err=not_found", status_code=303)
     if not decided:
         return RedirectResponse("/admin/bank?already=" + row["reference"], status_code=303)
     return RedirectResponse("/admin/bank?rejected=" + row["reference"], status_code=303)
