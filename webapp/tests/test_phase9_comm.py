@@ -13,6 +13,10 @@ owner-guarded inbox / comm-stats / CSV import APIs.
 Run:  cd webapp && PYTHONPATH=. python3 -m tests.test_phase9_comm
 Isolated temp DB, synthetic data only, no network, no real providers.
 """
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+import clock  # noqa: F401  (pins the suite clock; keeps date-relative checks deterministic)
+
 import os, sys, tempfile, time, hmac, hashlib, json, threading, socket
 os.environ["PAYRECOVERY_DB"] = tempfile.mktemp(prefix="test_p9_", suffix=".sqlite")
 os.environ.setdefault("MANUAL_UPI_ID", "testpay@upi")
