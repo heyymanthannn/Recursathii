@@ -1,4 +1,5 @@
 """Settings and SaaS pricing plans. All secrets come from env, never hardcoded."""
+import hashlib
 import hmac
 import os
 
@@ -149,6 +150,16 @@ def admin_token_ok(token) -> bool:
     """Fail-closed admin token check. When ADMIN_TOKEN is unset or empty,
     every request is refused: an empty token can never authenticate."""
     return bool(ADMIN_TOKEN) and hmac.compare_digest(token or "", ADMIN_TOKEN)
+
+
+def admin_cookie_ok(digest: str) -> bool:
+    """Fail-closed check for the admin-token cookie set by /admin/login.
+
+    The cookie never carries the raw ADMIN_TOKEN, only its SHA-256 digest.
+    Fails closed when ADMIN_TOKEN is unset or the digest is missing."""
+    if not ADMIN_TOKEN or not digest:
+        return False
+    return hmac.compare_digest(digest, hashlib.sha256(ADMIN_TOKEN.encode()).hexdigest())
 
 
 # ---- Plan feature entitlements -------------------------------------------
