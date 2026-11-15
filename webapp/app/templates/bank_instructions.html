@@ -1,0 +1,42 @@
+{% extends "base.html" %}{% block title %}Bank transfer | RecurSaathi{% endblock %}{% block content %}
+<h1>Pay {{ inr(amount) }} by bank transfer</h1>
+<p class="sub">{{ plan | capitalize }} plan &middot; {{ cycle }} &middot; this page shows the exact amount calculated on our server.</p>
+<div class="card" style="margin:14px 0">
+<div class="label">Amount to transfer</div>
+<div class="kpi blue">{{ inr(amount) }}</div>
+<div class="label" style="margin-top:12px">Payment reference</div>
+<div class="kpi">{{ ref }}</div>
+<p class="muted" style="margin:8px 0">Add the reference in your transfer note so we can match it. The amount is set by our server for your chosen plan and cycle; if your bank shows a different total, transfer the amount shown here.</p>
+</div>
+<div class="card" style="margin:14px 0">
+<div class="label">Where to send it</div>
+{% if det %}
+<table>
+<tr><th>Method</th><th>Details</th></tr>
+<tr><td>NEFT / IMPS</td><td>{{ det.bank }} &middot; A/C {{ det.account_number }} &middot; {{ det.account_name }} &middot; IFSC {{ det.ifsc }}</td></tr>
+{% if det.upi_vpa %}<tr><td>UPI</td><td>{{ det.upi_vpa }} ({{ det.upi_payee }})</td></tr>{% endif %}
+</table>
+{% else %}
+<p class="muted">The transfer account is being set up. Write to support and we will share the exact NEFT, IMPS and UPI details directly.</p>
+{% endif %}
+<p class="muted">Use NEFT, IMPS or UPI. Keep the confirmation your bank gives you.</p>
+</div>
+<div class="card" style="margin:14px 0">
+<div class="label">After you pay</div>
+<form method="post" action="/subscription/pay/bank">
+<input type="hidden" name="plan" value="{{ plan }}">
+<input type="hidden" name="cycle" value="{{ cycle }}">
+<input type="hidden" name="ea" value="{{ '1' if ea else '0' }}">
+<div class="label" style="margin-top:8px">Transfer type</div>
+<select name="method" required>
+<option value="neft">NEFT</option><option value="imps">IMPS</option><option value="upi">UPI</option>
+</select>
+<div class="label" style="margin-top:8px">UTR / bank reference number</div>
+<input name="utr" required placeholder="e.g. UPI 4235... or NEFT UTR ..." maxlength="64">
+<div class="label" style="margin-top:8px">Receipt note (optional)</div>
+<input name="receipt_note" placeholder="Anything we should know about the transfer" maxlength="500">
+<p class="muted" style="margin:8px 0">Your submission goes for verification as PENDING_VERIFICATION. Your plan activates only after our team verifies the transfer, not on the basis of the reference alone.</p>
+<button class="btn">Submit for verification</button>
+</form>
+</div>
+{% endblock %}

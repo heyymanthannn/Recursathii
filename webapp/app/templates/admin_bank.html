@@ -1,0 +1,49 @@
+{% extends "base.html" %}{% block title %}Payment verification | RecurSaathi{% endblock %}{% block content %}
+<h1>Bank-transfer verification</h1>
+<p class="sub">Every subscription payment waits here as PENDING_VERIFICATION until an authorized admin verifies it against the bank statement. Approvals are idempotent and audited.</p>
+{% if request.query_params.get('approved') %}<div class="card"><strong>Approved:</strong> {{ request.query_params.get('approved') }} - subscription activated, audit written.</div>{% endif %}
+{% if request.query_params.get('rejected') %}<div class="card"><strong>Rejected:</strong> {{ request.query_params.get('rejected') }}.</div>{% endif %}
+{% if request.query_params.get('already') %}<div class="card"><strong>Already decided:</strong> {{ request.query_params.get('already') }} - no second action was taken.</div>{% endif %}
+{% if request.query_params.get('err') == 'not_authorized' %}<div class="card" style="border-color:var(--purple)"><strong>Not authorized.</strong></div>{% endif %}
+<div class="card" style="margin:14px 0">
+<div class="label">Awaiting verification ({{ pending | length }})</div>
+{% if pending %}
+<table>
+<thead><tr><th>Reference</th><th>Business</th><th>Plan</th><th>Amount</th><th>Method</th><th>UTR</th><th>Note</th><th>Submitted</th><th>Decision</th></tr></thead>
+<tbody>
+{% for p in pending %}
+<tr>
+<td>{{ p.reference }}</td><td>{{ business_names[p.owner_id] or p.owner_id }}</td>
+<td>{{ p.plan | capitalize }} {{ p.cycle }}{% if p.ea %} (early adopter){% endif %}</td>
+<td>{{ inr(p.amount) }}</td><td>{{ p.method | upper }}</td><td>{{ p.utr }}</td><td>{{ p.receipt_note or '-' }}</td><td>{{ p.submitted_at | datetime }}</td>
+<td>
+<form method="post" action="/admin/bank/{{ p.id }}/approve" style="margin-bottom:6px">
+<input name="note" placeholder="verified against statement" maxlength="500"><button class="btn sm">Approve</button></form>
+<form method="post" action="/admin/bank/{{ p.id }}/reject">
+<input name="reason" placeholder="reason" maxlength="500"><button class="btn danger sm">Reject</button></form>
+</td></tr>
+{% endfor %}
+</tbody>
+</table>
+{% else %}
+<p class="muted">Nothing waiting.</p>
+{% endif %}
+</div>
+<div class="card" style="margin:14px 0">
+<div class="label">Recently decided ({{ decided | length }})</div>
+{% if decided %}
+<table>
+<thead><tr><th>Reference</th><th>Business</th><th>Plan</th><th>Amount</th><th>Status</th><th>Verified by</th><th>At</th><th>Receipt</th></tr></thead>
+<tbody>
+{% for p in decided %}
+<tr><td>{{ p.reference }}</td><td>{{ business_names[p.owner_id] or p.owner_id }}</td><td>{{ p.plan | capitalize }} {{ p.cycle }}</td><td>{{ inr(p.amount) }}</td>
+<td>{{ p.status }}{% if p.decision_note %}: {{ p.decision_note }}{% endif %}</td><td>{{ p.verified_by or '-' }}</td><td>{{ p.verified_at | datetime }}</td>
+<td>{% if p.status == 'approved' %}<a href="/subscription/receipt/{{ p.reference }}">PDF</a>{% endif %}</td></tr>
+{% endfor %}
+</tbody>
+</table>
+{% else %}
+<p class="muted">No decisions yet.</p>
+{% endif %}
+</div>
+{% endblock %}

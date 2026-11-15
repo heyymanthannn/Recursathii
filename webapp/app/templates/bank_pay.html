@@ -1,0 +1,34 @@
+{% extends "base.html" %}{% block title %}Pay for your plan | RecurSaathi{% endblock %}{% block content %}
+<h1>Pay for your plan</h1>
+<p class="sub">Bank transfer is the current payment method. Nothing is charged automatically.</p>
+{% if not (cfg.bank or cfg.upi) %}
+<div class="card" style="margin:14px 0"><strong>Bank details are being set up.</strong>
+<span class="muted">We have not finished configuring the transfer account. Write to support and we will send the details directly.</span></div>
+{% endif %}
+<div class="card" style="margin:14px 0">
+<div class="label">Choose your plan</div>
+<table>
+<thead><tr><th>Plan</th><th>Monthly</th><th>Annual (2 months free)</th><th></th></tr></thead>
+<tbody>
+{% for key, p in plans.items() %}
+<tr><td><strong>{{ p.name }}</strong></td>
+<td>{{ inr(p.amount) }}/month</td>
+<td>{{ inr(p.annual_amount) }}/year</td>
+<td>
+<a class="btn sm" href="/subscription/pay/bank?plan={{ key }}&cycle=monthly">Pay monthly by bank transfer</a>
+<a class="btn sm" href="/subscription/pay/bank?plan={{ key }}&cycle=annual">Pay annual by bank transfer</a>
+</td></tr>
+{% endfor %}
+</tbody>
+</table>
+{% if plans.enterprise and ea_available %}
+<p class="muted" style="margin-top:10px">Early-adopter Enterprise annual is
+{{ inr(ea_price) }} for the first 12 months while slots remain:
+<a href="/subscription/pay/bank?plan=enterprise&cycle=annual&ea=1">claim the early-adopter price</a>.</p>
+{% endif %}
+</div>
+<div class="card" style="margin:14px 0">
+<div class="label">Card payments</div>
+<div class="muted">Card checkout (Razorpay) is disabled for now. It will switch on only after a separate review, and this page will say so when it does.</div>
+</div>
+{% endblock %}

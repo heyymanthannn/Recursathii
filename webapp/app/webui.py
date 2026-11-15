@@ -1818,3 +1818,129 @@ async def help_page(request: Request):
         channels.append({"channel": ch, "connected": bool(cfg)})
     return render("help.html", request, user=user, tab="help", channels=channels,
                   msg=request.query_params.get("msg", ""))
+
+
+# ---------- Phase 24: manual bank-transfer subscription billing ----------
+from . import db, manual_bank
+manual_bank.migrate()
+
+
+def _bank_draft(owner_id: str, plan: str, cycle: str, ea: bool, amount: int) -> str:
+    """Reuse the business's draft for this plan+cycle so the shown reference
+    matches the submitted payment; a rejected submission can start fresh."""
+    row = models.one(
+        "SELECT * FROM bank_transfer_payments WHERE owner_id=? AND plan=? AND "
+        "cycle=? AND status IN ('DRAFT') ORDER BY submitted_at DESC",
+        (owner_id, plan, cycle))
+    if row:
+        return row["reference"]
+    ref = manual_bank.new_reference(owner_id, plan, cycle)
+    with db._conn() as c:
+        c.execute("""INSERT INTO bank_transfer_payments
+(id,owner_id,plan,cycle,ea,amount,method,utr,reference,status,submitted_at)
+VALUES(?,?,?,?,?,?,?,?,?,'DRAFT',?)""",
+                  (models.uid(), owner_id, plan, cycle, 1 if ea else 0, amount,
+                   "", "", ref, models.now()))
+    return ref
+
+
+@router.get("/subscription/pay", response_class=HTMLResponse)
+async def bank_pay_entry(request: Request):
+    """Payment method page: bank transfer is the live method, Razorpay shown
+    disabled until separately approved."""
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    cfg = manual_bank.configured()
+    return render("bank_pay.html", request, user=user, tab="billing",
+                  plans=config.PLANS, inr=inr, cfg=cfg, now_ts=time.time(),
+                  rzp=manual_bank.razorpay_status())
+
+
+@router.get("/subscription/pay/bank", response_class=HTMLResponse)
+async def bank_pay_page(request: Request, plan: str = "starter",
+                        cycle: str = "monthly", ea: str = ""):
+    """Transfer instructions: the exact server-calculated amount and the
+    payment reference. Bank details come from server-side configuration only,
+    shown to the signed-in business only. An unconfigured rail shows a support
+    line instead of invented details."""
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    if user.get("role") not in ("owner", "staff"):
+        return RedirectResponse("/subscription/payments", status_code=303)
+    plan = config.plan_key(plan or "starter")
+    ea_flag = ea in ("1", "true")
+    try:
+        amount = manual_bank.quote(plan, cycle, ea_flag)
+    except ValueError as e:
+        return RedirectResponse("/subscription/payments?error=" + str(e).replace(" ", "+"),
+                                status_code=303)
+    ref = _bank_draft(user["id"], plan, cycle, ea_flag, amount)
+    det = manual_bank.bank_details()
+    cfg = manual_bank.configured()
+    return render("bank_instructions.html", request, user=user, tab="billing",
+                  plan=plan, cycle=cycle, ea=ea_flag, amount=amount, inr=inr,
+                  ref=ref, det=det, cfg=cfg,
+                  methods=manual_bank.METHODS, now_ts=time.time())
+
+
+@router.post("/subscription/pay/bank")
+async def bank_submit(request: Request, plan: str = Form(""), cycle: str = Form(""),
+                      method: str = Form(""), utr: str = Form(""),
+                      receipt_note: str = Form(""), ea: str = Form("")):
+    """The business submits its UTR/reference (plus an optional receipt note).
+    The payment is always created PENDING_VERIFICATION; nothing activates
+    here, whatever the submission says."""
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    if user.get("role") not in ("owner", "staff"):
+        return RedirectResponse("/subscription/payments", status_code=303)
+    plan_key = config.plan_key(plan or "starter")
+    cyc = cycle if cycle in manual_bank.CYCLES else "monthly"
+    try:
+        row, _created = manual_bank.create_submission(
+            user, plan_key, cyc, method, utr, receipt_note,
+            ea=ea in ("1", "true"))
+    except (ValueError, PermissionError) as e:
+        msg = str(e).replace(" ", "+")
+        return RedirectResponse(f"/subscription/payments?error={msg}", status_code=303)
+    return RedirectResponse("/subscription/payments?submitted=" + row["reference"],
+                            status_code=303)
+
+
+@router.get("/subscription/payments", response_class=HTMLResponse)
+async def bank_payments_page(request: Request, submitted: str = "",
+                             error: str = ""):
+    """Payment history, renewal date and expiry state for the business."""
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    renewal = manual_bank.renewal_state(user)
+    manual_bank.queue_expiry_reminders(user)
+    pays = [p for p in manual_bank.history(user["id"])
+            if p["status"] != "DRAFT"]
+    return render("bank_payments.html", request, user=user, tab="billing",
+                  pays=pays, inr=inr, renewal=renewal, submitted=submitted,
+                  error=error, now_ts=time.time())
+
+
+@router.get("/subscription/receipt/{reference}")
+async def bank_receipt(request: Request, reference: str):
+    """PDF receipt, served only after admin approval, to the business it
+    belongs to or an admin. Nobody else."""
+    user = auth.current_user(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    row = manual_bank.get_by_reference(reference)
+    if not row or row["status"] != "approved":
+        raise HTTPException(status_code=404, detail="receipt not available")
+    if user["role"] != "admin" and row["owner_id"] != user["id"]:
+        raise HTTPException(status_code=403, detail="not your receipt")
+    owner = models.get_user(row["owner_id"])
+    from fastapi.responses import Response
+    return Response(manual_bank.sub_receipt_pdf_bytes(row, owner),
+                    media_type="application/pdf",
+                    headers={"Content-Disposition":
+                             f'attachment; filename="{row["receipt_no"] or row["reference"]}.pdf"'})
