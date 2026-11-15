@@ -93,7 +93,7 @@ def new_owner(email, plan="starter"):
     # each synthetic signup uses its own source address so the per-IP signup
     # rate limit (5/hour) does not fire on a batch of test accounts
     client.post("/signup", data={"name": "P " + email, "business": "P16 Biz " + email, "email": email,
-                                 "phone": "919810000201", "upi_vpa": "p16@upi", "password": "pw12345678"},
+                                 "phone": "919810000201", "upi_vpa": "p16@upi", "password": "pw12345678", "password2": "pw12345678", "accept": "1"},
                 headers={"X-Forwarded-For": next(_signup_ips)}, follow_redirects=False)
     u = models.get_user_by_email(email)
     client.post("/login", data={"email": email, "password": "pw12345678"}, follow_redirects=False)

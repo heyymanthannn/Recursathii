@@ -27,15 +27,39 @@ def record(name, ok, detail=""):
     print(("PASS" if ok else "FAIL"), name, ("| " + d) if not ok else "")
 
 # ---- 1. signup validation ----
-r = client.post("/signup", data={"name": "A", "business": "B", "email": "", "password": "pw12345678", "phone": "919810000130"})
+r = client.post("/signup", data={"name": "A", "business": "B", "email": "", "password": "pw12345678","password2": "pw12345678", "accept": "1","phone": "919810000130"})
 record("signup: missing email rejected", "required" in r.text, r.status_code)
-r = client.post("/signup", data={"name": "A", "business": "B", "email": "ob1@test.local", "password": "short", "phone": "919810000130"})
+r = client.post("/signup", data={"name": "A", "business": "B", "email": "ob1@test.local", "password": "short","password2": "short", "accept": "1","phone": "919810000130"})
 record("signup: short password rejected", "at least 8" in r.text, r.status_code)
 
 # ---- 2. signup success ----
 r = client.post("/signup", data={"name": "Ona Owner", "business": "Ona Traders", "email": "ob1@test.local",
-                                 "phone": "919810000130", "upi_vpa": "ona@upi", "password": "pw12345678"},
+                                 "phone": "919810000130", "upi_vpa": "ona@upi", "password": "pw12345678", "password2": "pw12345678", "accept": "1"},
                 follow_redirects=False)
+# Part 5: confirm-password + terms acceptance + remember-me session lengths
+_mismatch = client.post("/signup", data={"name": "A", "business": "B", "email": "mm1@test.local",
+                    "password": "pw12345678", "password2": "different99", "accept": "1",
+                    "phone": "919810000131"}, follow_redirects=False)
+record("signup: mismatched confirm password rejected", _mismatch.status_code == 200
+       and "Passwords do not match" in _mismatch.text
+       and not models.get_user_by_email("mm1@test.local"))
+_noaccept = client.post("/signup", data={"name": "A", "business": "B", "email": "na1@test.local",
+                    "password": "pw12345678", "password2": "pw12345678", "accept": "",
+                    "phone": "919810000131"}, follow_redirects=False)
+record("signup: terms acceptance required", _noaccept.status_code == 200
+       and "Terms of Service" in _noaccept.text
+       and not models.get_user_by_email("na1@test.local"))
+_remember = client.post("/login", data={"email": "ob1@test.local", "password": "pw12345678", "remember": "1"},
+                        follow_redirects=False)
+_plain = client.post("/login", data={"email": "ob1@test.local", "password": "pw12345678"},
+                     follow_redirects=False)
+def _max_age(r):
+    for c in r.headers.get_list("set-cookie"):
+        if "rs_session=" in c and "Max-Age=" in c:
+            return int(c.split("Max-Age=")[1].split(";")[0])
+    return None
+record("login: remember me sets the 30-day session", _max_age(_remember) == 30 * 86400, _max_age(_remember))
+record("login: plain login sets the 12-hour session", _max_age(_plain) == 43200, _max_age(_plain))
 record("signup: lands on login page", r.status_code == 303 and "/login" in r.headers.get("location", ""), r.status_code)
 u = models.get_user_by_email("ob1@test.local")
 record("signup: user created unverified", bool(u) and not u.get("verified_at") and bool(u.get("verify_token")), dict(u) if u else None)

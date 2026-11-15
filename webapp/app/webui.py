@@ -101,7 +101,8 @@ async def login_page(request: Request):
 
 @router.post("/login")
 
-async def login(request: Request, email: str = Form(""), password: str = Form("")):
+async def login(request: Request, email: str = Form(""), password: str = Form(""),
+                    remember: str = Form("")):
     _ip = (request.headers.get("x-forwarded-for") or request.client.host or "?").split(",")[0].strip()
     _rl_key = "login:" + _ip + ":" + (email or "").lower()
     if not rl_allow(_rl_key, 10, 600):
@@ -113,7 +114,7 @@ async def login(request: Request, email: str = Form(""), password: str = Form(""
         tok = _sign_challenge(u["email"])
         return render("login2.html", request, error="", challenge=tok, email=u["email"])
     resp = RedirectResponse("/dashboard" if u.get("onboarded") else "/onboarding", status_code=303)
-    auth.start_session(resp, u["id"])
+    auth.start_session(resp, u["id"], ttl=30 * 86400 if remember == "1" else 43200)
     models.log_audit(u["id"], "login", u["email"])
     return resp
 
@@ -168,7 +169,8 @@ async def signup_page(request: Request):
 @router.post("/signup")
 async def signup(request: Request, name: str = Form(""), business: str = Form(""),
                  email: str = Form(""), phone: str = Form(""),
-                 upi_vpa: str = Form(""), password: str = Form("")):
+                 upi_vpa: str = Form(""), password: str = Form(""),
+                 password2: str = Form(""), accept: str = Form("")):
     _ip = (request.headers.get("x-forwarded-for") or request.client.host or "?").split(",")[0].strip()
     _rl_key = "signup:" + _ip
     if not rl_allow(_rl_key, 5, 3600):
@@ -179,6 +181,10 @@ async def signup(request: Request, name: str = Form(""), business: str = Form(""
         return render("signup.html", request, error="Phone number is required to start your trial.")
     if len(password) < 8:
         return render("signup.html", request, error="Password must be at least 8 characters.")
+    if password2 != password:
+        return render("signup.html", request, error="Passwords do not match.")
+    if accept != "1":
+        return render("signup.html", request, error="Please accept the Terms of Service and Privacy Policy to continue.")
     if models.get_user_by_email(email):
         return render("signup.html", request, error="That email is already registered. Try logging in.")
     u = models.create_user(email, auth.hash_pw(password), name, business, phone,
