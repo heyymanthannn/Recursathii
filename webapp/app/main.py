@@ -30,7 +30,11 @@ def _cookie_secure() -> bool:
     # Secure flag only where we actually serve https (Render), so localhost dev keeps working.
     return (config.BASE_URL or "").startswith("https")
 
-app = FastAPI(title="payment-recovery-mvp", version="0.2")
+_docs_enabled = os.environ.get("DEBUG_DOCS") == "1"
+app = FastAPI(title="payment-recovery-mvp", version="0.2",
+              docs_url="/docs" if _docs_enabled else None,
+              redoc_url="/redoc" if _docs_enabled else None,
+              openapi_url="/openapi.json" if _docs_enabled else None)
 
 # Cross-origin access from the hosted marketing site (GitHub Pages)
 from fastapi.middleware.cors import CORSMiddleware
@@ -459,7 +463,7 @@ async def admin_panel(request: Request):
     tok = request.cookies.get("admin_token", "")
     if not hmac.compare_digest(tok, _ADMIN_COOKIE):
         html = """<!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin - RecurSaathi</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin | RecurSaathi</title>
 <meta name="robots" content="noindex,nofollow">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
 <style>body{background:#0a0e1a;color:#e8ecf6;font-family:Inter,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:24px;margin:0}
@@ -487,7 +491,7 @@ button{width:100%;background:linear-gradient(135deg,#7c6cf8,#5ac8fa);border:0;bo
     if not cards:
         cards = ['<div class="empty">No pending payments right now. New trial signups land here the moment they say "I\'ve paid".</div>']
     html = """<!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin - RecurSaathi</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin | RecurSaathi</title>
 <meta name="robots" content="noindex,nofollow">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
 <style>body{background:#0a0e1a;color:#e8ecf6;font-family:Inter,sans-serif;margin:0;padding:32px 16px}
