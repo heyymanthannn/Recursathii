@@ -854,8 +854,15 @@ async def subscription_page(request: Request):
     if not user:
         return RedirectResponse("/login", status_code=303)
     pays = models.list_plat_pays(user["id"])
+    user["plan"] = config.plan_key(user.get("plan") or "starter")
+    usage = models.plan_usage(user["id"])
+    from . import early_adopter
+    sub = early_adopter.get_subscription(user["id"])
+    ea_av = early_adopter.availability()
     return render("billing.html", request, user=user, tab="subscription", pays=pays,
-                  plans=config.PLANS, inr=inr)
+                  plans=config.PLANS, inr=inr, usage=usage, now_ts=time.time(),
+                  blocked="", sub=sub, ea_av=ea_av,
+                  ea_price=early_adopter.EA_ANNUAL_PAISE)
 
 # ---------- settings ----------
 @router.get("/inbox", response_class=HTMLResponse)
