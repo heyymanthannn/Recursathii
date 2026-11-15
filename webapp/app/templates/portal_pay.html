@@ -24,6 +24,15 @@
 <p class="muted">Secure checkout by Razorpay. Money goes directly to {{ owner.business }}'s account.</p>
 <hr style="border:0;border-top:1px solid var(--line2)">
 {% endif %}
+{% if owner.payment_link_url and inv.status != 'paid' %}
+<p><a class="btn ghost" href="{{ owner.payment_link_url }}" rel="noopener">Pay via {{ owner.business }}'s payment link</a></p>
+{% endif %}
+{% if owner.bank_name or owner.bank_account_note %}
+<div class="card" style="margin-top:10px;padding:10px">
+<div class="label">Bank transfer ({{ owner.business }}'s account)</div>
+<p class="muted">{{ owner.bank_name }}{% if owner.bank_account_note %} · {{ owner.bank_account_note }}{% endif %}</p>
+</div>
+{% endif %}
 {% if vpa %}
 <h2>Pay by UPI</h2>
 <div class="center">
@@ -35,6 +44,22 @@
 <button class="btn ghost">I have paid</button>
 </form>
 <p class="muted">{{ owner.business }} confirms receipt from their dashboard; you'll see the status update here.</p>
+<div style="margin-top:14px;border-top:1px solid var(--line2);padding-top:12px">
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<details style="flex:1;min-width:200px"><summary class="muted" style="cursor:pointer">Need more time?</summary>
+<form method="post" action="/invoice/{{ inv.token }}/more-time" class="stack" style="margin-top:8px">
+<input name="date" type="date" placeholder="When can you pay?">
+<input name="note" placeholder="Anything they should know (optional)">
+<button class="btn ghost">Ask for more time</button>
+</form></details>
+<details style="flex:1;min-width:200px"><summary class="muted" style="cursor:pointer">Dispute this invoice</summary>
+<form method="post" action="/invoice/{{ inv.token }}/dispute" class="stack" style="margin-top:8px">
+<input name="note" placeholder="What is wrong?">
+<button class="btn ghost">Raise dispute</button>
+</form></details>
+</div>
+<p class="muted" style="margin-top:8px">Asking for more time pauses reminders until {{ owner.business }} responds. A dispute stops reminders and goes to them for review.</p>
+</div>
 {% else %}
 <div class="err">{{ owner.business }} hasn't connected a payment method yet. Contact them to pay.</div>
 {% endif %}

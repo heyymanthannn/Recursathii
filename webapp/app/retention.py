@@ -105,7 +105,7 @@ def _first_touch(m: dict, counts: dict):
     call_status = _place_call(m, script)
     st_wa = st_em = ""
     if m.get("phone") and not m.get("retention_wa_sent"):
-        st_wa, _err = notify.send_whatsapp(m.get("phone"), wa_body)
+        st_wa = notify.send_whatsapp(m.get("phone"), wa_body)[0]
     if m.get("email") and not m.get("retention_email_sent"):
         st_em, _err = notify.send_email(m.get("email"), "What stopped you from finishing your RecurSaathi setup?", em_body)
     ok_call = call_status == "call_placed"
@@ -133,7 +133,7 @@ def _coupon_touch(m: dict, counts: dict):
     wa_body, em_body = _coupon_bodies(m, code, pct)
     st_wa = st_em = ""
     if m.get("phone"):
-        st_wa, _err = notify.send_whatsapp(m.get("phone"), wa_body)
+        st_wa = notify.send_whatsapp(m.get("phone"), wa_body)[0]
     if m.get("email"):
         st_em, _err = notify.send_email(m.get("email"),
                                         f"Your {pct}% off code for RecurSaathi", em_body)

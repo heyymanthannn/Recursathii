@@ -89,6 +89,9 @@ async def invoice_razorpay_order(tok: str):
 async def pay_sent(request: Request, tok: str, reference: str = Form("")):
     """Customer says they paid by UPI. Records the claim as pending; the
     business owner confirms receipt in their dashboard. Nothing is faked."""
+    _ip = (request.headers.get("x-forwarded-for") or request.client.host or "?").split(",")[0].strip()
+    if not rl_allow(f"portal_claim:{_ip}:{tok}", 10, 600):
+        raise HTTPException(status_code=429, detail="too many attempts; try again in a few minutes")
     ctx = _invoice_ctx(tok)
     if not ctx:
         return render("portal_404.html", request)
@@ -113,10 +116,58 @@ async def receipt(request: Request, payment_id: str):
 
 @router.post("/portal/opt-out")
 async def opt_out(request: Request, phone: str = Form("")):
+    _ip = (request.headers.get("x-forwarded-for") or request.client.host or "?").split(",")[0].strip()
+    if not rl_allow(f"portal_optout:{_ip}", 5, 3600):
+        raise HTTPException(status_code=429, detail="too many attempts; try again later")
     if phone:
         models.ex("UPDATE customers SET wa_opt_out=1 WHERE phone=?", (phone.strip(),))
         return render("optout_done.html", request)
     return render("optout_done.html", request, error="Enter the phone number you want to opt out.")
+
+
+@router.post("/invoice/{tok}/more-time")
+async def more_time(request: Request, tok: str, note: str = Form(""), date: str = Form("")):
+    """Customer asks for more time. The case is paused (reminders hold) and a
+    request lands in the owner's inbox; only the owner can resume it, with or
+    without a promised date. Nothing is automated against the customer."""
+    _ip = (request.headers.get("x-forwarded-for") or request.client.host or "?").split(",")[0].strip()
+    if not rl_allow(f"portal_moretime:{_ip}:{tok}", 5, 600):
+        raise HTTPException(status_code=429, detail="too many attempts; try again later")
+    ctx = _invoice_ctx(tok)
+    if not ctx:
+        return render("portal_404.html", request)
+    inv, cu, owner, pays = ctx
+    if inv["status"] not in ("paid", "cancelled"):
+        models.create_customer_request(inv["owner_id"], customer_id=cu["id"], invoice_id=inv["id"],
+                                       kind="more_time", note=note, requested_date=(date or "")[:10])
+        models.ex("UPDATE invoices SET paused=1 WHERE id=?", (inv["id"],))
+        models.log_activity(inv["owner_id"], "automation",
+                            f"{cu['name']} asked for more time on invoice {inv['number']} via the payment page; "
+                            "reminders paused pending your decision")
+        models.log_audit(inv["owner_id"], "portal.more_time", inv["number"])
+    return RedirectResponse(f"/invoice/{tok}?moretime=1", status_code=303)
+
+
+@router.post("/invoice/{tok}/dispute")
+async def dispute(request: Request, tok: str, note: str = Form("")):
+    """Customer disputes the invoice. Reminders stop (disputed status) and the
+    dispute lands in the owner's inbox for a human decision."""
+    _ip = (request.headers.get("x-forwarded-for") or request.client.host or "?").split(",")[0].strip()
+    if not rl_allow(f"portal_dispute:{_ip}:{tok}", 5, 600):
+        raise HTTPException(status_code=429, detail="too many attempts; try again later")
+    ctx = _invoice_ctx(tok)
+    if not ctx:
+        return render("portal_404.html", request)
+    inv, cu, owner, pays = ctx
+    if inv["status"] not in ("paid", "cancelled", "disputed"):
+        models.create_customer_request(inv["owner_id"], customer_id=cu["id"], invoice_id=inv["id"],
+                                       kind="dispute", note=note)
+        models.ex("UPDATE invoices SET status='disputed' WHERE id=?", (inv["id"],))
+        models.log_activity(inv["owner_id"], "automation",
+                            f"{cu['name']} disputed invoice {inv['number']} via the payment page; "
+                            "reminders stopped until you review")
+        models.log_audit(inv["owner_id"], "portal.dispute", inv["number"])
+    return RedirectResponse(f"/invoice/{tok}?disputed=1", status_code=303)
 
 
 # ---------- customer portal accounts (separate login, strict isolation) ----------

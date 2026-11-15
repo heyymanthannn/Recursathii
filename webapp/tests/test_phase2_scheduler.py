@@ -7,7 +7,7 @@ import os, sys, tempfile, time
 
 os.environ["PAYRECOVERY_DB"] = tempfile.mktemp(prefix="test_phase2_", suffix=".sqlite")
 os.environ["MANUAL_UPI_ID"] = "testpay@upi"
-os.environ.pop("PROVIDER_STATUS_TOKEN", None)
+os.environ["PROVIDER_STATUS_TOKEN"] = "phase2-status-token"  # phase 9: webhook is fail-closed
 os.environ.pop("RAZORPAY_KEY_ID", None)
 os.environ.pop("RAZORPAY_KEY_SECRET", None)
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
@@ -47,11 +47,20 @@ try:
     record("duplicate ids rejected", False)
 except ValueError:
     record("duplicate ids rejected", True)
+# phase 9: validated negative offsets are now allowed (before-due reminders);
+# decreasing offsets and sub-floor values are still rejected
+ok_neg = False
 try:
-    sequences.set_sequence(OID, [{"id": "y", "offset": -1}])
-    record("negative offset rejected", False)
+    out_neg = sequences.set_sequence(OID, [{"id": "y", "offset": -1}])
+    ok_neg = bool(out_neg)
 except ValueError:
-    record("negative offset rejected", True)
+    ok_neg = False
+record("negative offset accepted (validated)", ok_neg)
+try:
+    sequences.set_sequence(OID, [{"id": "y", "offset": -99}])
+    record("sub-floor offset rejected", False)
+except ValueError:
+    record("sub-floor offset rejected", True)
 sequences.set_sequence(OID, [])  # restore defaults
 record("empty list restores defaults", sequences.get_sequence(OID)[0]["id"] == "day0")
 
@@ -114,13 +123,16 @@ record("cancelled case skipped", b == a)
 ref = "wamid.TESTREF123"
 models.ex("UPDATE outbox SET provider_ref=?, delivery_status='accepted' WHERE id=?",
           (ref, e["id"]))
-r = client.post("/webhooks/provider-status", json={"provider_ref": ref, "status": "delivered"})
+STH = {"X-Provider-Token": "phase2-status-token"}
+r = client.post("/webhooks/provider-status", json={"provider_ref": ref, "status": "delivered"}, headers=STH)
 row = models.get_outbox(e["id"])
 record("provider confirms delivered", r.status_code == 200 and row["delivery_status"] == "delivered")
-r = client.post("/webhooks/provider-status", json={"provider_ref": "nope", "status": "delivered"})
+r = client.post("/webhooks/provider-status", json={"provider_ref": "nope", "status": "delivered"}, headers=STH)
 record("unknown ref rejected", r.status_code == 404)
-r = client.post("/webhooks/provider-status", json={"provider_ref": ref, "status": "successful"})
+r = client.post("/webhooks/provider-status", json={"provider_ref": ref, "status": "successful"}, headers=STH)
 record("bogus status rejected", r.status_code == 400)
+r = client.post("/webhooks/provider-status", json={"provider_ref": ref, "status": "delivered"})
+record("missing token rejected", r.status_code == 401)
 
 # ---- 9. control centre: config, pause, approvals, audit ----
 r = client.get("/api/automations/control", headers=H)

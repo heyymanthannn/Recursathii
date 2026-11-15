@@ -69,8 +69,8 @@ PLANS = {
     },
     "enterprise": {
         "plan_id_env": "RZP_PLAN_SCALE",   # keeps the existing Razorpay plan env var
-        "amount": 599900,            # Rs 5,999/mo
-        "annual_amount": 5999000,    # Rs 59,990/yr
+        "amount": 999900,            # Rs 9,999/mo (owner-approved Nov 15, 2026; supersedes 5,999/6,999/7,999)
+        "annual_amount": 9999000,    # Rs 99,990/yr (owner-approved Nov 15, 2026, supersedes 59,990)
         "name": "Enterprise",
         "trial_days": 14,
         "max_mrr_tracked": None,
@@ -92,6 +92,39 @@ PLANS = {
 
 # Older accounts may still carry plan="scale"; it maps to Enterprise.
 PLAN_ALIASES = {"scale": "enterprise"}
+
+# Official pricing (owner-approved source of truth, Nov 15, 2026):
+# Starter Rs 999/mo, Growth Rs 4,999/mo, Enterprise Rs 9,999/mo.
+# The backend refuses to boot on any outdated or inconsistent plan price.
+OFFICIAL_MONTHLY = {"starter": 99900, "growth": 499900, "enterprise": 999900}
+OFFICIAL_ANNUAL = {"starter": 999000, "growth": 4999000, "enterprise": 9999000}
+
+# Early Adopter Enterprise offer (owner-approved Nov 15, 2026): first 10
+# eligible paying Enterprise businesses get their first 12 months at
+# Rs 79,990 (Rs 20,000 off the regular annual). One per business; renewal
+# after year one at the then-current regular annual price, with advance
+# notice and an explicit customer action. Never a silent charge.
+EA_OFFER = {"plan": "enterprise", "annual_price": 7999000,
+            "regular_annual_price": 9999000, "max_slots": 10, "months": 12,
+            "reservation_ttl_s": 1800, "savings": 2000000}
+
+def validate_pricing(plans=None):
+    plans = PLANS if plans is None else plans
+    for _key, _paise in OFFICIAL_MONTHLY.items():
+        _got = plans[_key]["amount"]
+        if _got != _paise:
+            raise ValueError(f"plan pricing drift: {_key} monthly is {_got}, official price is {_paise}")
+    for _key, _paise in OFFICIAL_ANNUAL.items():
+        _got = plans[_key]["annual_amount"]
+        if _got != _paise:
+            raise ValueError(f"plan pricing drift: {_key} annual is {_got}, official price is {_paise}")
+    if EA_OFFER["annual_price"] + EA_OFFER["savings"] != EA_OFFER["regular_annual_price"]:
+        raise ValueError("early-adopter offer arithmetic is inconsistent")
+    if EA_OFFER["regular_annual_price"] != OFFICIAL_ANNUAL["enterprise"]:
+        raise ValueError("early-adopter regular price does not match Enterprise annual")
+
+
+validate_pricing()
 
 
 def plan_key(plan):

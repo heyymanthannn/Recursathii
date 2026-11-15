@@ -288,7 +288,9 @@ async def dashboard(request: Request):
     leak = models.predictive_leak(user["id"]) if "predictive_leaks" in user.get("features", []) else None
     insights = models.daily_insights(user["id"]) if "advanced_assistant" in user.get("features", []) else []
     bstats = models.branch_stats(user["id"]) if "multi_branch" in user.get("features", []) else []
+    dstats = models.delivery_stats(user["id"], 30)
     return render("dashboard.html", request, user=user, tab="dashboard", m=m, chart=chart,
+                  dstats=dstats,
                   acts=acts, pays=pays, fails=fails, ov=ov, inr=inr, trial_left=trial_left, period=period,
                   leak=leak, insights=insights, bstats=bstats,
                   channel_note=notify.retailer_email_ready(user["id"]) or notify.retailer_whatsapp_ready(user["id"]),
@@ -325,6 +327,15 @@ async def customers_add(request: Request, name: str = Form(""), email: str = For
         models.log_audit(user["id"], "customer.create", name)
     return RedirectResponse("/customers", status_code=303)
 
+def _csv_safe(v):
+    """Neutralize spreadsheet formula injection: a cell a person controls that
+    starts with =, +, - or @ must not evaluate when opened in Excel/Sheets."""
+    s = str(v)
+    if s[:1] in ("=", "+", "-", "@"):
+        return "'" + s
+    return s
+
+
 @router.get("/customers/export")
 async def customers_export(request: Request):
     user = guard(request)
@@ -334,7 +345,8 @@ async def customers_export(request: Request):
     w = csv.writer(buf)
     w.writerow(["name", "email", "phone", "outstanding_paise", "paid_total_paise", "invoices", "whatsapp_opt_out", "created_at"])
     for r in models.customer_balances(user["id"]):
-        w.writerow([r["name"], r["email"], r["phone"], r["outstanding"], r["paid_total"],
+        w.writerow([_csv_safe(r["name"]), _csv_safe(r["email"]), _csv_safe(r["phone"]),
+                    r["outstanding"], r["paid_total"],
                     r["invoices"], r["wa_opt_out"], time.strftime("%Y-%m-%d %H:%M", time.localtime(r["created"]))])
     return Response(content=buf.getvalue(), media_type="text/csv",
                     headers={"Content-Disposition": "attachment; filename=customers.csv"})
@@ -607,18 +619,29 @@ async def billing_page(request: Request):
     user["plan"] = config.plan_key(user.get("plan") or "starter")
     usage = models.plan_usage(user["id"])
     blocked = request.query_params.get("blocked", "")
+    from . import early_adopter
+    sub = early_adopter.get_subscription(user["id"])
+    ea_av = early_adopter.availability()
     return render("billing.html", request, user=user, tab="subscription", pays=pays,
-                  plans=config.PLANS, inr=inr, usage=usage, now_ts=time.time(), blocked=blocked)
+                  plans=config.PLANS, inr=inr, usage=usage, now_ts=time.time(),
+                  blocked=blocked, sub=sub, ea_av=ea_av,
+                  ea_price=early_adopter.EA_ANNUAL_PAISE)
 
 @router.post("/billing/change-plan")
-async def change_plan(request: Request, plan: str = Form(""), cycle: str = Form("monthly")):
+async def change_plan(request: Request, plan: str = Form(""), cycle: str = Form("monthly"),
+                      ea: str = Form("")):
     user = guard(request)
     if not user:
         return RedirectResponse("/login", status_code=303)
     plan = config.plan_key(plan)
     if plan in config.PLANS and plan != config.plan_key(user["plan"]):
         p = config.PLANS[plan]
+        from . import early_adopter
         if user["plan_status"] == "trialing":
+            if ea == "1" and plan == "enterprise" and cycle == "annual":
+                # The early-adopter offer is for PAYING Enterprise businesses;
+                # a free-trial checkout can never claim or hold a slot.
+                return RedirectResponse("/billing?blocked=ea_trial", status_code=303)
             # Plan changes during a free trial are free; the trial keeps running.
             models.update_user(user["id"], plan=plan, plan_status="trialing")
             models.log_audit(user["id"], "billing.plan_change", f"{plan} during trial (no charge)")
@@ -626,12 +649,32 @@ async def change_plan(request: Request, plan: str = Form(""), cycle: str = Form(
             # No verified payment -> no activation. The plan sits in pending_payment
             # until the payment is confirmed (admin panel or billing webhook).
             cyc = "annual" if cycle == "annual" else "monthly"
-            amount = p["annual_amount"] if cyc == "annual" else p["amount"]
+            # unique per checkout: two checkouts in the same second must never
+            # share a reference (webhooks correlate on it)
+            ref = "pc-" + models.uid()[:16]
+            is_ea = bool(ea == "1" and plan == "enterprise" and cyc == "annual")
+            if is_ea:
+                # Server-side eligibility first: the slot is reserved atomically
+                # and expires in 30 minutes if the checkout is abandoned.
+                ok, res = early_adopter.reserve(user, checkout_ref=ref)
+                if not ok:
+                    reason = {"sold_out": "ea_sold_out", "already_claimed": "ea_already"}.get(res, "ea_unavailable")
+                    return RedirectResponse(f"/billing?blocked={reason}", status_code=303)
+                # The payable amount comes from trusted server config only.
+                amount = config.EA_OFFER["annual_price"]
+                regular = p["annual_amount"]
+            else:
+                amount = p["annual_amount"] if cyc == "annual" else p["amount"]
+                regular = amount
             models.update_user(user["id"], plan=plan, plan_status="pending_payment",
                                billing_cycle=cyc)
-            models.record_plat_pay(user["id"], plan, amount, "pending",
-                                   reference=f"plan-change-{int(time.time())}")
-            models.log_audit(user["id"], "billing.plan_change", f"{plan}/{cyc} pending payment")
+            models.record_plat_pay(user["id"], plan, amount, "pending", reference=ref)
+            early_adopter.open_checkout(user, plan=plan, cycle=cyc, price=amount,
+                                        regular_renewal_price=regular,
+                                        is_early_adopter=is_ea, payment_ref=ref)
+            models.log_audit(user["id"], "billing.plan_change",
+                             f"{plan}/{cyc}{' early-adopter' if is_ea else ''} "
+                             f"pending payment ({amount})")
     return RedirectResponse("/billing", status_code=303)
 
 @router.post("/billing/cancel")
@@ -719,7 +762,7 @@ async def analytics_export(request: Request, report: str = "recovery"):
             v = d.get(h, "")
             if h == "when" and v:
                 v = time.strftime("%Y-%m-%d %H:%M", time.localtime(v))
-            vals.append(str(v).replace(",", " "))
+            vals.append(_csv_safe(str(v).replace(",", " ")))
         lines.append(",".join(vals))
     if request.query_params.get("format") == "pdf":
         from . import pdfgen
@@ -809,6 +852,47 @@ async def subscription_page(request: Request):
                   plans=config.PLANS, inr=inr)
 
 # ---------- settings ----------
+@router.get("/inbox", response_class=HTMLResponse)
+async def inbox_page(request: Request):
+    """The owner's communication inbox: inbound customer replies with their
+    rule-based intent tags, and open more-time / dispute requests."""
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    convs = models.list_conversations(user["id"], 100)
+    reqs = models.list_customer_requests(user["id"], "open")
+    return render("inbox.html", request, user=user, tab="inbox", convs=convs, reqs=reqs, inr=inr)
+
+
+@router.post("/inbox/{rid}/resolve")
+async def inbox_resolve(request: Request, rid: str, decision: str = Form(""),
+                        promised_date: str = Form("")):
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    if user.get("role") != "owner":
+        return RedirectResponse("/inbox", status_code=303)
+    decision = "approved" if decision == "approved" else "rejected"
+    rrow = models.get_customer_request(rid)
+    r = dict(rrow) if rrow else None
+    if r and r["owner_id"] == user["id"] and r["status"] == "open":
+        inv = models.get_invoice(r["invoice_id"]) if r["invoice_id"] else None
+        if decision == "approved" and r["kind"] == "more_time" and inv:
+            pdate = (promised_date or r.get("requested_date") or "").strip()[:10]
+            models.ex("UPDATE invoices SET promised_date=?, paused=0 WHERE id=?", (pdate, inv["id"]))
+        elif decision == "rejected" and r["kind"] == "more_time" and inv:
+            models.ex("UPDATE invoices SET paused=0 WHERE id=?", (inv["id"],))
+        elif decision == "rejected" and r["kind"] == "dispute" and inv:
+            models.ex("UPDATE invoices SET status='pending' WHERE id=?", (inv["id"],))
+        models.resolve_customer_request(rid, decision, owner_id=user["id"])
+        models.log_audit(user["id"], f"customer_request_{decision}",
+                         f"kind={r['kind']} invoice={inv['number'] if inv else ''}")
+        if inv:
+            models.log_activity(user["id"], "automation",
+                                f"customer request ({r['kind']}) on invoice {inv['number']} {decision}")
+    return RedirectResponse("/inbox", status_code=303)
+
+
 @router.get("/settings", response_class=HTMLResponse)
 async def settings_page(request: Request):
     user = guard(request)
@@ -851,26 +935,56 @@ async def settings_connect(request: Request, business_name: str = Form(""),
         return RedirectResponse("/login", status_code=303)
     if user.get("role") != "owner":
         return RedirectResponse("/settings", status_code=303)
+    bank_name = (request.headers.get("x-bank-name") or "").strip()
+    bank_note = (request.headers.get("x-bank-account-note") or "").strip()
+    pay_link = (request.headers.get("x-payment-link-url") or "").strip()
+    try:
+        fm = await request.form()
+        bank_name = (fm.get("bank_name") or bank_name or "").strip()
+        bank_note = (fm.get("bank_account_note") or bank_note or "").strip()
+        pay_link = (fm.get("payment_link_url") or pay_link or "").strip()
+    except Exception:
+        pass
     models.save_connect(
         user["id"],
         business_name=(business_name or user.get("business") or user.get("name") or "").strip(),
         smtp_host=smtp_host.strip(), smtp_port=int(smtp_port or 587),
         smtp_user=smtp_user.strip(),
-        smtp_pass_enc=vault.encrypt(smtp_pass) if smtp_pass else None)
+        smtp_pass_enc=vault.encrypt(smtp_pass) if smtp_pass else None,
+        bank_name=bank_name, bank_account_note=bank_note, payment_link_url=pay_link)
     models.log_audit(user["id"], "settings.connect", "email")
     return RedirectResponse("/settings", status_code=303)
 
 @router.post("/settings/connect/wa")
-async def settings_connect_wa(request: Request, wa_phone_id: str = Form(""), wa_token: str = Form("")):
+async def settings_connect_wa(request: Request, wa_phone_id: str = Form(""), wa_token: str = Form(""),
+                              wa_app_secret: str = Form("")):
     user = guard(request)
     if not user:
         return RedirectResponse("/login", status_code=303)
     if user.get("role") != "owner":
         return RedirectResponse("/settings", status_code=303)
     models.save_connect(user["id"], wa_phone_id=wa_phone_id.strip(),
-                        wa_token_enc=vault.encrypt(wa_token) if wa_token else None)
+                        wa_token_enc=vault.encrypt(wa_token) if wa_token else None,
+                        wa_app_secret_enc=vault.encrypt(wa_app_secret) if wa_app_secret else None)
     models.log_audit(user["id"], "settings.connect", "whatsapp")
     return RedirectResponse("/settings", status_code=303)
+
+
+@router.post("/settings/connect/wa/disconnect")
+async def settings_wa_disconnect(request: Request):
+    """Remove the WhatsApp connection: credentials cleared, action audited,
+    message history kept. Inbound replies to that number stop being recorded."""
+    user = guard(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    if user.get("role") != "owner":
+        return RedirectResponse("/settings", status_code=303)
+    models.ex("UPDATE connect SET wa_phone_id='', wa_token_enc='', wa_app_secret_enc='' WHERE owner_id=?",
+              (user["id"],))
+    models.log_audit(user["id"], "whatsapp_disconnected", "settings")
+    models.log_activity(user["id"], "automation",
+                        "WhatsApp Business connection removed from Settings; message history kept")
+    return RedirectResponse("/settings?watest=disconnected", status_code=303)
 
 @router.post("/settings/connect/test")
 async def settings_connect_test(request: Request, channel: str = Form("email"), dest: str = Form("")):
@@ -960,6 +1074,10 @@ async def terms(request: Request):
 @router.get("/contact", response_class=HTMLResponse)
 async def contact(request: Request):
     return render("contact.html", request)
+
+@router.get("/refund", response_class=HTMLResponse)
+async def refund_policy(request: Request):
+    return render("refund.html", request)
 
 @router.post("/contact-send")
 async def contact_send(request: Request, name: str = Form(""), email: str = Form(""), message: str = Form("")):

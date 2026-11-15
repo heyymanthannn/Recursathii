@@ -1,9 +1,12 @@
-{% extends "base.html" %}{% block title %}Privacy Policy · RecurSaathi{% endblock %}{% block content %}
+{% extends "base.html" %}{% block title %}Privacy Policy | RecurSaathi{% endblock %}{% block content %}
 <h1>Privacy Policy</h1><p class="muted">Last updated: November 2026</p>
 <div class="copy">
-<h2>What we collect</h2><p>Account details (name, business name, email, phone), your UPI ID if you add one, and the customer and invoice records you enter. If you connect Razorpay, your API keys are stored encrypted and never displayed again in full.</p>
-<h2>Customer data</h2><p>You control the customer data you upload. We process it only to provide the service: sending reminders you configure, showing payment pages and keeping your records. We do not sell data or use it to train third-party AI models.</p>
-<h2>Payments</h2><p>Customer invoice payments settle directly into your own bank account via your own UPI ID or your own Razorpay account. RecurSaathi never holds customer money. Subscription payments to RecurSaathi are separate.</p>
-<h2>Security</h2><p>Passwords are stored as salted hashes. Sensitive credentials are encrypted at rest. Gateway webhooks are verified by signature. Access is role-based, and administrative actions are logged.</p>
-<h2>Your rights</h2><p>Write to recursathi@gmail.com to access, correct or delete your data. Customer opt-outs from WhatsApp are honored automatically.</p>
+<h2>What we collect</h2><p>Account details (name, business name, email, phone), your UPI ID and payee name if you add one, and the customer, invoice and payment records you enter or import. If you connect Razorpay or a WhatsApp Business number, the credentials needed to run that connection (API keys, phone number ID, app secret) are stored encrypted and never shown again in full.</p>
+<h2>Customer data</h2><p>You control the customer data you add. We process it only to provide the service: sending the reminders you configure, showing payment pages and links, keeping your records, and answering customer requests that reach your connected channels. We do not sell customer data and we do not use it to train third-party AI models.</p>
+<h2>Messages on your behalf</h2><p>Reminders are sent through channels your business connects (email, WhatsApp). We honor customer opt-outs automatically: a customer who replies STOP or opts out through the portal stops receiving reminders. Message logs (delivery status, timestamps) are kept so you can see what was sent.</p>
+<h2>Payments</h2><p>Customer invoice payments settle directly into your own bank account via your own UPI ID or your own Razorpay account. RecurSaathi never receives, holds or transfers customer money. Subscription payments to RecurSaathi are separate and processed by our payment provider.</p>
+<h2>Security</h2><p>Passwords are stored as salted hashes. Sensitive credentials are encrypted at rest. Gateway and platform webhooks are verified by signature before processing. Access is role-based, and administrative actions are logged. Daily encrypted backups are kept off the application server.</p>
+<h2>Data retention and deletion</h2><p>Your records are kept while your account is active. On written request we delete your account data, including customer records and message logs, within 30 days, except where the law requires us to keep a record.</p>
+<h2>Your rights</h2><p>Write to recursathi@gmail.com to access, correct or delete your data. Customer opt-outs from WhatsApp are honored automatically and independently of your account settings.</p>
+<h2>Changes</h2><p>We will update this page when the policy changes and note the date above.</p>
 </div>{% endblock %}

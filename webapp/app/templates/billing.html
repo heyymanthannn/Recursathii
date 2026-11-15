@@ -2,7 +2,7 @@
 <h1>Billing &amp; Subscription</h1>
 <p class="sub">Your RecurSaathi subscription. Upgrade, downgrade or cancel any time.</p>
 {% if blocked %}
-<div class="card" style="border-color:var(--purple)"><strong>Plan limit reached.</strong> <span class="muted">{% if blocked == 'customers' %}You've hit the customer limit on your plan. Upgrade to add more.{% elif blocked == 'invoices' %}You've hit this month's invoice limit on your plan. Upgrade for a higher monthly quota.{% elif blocked == 'team' %}Your plan's team seats are full. Upgrade to add team members.{% else %}This action is in read-only mode. Subscribe to a plan to unlock it again.{% endif %}</span></div>
+<div class="card" style="border-color:var(--purple)"><strong>Plan limit reached.</strong> <span class="muted">{% if blocked == 'customers' %}You've hit the customer limit on your plan. Upgrade to add more.{% elif blocked == 'invoices' %}You've hit this month's invoice limit on your plan. Upgrade for a higher monthly quota.{% elif blocked == 'team' %}Your plan's team seats are full. Upgrade to add team members.{% elif blocked == 'ea_sold_out' %}All 10 early-adopter slots are taken. Regular annual pricing still applies.{% elif blocked == 'ea_already' %}Your business has already used its one early-adopter offer.{% elif blocked == 'ea_trial' %}The early-adopter offer is for paying Enterprise businesses. Complete your trial or subscribe first, then claim it.{% elif blocked == 'ea_unavailable' %}The early-adopter offer is not available right now.{% else %}This action is in read-only mode. Subscribe to a plan to unlock it again.{% endif %}</span></div>
 {% endif %}
 {% if user.plan_status == 'expired' %}
 <div class="card" style="border-color:var(--purple)"><strong>Trial ended.</strong> <span class="muted">Your data is safe. Subscribe below to unlock full access again.</span></div>
@@ -22,6 +22,19 @@ Billing cycle: {{ user.billing_cycle or 'monthly' }} &middot; We never charge au
 <form method="post" action="/billing/cancel" style="margin-top:10px" data-confirm="Cancel your subscription? Your data stays safe; paid features pause after this period."><button class="btn danger sm">Cancel subscription</button></form>
 {% endif %}
 </div>
+{% if sub %}
+<div class="card" style="margin:14px 0">
+<div class="label">Subscription details</div>
+<div class="muted" style="margin:8px 0">
+Plan: {{ sub.plan | capitalize }} &middot; Billing: {{ "Early-adopter annual (first 12 months)" if sub.is_early_adopter else (sub.cycle or "monthly") | capitalize }}<br>
+Status: {{ sub.status }}{% if sub.status in ("canceled", "expired", "refunded", "refund_pending") %} (cancellation/refund status){% endif %}<br>
+{% if sub.price %}Price this term: {{ inr(sub.price) }}{% if sub.is_early_adopter %} (early-adopter first-year price, locked in){% endif %}<br>{% endif %}
+{% if sub.is_early_adopter and sub.regular_renewal_price %}Next renewal price: {{ inr(sub.regular_renewal_price) }} (regular annual; only after your explicit renewal){% if sub.term_end %} &middot; renewal date {{ sub.term_end | datetime }}{% endif %}<br>{% endif %}
+{% if sub.term_start %}Term started {{ sub.term_start | datetime }}{% if sub.term_end %} &middot; ends {{ sub.term_end | datetime }}{% endif %}<br>{% endif %}
+{% if sub.payment_ref %}Reference: {{ sub.payment_ref }}<br>{% endif %}
+</div>
+</div>
+{% endif %}
 <div class="cards">
 {% for key, p in plans.items() %}
 <div class="card" style="{{ 'border-color:var(--purple)' if user.plan==key }}">
@@ -33,11 +46,14 @@ Billing cycle: {{ user.billing_cycle or 'monthly' }} &middot; We never charge au
 {% if user.plan_status=='active' %}<form method="post" action="/billing/cancel" style="margin-top:10px" data-confirm="Cancel your subscription? Your data stays safe; paid features pause after this period."><button class="btn danger sm">Cancel subscription</button></form>{% endif %}
 {% else %}
 <form method="post" action="/billing/change-plan" style="margin-top:10px"><input type="hidden" name="plan" value="{{ key }}"><select name="cycle" style="margin-right:6px;padding:8px"><option value="monthly">Monthly</option><option value="annual">Annual (2 months free)</option></select><button class="btn sm">Switch to {{ p.name }}</button></form>
+{% if key == 'enterprise' and user.plan_status != 'trialing' %}
+<form method="post" action="/billing/change-plan" style="margin-top:10px" data-confirm="Early-adopter annual: {{ inr(ea_price) }} for your first 12 months. {{ ea_av.remaining }} of 10 slots left. After year one, renewal runs at the regular annual price ({{ inr(plans.enterprise.annual_amount) }}) and needs your explicit action. Continue?"><input type="hidden" name="plan" value="enterprise"><input type="hidden" name="cycle" value="annual"><input type="hidden" name="ea" value="1"><button class="btn sm">Early-adopter annual {{ inr(ea_price) }}</button><span class="muted" style="margin-left:8px">{{ ea_av.remaining }} of 10 slots left &middot; first 12 months only</span></form>
+{% endif %}
 {% endif %}
 </div>
 {% endfor %}
 </div>
-<div class="muted" style="margin:12px 0">Subscription payments go to RecurSaathi. Your customers' invoice payments never touch this account: they go straight to your bank via your own UPI ID or your own Razorpay keys.</div>
+<div class="muted" style="margin:12px 0">Subscription payments go to RecurSaathi. Your customers' invoice payments never touch this account: they go straight to your bank via your own UPI ID or your own Razorpay keys. Annual renewals are never automatic: every renewal needs your explicit checkout and a verified payment, at the regular price shown on the plan card at that time.</div>
 <div class="muted">Usage this month: {{ usage.customers }} / {{ plans[user.plan].max_customers }} customers &middot; {{ usage.invoices_month }} / {{ plans[user.plan].max_invoices_month }} invoices &middot; {{ usage.team }} / {{ plans[user.plan].max_team }} team seats &middot; {{ usage.messages_month }} / {{ plans[user.plan].max_emails_month }} automated messages &middot; {{ usage.workflows }} / {{ plans[user.plan].max_workflows }} automation workflows</div>
 <h2>Subscription payment history</h2>
 <div class="card">{% if pays %}<table><tr><th>When</th><th>Plan</th><th>Amount</th><th>Status</th><th>Reference</th><th>Receipt</th></tr>

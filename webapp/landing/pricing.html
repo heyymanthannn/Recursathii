@@ -4,32 +4,50 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pricing | RecurSaathi</title>
-<meta name="description" content="RecurSaathi pricing is being finalized. Request early access to help shape pricing and get founding terms at launch.">
+<meta name="description" content="RecurSaathi pricing: Starter Rs 999/month, Growth Rs 4,999/month, Enterprise Rs 9,999/month. Early-adopter Enterprise annual Rs 79,990 for the first 12 months, limited to the first 10 eligible businesses.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234f6bff'/%3E%3Cpath d='M9 22V10h8a4 4 0 0 1 0 8h-4l5 4' stroke='white' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <style>
 :root{--bg:#f6f7fb;--card:#fff;--ink:#10132a;--muted:#5a6079;--faint:#8b90a7;--line:#e8eaf3;--blue:#4f6bff;--violet:#7b5cff;--grad:linear-gradient(100deg,#4f6bff,#7b5cff);--radius:16px;--shadow:0 10px 30px rgba(24,32,84,.07)}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased}
-.wrap{max-width:860px;margin:0 auto;padding:0 24px}
+.wrap{max-width:1000px;margin:0 auto;padding:0 24px}
 a{color:inherit;text-decoration:none}
-.btn{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:14px 28px;font-size:15.5px;font-weight:600;border:1px solid transparent;cursor:pointer}
+.btn{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:13px 26px;font-size:15px;font-weight:600;border:1px solid transparent;cursor:pointer}
 .btn-primary{background:var(--grad);color:#fff;box-shadow:0 8px 20px rgba(79,107,255,.25)}
+.btn-ghost{background:#fff;color:var(--ink);border-color:var(--line)}
 nav{position:sticky;top:0;z-index:50;background:rgba(246,247,251,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
 .nav{display:flex;align-items:center;gap:26px;height:66px}
 .logo{display:flex;align-items:center;gap:9px;font-size:18px}
 .logo .mark{width:28px;height:28px;border-radius:8px;background:var(--grad);display:inline-flex;align-items:center;justify-content:center}
 .logo .mark svg{width:16px;height:16px}
 .nav .btn{padding:10px 20px;font-size:14px;margin-left:auto}
-main{padding:70px 0}
+main{padding:64px 0 80px}
 .badge{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#4f46e5;background:#eef0ff;border:1px solid #dcdcff;border-radius:999px;padding:4px 11px;margin-bottom:20px}
-h1{font-size:clamp(28px,4.5vw,42px);letter-spacing:-.02em;font-weight:800;margin-bottom:14px}
-main p{color:var(--muted);max-width:560px}
-.panel{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:34px;margin-top:34px;box-shadow:var(--shadow)}
-.panel h2{font-size:20px;margin-bottom:10px}
-.panel ul{margin:14px 0 0 18px;color:var(--muted)}
-.panel li{margin-bottom:8px}
+h1{font-size:clamp(28px,4.5vw,42px);letter-spacing:-.02em;font-weight:800;margin-bottom:12px}
+.lede{color:var(--muted);max-width:620px}
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:36px}
+.pcard{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:28px;display:flex;flex-direction:column;box-shadow:var(--shadow);position:relative}
+.pcard.hot{border-color:#c9c2ff;box-shadow:0 14px 40px rgba(109,94,245,.16)}
+.pop{position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#fff;background:var(--grad);border-radius:999px;padding:5px 14px;white-space:nowrap}
+.plan{font-size:12.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.price{font-size:clamp(26px,3vw,34px);font-weight:800;letter-spacing:-.02em;margin:14px 0 2px}
+.price small{font-size:14px;font-weight:600;color:var(--faint)}
+.annual{font-size:13.5px;color:var(--muted);margin-bottom:14px}
+.pcard ul{list-style:none;margin:6px 0 20px;display:flex;flex-direction:column;gap:8px;font-size:14px;color:var(--muted)}
+.pcard ul li::before{content:"✓";color:#34c759;font-weight:700;margin-right:8px}
+.pcard .btn{margin-top:auto}
+.ea{background:linear-gradient(160deg,rgba(79,107,255,.10),rgba(123,92,255,.10)),#fff;border:1px solid #d8dcff;border-radius:20px;padding:28px;margin-top:22px;box-shadow:var(--shadow)}
+.ea h2{font-size:20px;margin-bottom:6px}
+.ea .big{font-size:clamp(26px,3vw,34px);font-weight:800;letter-spacing:-.02em;margin:10px 0 2px}
+.ea ul{list-style:none;margin:12px 0;display:flex;flex-direction:column;gap:8px;font-size:14px;color:var(--muted)}
+.ea ul li::before{content:"✓";color:#34c759;font-weight:700;margin-right:8px}
+.avail{display:inline-flex;align-items:center;gap:8px;background:#eef0ff;border:1px solid #dcdcff;color:#3f3fae;border-radius:999px;padding:6px 14px;font-size:13px;font-weight:600;margin:6px 0 12px}
+.fine{font-size:12.5px;color:var(--faint);margin-top:14px}
+.terms{font-size:13.5px;margin-top:14px}
+.terms a{color:var(--blue)}
 footer{border-top:1px solid var(--line);padding:30px 0;font-size:13.5px;color:var(--faint);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 footer a{color:var(--muted)}
+@media(max-width:860px){.plans{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -39,18 +57,68 @@ footer a{color:var(--muted)}
 </div></nav>
 <main>
   <div class="wrap">
-    <span class="badge">Early access</span>
-    <h1>Pricing is being finalized.</h1>
-    <p>RecurSaathi is in early access and pricing is not final yet. Early access partners use the product before launch, help shape the plans, and get founding terms when pricing is announced.</p>
-    <div class="panel">
-      <h2>What early access partners get</h2>
+    <span class="badge">Pricing</span>
+    <h1>Simple plans for subscription businesses.</h1>
+    <p class="lede">Monthly or annual. Your money never passes through us: recovery runs on your own Razorpay account, your own WhatsApp Business number and your own SMTP login. Prices exclude applicable taxes.</p>
+
+    <div class="plans">
+      <div class="pcard">
+        <div class="plan">Starter</div>
+        <div class="price">₹999<small>/month</small></div>
+        <div class="annual">or ₹9,990/year (2 months free)</div>
+        <ul>
+          <li>Customer and invoice management</li>
+          <li>Recovery Radar (overdue detection)</li>
+          <li>Manual UPI payment collection</li>
+          <li>Email reminders &amp; basic analytics</li>
+          <li>1 team member &middot; 500 customers</li>
+        </ul>
+        <a class="btn btn-ghost" href="#" data-ea-mail>Start with Starter</a>
+      </div>
+      <div class="pcard hot">
+        <span class="pop">Most popular</span>
+        <div class="plan">Growth</div>
+        <div class="price">₹4,999<small>/month</small></div>
+        <div class="annual">or ₹49,990/year (2 months free)</div>
+        <ul>
+          <li>Everything in Starter</li>
+          <li>Automated email &amp; WhatsApp follow-ups</li>
+          <li>Dormant customer reactivation</li>
+          <li>AI Recovery Assistant &amp; weekly reports</li>
+          <li>5 team members &middot; 5,000 customers</li>
+        </ul>
+        <a class="btn btn-primary" href="#" data-ea-mail>Choose Growth</a>
+      </div>
+      <div class="pcard">
+        <div class="plan">Enterprise</div>
+        <div class="price">₹9,999<small>/month</small></div>
+        <div class="annual">or ₹99,990/year</div>
+        <ul>
+          <li>Everything in Growth</li>
+          <li>Advanced AI assistant &amp; daily insights</li>
+          <li>Custom business reports</li>
+          <li>Team roles &amp; permissions, priority support</li>
+          <li>10 team members &middot; 5 branches</li>
+        </ul>
+        <a class="btn btn-ghost" href="#" data-ea-mail>Talk to us about Enterprise</a>
+      </div>
+    </div>
+
+    <div class="ea">
+      <h2>Early-adopter annual offer</h2>
+      <div class="big">₹79,990 <span style="font-size:15px;font-weight:600;color:var(--muted)">for the first 12 months</span></div>
+      <div class="avail" id="ea-avail">Availability is confirmed live at checkout</div>
       <ul>
-        <li>Access to the current build for real billing, before the public launch</li>
-        <li>A direct line to the team building RecurSaathi, and a say in the roadmap</li>
-        <li>Founding-partner terms when pricing is finalized at launch</li>
+        <li>Limited to the first 10 eligible businesses, one offer per business</li>
+        <li>Save ₹20,000 against the regular annual price of ₹99,990</li>
+        <li>Applies to the first 12 months only</li>
+        <li>Renewal after the first year runs at the then-current regular annual price</li>
+        <li>We send advance notice before renewal, and renewal always needs your explicit action: nothing is charged automatically</li>
+        <li>Your first-year price is locked in and does not change if list prices change during the year</li>
       </ul>
-      <p style="margin-top:20px"><a class="btn btn-primary" href="#" data-ea-mail>Request Early Access</a></p>
-      <p style="margin-top:14px;font-size:13px;color:var(--faint)">Questions? Email us using the button above, or use the <a href="/contact" style="color:var(--blue)">contact page</a>.</p>
+      <a class="btn btn-primary" href="#" data-ea-mail>Claim the early-adopter rate</a>
+      <p class="fine">Eligibility and slots are confirmed on our servers at checkout; this page shows live availability from the same source. No countdown timers, no invented numbers.</p>
+      <p class="terms">The early-adopter offer is subject to our <a href="/terms">terms and conditions</a>. Prices exclude applicable taxes.</p>
     </div>
   </div>
 </main>
@@ -61,6 +129,13 @@ footer a{color:var(--muted)}
   var cfg=window.EA_CONFIG||{};
   var mailto=cfg.email?"mailto:"+cfg.email+"?subject="+encodeURIComponent(cfg.subject||"RecurSaathi Early Access Request"):"#";
   document.querySelectorAll("[data-ea-mail]").forEach(function(a){a.setAttribute("href",mailto);});
+  var el=document.getElementById("ea-avail");
+  if(el&&window.fetch){
+    fetch("/api/early-adopter-availability").then(function(r){return r.ok?r.json():null;}).then(function(d){
+      if(!d||typeof d.remaining!=="number")return;
+      el.textContent=d.remaining>0?(d.remaining+" of "+d.max+" early-adopter slots left"):"All "+d.max+" early-adopter slots claimed";
+    }).catch(function(){});
+  }
 })();
 </script>
 </body>

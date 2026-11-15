@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Inbox</h1>
+<p class="muted">Customer replies on your own WhatsApp number, and their requests. Nothing here contacts anyone: every reaction is yours to decide.</p>
+
+{% if reqs %}
+<div class="card">
+<h2>Open requests</h2>
+{% for r in reqs %}
+<div style="border-top:1px solid var(--line2);padding:10px 0">
+<div><b>{{ r.customer_name or 'Unknown customer' }}</b> · {{ r.kind.replace('_',' ') }}
+{% if r.invoice_number %} · invoice {{ r.invoice_number }}{% endif %}</div>
+{% if r.note %}<p class="muted">{{ r.note }}</p>{% endif %}
+{% if r.requested_date %}<p class="muted">They suggested paying by {{ r.requested_date }}</p>{% endif %}
+<form method="post" action="/inbox/{{ r.id }}/resolve" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end">
+{% if r.kind == 'more_time' %}
+<div><label>Promise date</label><input name="promised_date" type="date" value="{{ r.requested_date }}"></div>
+{% endif %}
+<button class="btn" name="decision" value="approved">Approve</button>
+<button class="btn ghost" name="decision" value="rejected">Reject</button>
+</form>
+</div>
+{% endfor %}
+</div>
+{% else %}
+<p class="muted">No open requests.</p>
+{% endif %}
+
+<div class="card" style="margin-top:14px">
+<h2>Conversations</h2>
+{% if convs %}
+{% for c in convs %}
+<div style="border-top:1px solid var(--line2);padding:10px 0">
+<div><b>{{ c.customer_name or c.customer_phone or 'Unknown number' }}</b>
+{% if c.invoice_number %} · invoice {{ c.invoice_number }}{% endif %}
+<span class="pill {{ 'overdue' if c.intent=='dispute' else 'pending' }}">{{ c.intent.replace('_',' ') }}</span></div>
+<p class="muted">{{ c.body }}</p>
+<p class="muted" style="font-size:12px">{{ c.created|datetime }}</p>
+</div>
+{% endfor %}
+{% else %}
+<p class="muted">No replies yet. When a customer replies to your WhatsApp Business number, it lands here with an intent tag (paid, more time, dispute, other).</p>
+{% endif %}
+</div>
+{% endblock %}
