@@ -10,13 +10,13 @@ Run:  cd webapp && PYTHONPATH=. python3 -m tests.test_phase7_security_gate
 Isolated temp DB, synthetic data only, no network, no real providers,
 production untouched.
 """
-import os, sys, tempfile
+import os, sys, tempfile, time
 os.environ["PAYRECOVERY_DB"] = tempfile.mktemp(prefix="test_sg_", suffix=".sqlite")
 os.environ.setdefault("MANUAL_UPI_ID", "testpay@upi")
 os.environ["RZP_WEBHOOK_SECRET"] = "gate-webhook-secret"  # fail-closed: explicit test secret
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 from fastapi.testclient import TestClient
-from app import main as app_main, models, sequences, vault
+from app import auth, main as app_main, models, sequences, vault
 from app.auth import hash_pw
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "scripts")))
 from seed_phase7 import seed  # noqa: E402
@@ -77,7 +77,36 @@ r = client.post("/login", data={"email": A["email"], "password": PW}, follow_red
 sc = r.headers.get("set-cookie", "")
 record("session cookie HttpOnly", "httponly" in sc.lower(), sc)
 record("session cookie SameSite=Lax", "samesite=lax" in sc.lower(), sc)
-record("session cookie max-age 30d", "max-age=2592000" in sc.lower(), sc)
+record("session cookie default 12h max-age", "max-age=43200" in sc.lower(), sc)
+# remember-me: same signed session, browser keeps it for 30d (commit 80fb6ff)
+r = client.post("/login", data={"email": B["email"], "password": PW, "remember": "1"},
+                follow_redirects=False)
+sc30 = r.headers.get("set-cookie", "")
+record("session cookie remember-me 30d max-age", "max-age=2592000" in sc30.lower(), sc30)
+record("cookie expiry matches server-side session TTL",
+       auth.SESSION_TTL == 2592000 and 43200 <= auth.SESSION_TTL,
+       f"SESSION_TTL={auth.SESSION_TTL}")
+# Secure flag: middleware adds it when the request looks https (incl. X-Forwarded-Proto)
+client.cookies.clear()
+r_https = client.post("/login", data={"email": B["email"], "password": PW, "remember": "1"},
+                      headers={"x-forwarded-proto": "https"}, follow_redirects=False)
+record("session cookie Secure added on https", "secure" in r_https.headers.get("set-cookie", "").lower(),
+       r_https.headers.get("set-cookie", ""))
+# logout invalidates the session: cookie cleared, private pages bounce to login
+client.get("/logout", follow_redirects=False)
+r = client.get("/dashboard", follow_redirects=False)
+record("logout invalidates session",
+       r.status_code == 303 and "/login" in r.headers.get("location", ""), str(r.status_code))
+# expired sessions cannot authenticate: shrink the server-side validation window,
+# let it lapse, and the same cookie must stop authenticating
+r = client.post("/login", data={"email": B["email"], "password": PW}, follow_redirects=False)
+_t0 = auth.SESSION_TTL
+auth.SESSION_TTL = 1
+time.sleep(2)
+r = client.get("/dashboard", follow_redirects=False)
+record("expired sessions cannot authenticate",
+       r.status_code == 303 and "/login" in r.headers.get("location", ""), str(r.status_code))
+auth.SESSION_TTL = _t0
 
 # ---- 2. anonymous protection on private surfaces ----
 client.cookies.clear()
