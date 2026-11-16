@@ -31,9 +31,12 @@ pricing = io.open(pricing_path, encoding="utf-8").read()
 meta = re.search(r'<meta name="description" content="([^"]*)"', pricing)
 check("pricing page has a meta description", bool(meta))
 meta = meta.group(1) if meta else ""
-check("meta carries " + RUPEE + "999/month", RUPEE + "999/month" in meta)
-check("meta carries " + RUPEE + "4,999/month", RUPEE + "4,999/month" in meta)
-check("meta carries " + RUPEE + "9,999/month", RUPEE + "9,999/month" in meta)
+# Wording updated Nov 16, 2026 to the owner-approved SEO meta
+# ("Starter ₹999, Growth ₹4,999 and Enterprise ₹9,999 per month...");
+# guards stay the same: exact approved figures, per-month wording.
+check("meta carries Starter " + RUPEE + "999 per month", "Starter " + RUPEE + "999" in meta and "per month" in meta)
+check("meta carries Growth " + RUPEE + "4,999 per month", "Growth " + RUPEE + "4,999" in meta)
+check("meta carries Enterprise " + RUPEE + "9,999 per month", "Enterprise " + RUPEE + "9,999" in meta)
 check("meta carries " + RUPEE + "79,990 early-adopter annual", RUPEE + "79,990" in meta)
 check("meta has no plain-Rs figures", not re.search(r"Rs\.? ?\d", meta), meta[:120])
 

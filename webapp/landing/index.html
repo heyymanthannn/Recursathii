@@ -3,11 +3,25 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Recover More Revenue. Automatically. | RecurSaathi</title>
-<meta name="description" content="RecurSaathi helps businesses recover overdue payments through intelligent reminders, customer communication and organized follow-ups.">
-<meta property="og:title" content="Recover More Revenue. Automatically. | RecurSaathi">
-<meta property="og:description" content="RecurSaathi helps businesses recover overdue payments through intelligent reminders, customer communication and organized follow-ups.">
+<title>Recover More Revenue: Payment Reminders | RecurSaathi</title>
+<meta name="description" content="Recover overdue invoices and failed payments with email and WhatsApp reminders, UPI payment links and organised follow-ups. Made in India.">
+<link rel="canonical" href="https://recursathii.onrender.com/">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="RecurSaathi">
+<meta property="og:locale" content="en_IN">
+<meta property="og:title" content="Recover More Revenue: Payment Reminders | RecurSaathi">
+<meta property="og:description" content="Recover overdue invoices and failed payments with email and WhatsApp reminders, UPI payment links and organised follow-ups. Made in India.">
+<meta property="og:url" content="https://recursathii.onrender.com/">
+<meta property="og:image" content="https://recursathii.onrender.com/static/og-default.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="RecurSaathi: recover overdue payments with reminders and follow-ups">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Recover More Revenue: Payment Reminders | RecurSaathi">
+<meta name="twitter:description" content="Recover overdue invoices and failed payments with email and WhatsApp reminders, UPI payment links and organised follow-ups. Made in India.">
+<meta name="twitter:image" content="https://recursathii.onrender.com/static/og-default.png">
+<meta name="twitter:image:alt" content="RecurSaathi: recover overdue payments with reminders and follow-ups">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://recursathii.onrender.com/#organization","name":"RecurSaathi","url":"https://recursathii.onrender.com/","logo":"https://recursathii.onrender.com/static/logo-512.png","description":"Revenue recovery communication software for Indian businesses: overdue invoice tracking, failed payment follow-ups and customer reactivation.","areaServed":{"@type":"Country","name":"India"}},{"@type":"WebSite","@id":"https://recursathii.onrender.com/#website","url":"https://recursathii.onrender.com/","name":"RecurSaathi","inLanguage":"en-IN","publisher":{"@id":"https://recursathii.onrender.com/#organization"}},{"@type":"FAQPage","@id":"https://recursathii.onrender.com/#faq","mainEntity":[{"@type":"Question","name":"What exactly does RecurSaathi do?","acceptedAnswer":{"@type":"Answer","text":"It runs your overdue-payment follow-ups over your own billing records: failed card and UPI AutoPay payments get retried inside RBI's allowed windows, overdue invoices get chased, and dormant repeat customers get flagged for win-back. The intelligence is rule-based logic on your own data."}},{"@type":"Question","name":"Does customer money ever pass through RecurSaathi?","acceptedAnswer":{"@type":"Answer","text":"No. Payment instructions carry your own UPI ID or your own Razorpay account, so money settles directly to you. RecurSaathi only reads the payment status so it knows when to stop following up."}},{"@type":"Question","name":"How do retries stay within RBI rules?","acceptedAnswer":{"@type":"Answer","text":"Retries run through your connected Razorpay account, scheduled inside the retry windows the RBI permits for UPI AutoPay. Decline codes are read before anything is retried, so a hard decline isn't retried blindly."}},{"@type":"Question","name":"Do I need a WhatsApp Business account?","acceptedAnswer":{"@type":"Answer","text":"WhatsApp reminders use the official Meta WhatsApp Business Platform through your own business account and number. Meta charges per conversation; those charges are yours, billed by Meta, and RecurSaathi adds nothing on top. You can start with email reminders only."}},{"@type":"Question","name":"How do I get started?","acceptedAnswer":{"@type":"Answer","text":"Sign up, verify your email, and complete the guided onboarding: business profile, payment instructions and reminder preferences. Your 14-day trial starts right away, and automation stays off until you switch it on."}},{"@type":"Question","name":"What does the early adopter offer include?","acceptedAnswer":{"@type":"Answer","text":"The first 10 eligible businesses pay ₹79,990 for their first 12 months of Enterprise instead of ₹99,990, one offer per business. Renewal after the first year runs at the then-current regular annual price with advance notice and your explicit approval."}}]}]}</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234f6bff'/%3E%3Cpath d='M9 22V10h8a4 4 0 0 1 0 8h-4l5 4' stroke='white' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <style>
 :root{
@@ -73,6 +87,7 @@ h2{font-size:clamp(26px,3.4vw,36px);letter-spacing:-.02em;line-height:1.15;font-
 .plan ul{list-style:none;margin:0 0 22px}
 .plan li{font-size:14.5px;color:var(--muted);margin-bottom:8px;padding-left:22px;position:relative}
 .plan li::before{content:"\2713";position:absolute;left:0;color:var(--blue);font-weight:700}
+.plan li a.inl{text-decoration:underline;text-underline-offset:3px}
 .plan .btn{margin-top:auto;width:100%}
 .ea-panel{margin-top:24px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:30px;box-shadow:var(--shadow)}
 .ea-panel h3{font-size:20px;margin-bottom:8px}
@@ -216,7 +231,7 @@ footer{padding:56px 0 34px}
         <h3>Growth</h3>
         <p class="pm">&#8377;4,999<span> /month</span></p>
         <p class="pa">&#8377;49,990 billed annually (2 months free)</p>
-        <ul><li>5,000 customers, 2,000 invoices/month</li><li>Automated email and WhatsApp follow-ups</li><li>Dormant customer reactivation campaigns</li><li>5 team members</li></ul>
+        <ul><li>5,000 customers, 2,000 invoices/month</li><li>Automated email and WhatsApp follow-ups</li><li><a class="inl" href="/customer-reactivation">Dormant customer reactivation campaigns</a></li><li>5 team members</li></ul>
         <a class="btn btn-primary" href="/signup">Start free trial</a>
       </div>
       <div class="plan reveal">
@@ -276,6 +291,7 @@ footer{padding:56px 0 34px}
         <li><a href="#how">How It Works</a></li>
         <li><a href="#pricing">Pricing</a></li>
         <li><a href="/pricing">Full pricing</a></li>
+        <li><a href="/customer-reactivation">Customer reactivation</a></li>
       </ul></div>
       <div><h4>Company</h4><ul>
         <li><a href="/contact">Contact</a></li>
